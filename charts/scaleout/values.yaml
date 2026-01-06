@@ -20,7 +20,7 @@ image:
   # -- The Docker image pull policy
   pullPolicy: IfNotPresent
   # -- The Docker image tag (Ignition version)
-  tag: "8.1"
+  tag: "8.3"
   # -- Optional: Secrets for pulling images from private registries
   # imagePullSecrets: []
 
