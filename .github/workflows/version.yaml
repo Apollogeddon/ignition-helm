@@ -1,4 +1,4 @@
-name: Version
+name: Version and Release
 
 on:
   push:
@@ -19,8 +19,39 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - uses: google-github-actions/release-please-action@v4
+      - name: Release Please
+        id: release
+        uses: google-github-actions/release-please-action@v4
         with:
           config-file: .github/release.json
           manifest-file: .github/.release.json
+
+      - name: Configure Git
+        if: ${{ steps.release.outputs.releases_created }}
+        run: |
+          git config user.name "$GITHUB_ACTOR"
+          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+
+      - name: Install Helm
+        if: ${{ steps.release.outputs.releases_created }}
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.14.4
+
+      - name: Update dependencies
+        if: ${{ steps.release.outputs.releases_created }}
+        run: |
+          for dir in charts/*; do
+            if [ -d "$dir" ]; then
+              helm dependency build "$dir"
+            fi
+          done
+
+      - name: Run chart-releaser
+        if: ${{ steps.release.outputs.releases_created }}
+        uses: helm/chart-releaser-action@v1.6.0
+        env:
+          CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
