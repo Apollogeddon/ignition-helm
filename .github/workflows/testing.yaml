@@ -1,4 +1,4 @@
-name: Lint and Test Charts
+name: Testing
 
 on:
   pull_request:
@@ -6,7 +6,7 @@ on:
       - main
 
 jobs:
-  lint-test:
+  testing:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -27,6 +27,14 @@ jobs:
 
       - name: Set up chart-testing
         uses: helm/chart-testing-action@v2.6.1
+
+      - name: Update dependencies
+        run: |
+          for dir in charts/*; do
+            if [ -d "$dir" ]; then
+              helm dependency build "$dir"
+            fi
+          done
 
       - name: Run chart-testing (list-changed)
         id: list-changed

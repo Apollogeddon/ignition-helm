@@ -1,0 +1,25 @@
+{
+  "packages": {
+    "charts/common": {
+      "package-type": "helm",
+      "changelog-path": "CHANGELOG.md",
+      "release-type": "helm"
+    },
+    "charts/failover": {
+      "package-type": "helm",
+      "changelog-path": "CHANGELOG.md",
+      "release-type": "helm"
+    },
+    "charts/scaleout": {
+      "package-type": "helm",
+      "changelog-path": "CHANGELOG.md",
+      "release-type": "helm"
+    }
+  },
+  "plugins": [
+    {
+      "type": "sentence-case"
+    }
+  ],
+  "bootstrap-sha": "df5e5c703e911229618f08f376a911a37c4d5d4d"
+}
