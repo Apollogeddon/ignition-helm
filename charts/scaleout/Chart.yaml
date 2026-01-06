@@ -3,7 +3,7 @@ name: ignition-scaleout
 description: A Helm chart for failover Ignition Gateway with scalable frontend
   client functionality
 type: application
-version: 1.1.0
+version: 1.1.1
 dependencies:
   - name: ignition-common
     version: 0.2.0
