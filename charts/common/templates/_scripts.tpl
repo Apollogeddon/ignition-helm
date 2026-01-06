@@ -74,6 +74,9 @@ data:
     function populateGanKeystore() {
       info "Populating GAN Client Keystore into Ignition data/local/metro-keystore"
 
+      # Ensure the destination directory exists
+      mkdir -v -p "${IGNITION_DATA_DIR}/local"
+
       # Replace any existing GAN client keystore with the updated one from the mounted secret
       rm -v -f "${IGNITION_DATA_DIR}/local/metro-keystore"
       cp "${GAN_SECRETS_DIR}/keystore.p12" "${IGNITION_DATA_DIR}/local/metro-keystore"
