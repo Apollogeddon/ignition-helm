@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.2](https://github.com/Apollogeddon/ignition-helm/compare/ignition-scaleout-v1.1.1...ignition-scaleout-v1.1.2) (2026-01-06)
+
+
+### Bug Fixes
+
+* **charts:** Consolidate common scripts into shared template ([9976c5d](https://github.com/Apollogeddon/ignition-helm/commit/9976c5d7971d3dc1c7ea84f6b48e9a4dba4f0d1d))
+
 ## [1.1.1](https://github.com/Apollogeddon/ignition-helm/compare/ignition-scaleout-v1.1.0...ignition-scaleout-v1.1.1) (2026-01-06)
 
 
