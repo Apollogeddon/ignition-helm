@@ -53,5 +53,8 @@ jobs:
       - name: Run chart-releaser
         if: ${{ steps.release.outputs.releases_created }}
         uses: helm/chart-releaser-action@v1.6.0
+        with:
+          charts_dir: charts
+          pages_branch: main
         env:
           CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
