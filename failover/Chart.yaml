@@ -1,6 +1,6 @@
 apiVersion: v2
-name: ignition-redundant
-description: A Helm chart for redundant Ignition Gateway with combined
+name: ignition-failover
+description: A Helm chart for failover Ignition Gateway with combined
   frontend/backend functionality
 type: application
 version: 1.0.0

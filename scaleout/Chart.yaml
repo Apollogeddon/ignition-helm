@@ -1,6 +1,6 @@
 apiVersion: v2
 name: ignition-scaleout
-description: A Helm chart for redundant Ignition Gateway with scalable
+description: A Helm chart for failover Ignition Gateway with scalable
     frontend client functionality
 type: application
 version: 1.0.0
