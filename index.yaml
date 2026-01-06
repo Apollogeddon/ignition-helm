@@ -13,6 +13,20 @@ entries:
     version: 0.2.0
   ignition-failover:
   - apiVersion: v2
+    created: "2026-01-06T11:22:59.940231172Z"
+    dependencies:
+    - name: ignition-common
+      repository: file://../common
+      version: '*'
+    description: A Helm chart for failover Ignition Gateway with combined frontend/backend
+      functionality
+    digest: 5cc687f3d88fb5130f135de0012a7e63b0d7820058455f65f20d4031db9fd0e0
+    name: ignition-failover
+    type: application
+    urls:
+    - https://github.com/Apollogeddon/ignition-helm/releases/download/ignition-failover-1.1.2/ignition-failover-1.1.2.tgz
+    version: 1.1.2
+  - apiVersion: v2
     created: "2026-01-06T10:48:31.793854204Z"
     dependencies:
     - name: ignition-common
@@ -42,6 +56,20 @@ entries:
     version: 1.1.0
   ignition-scaleout:
   - apiVersion: v2
+    created: "2026-01-06T11:23:00.127479561Z"
+    dependencies:
+    - name: ignition-common
+      repository: file://../common
+      version: '*'
+    description: A Helm chart for failover Ignition Gateway with scalable frontend
+      client functionality
+    digest: 72c819e393f84035181c1171a26fac1a339ad03c33572a5dd559d2a0b054897c
+    name: ignition-scaleout
+    type: application
+    urls:
+    - https://github.com/Apollogeddon/ignition-helm/releases/download/ignition-scaleout-1.1.2/ignition-scaleout-1.1.2.tgz
+    version: 1.1.2
+  - apiVersion: v2
     created: "2026-01-06T10:48:31.909863817Z"
     dependencies:
     - name: ignition-common
@@ -69,4 +97,4 @@ entries:
     urls:
     - https://github.com/Apollogeddon/ignition-helm/releases/download/ignition-scaleout-1.1.0/ignition-scaleout-1.1.0.tgz
     version: 1.1.0
-generated: "2026-01-06T11:07:04.980977Z"
+generated: "2026-01-06T11:23:00.127503631Z"
