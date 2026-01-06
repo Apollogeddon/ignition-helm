@@ -36,7 +36,7 @@ jobs:
         run: |
           for dir in charts/*; do
             if [ -d "$dir" ]; then
-              helm dependency update "$dir"
+              helm dependency build "$dir"
             fi
           done
 
