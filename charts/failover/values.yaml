@@ -156,7 +156,7 @@ ignition:
   # -- Redundancy-specific settings
   redundancy:
     # -- Enable redundancy (Master/Backup). If false, deploys a single Standalone node.
-    enabled: true
+    enabled: false
     pingRate: 1000
     pingTimeout: 300
     pingMaxMissed: 10

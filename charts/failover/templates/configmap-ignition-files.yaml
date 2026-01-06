@@ -6,7 +6,7 @@ metadata:
     {{- include "ignition.labels" . | nindent 4 }}
 data:
   redundancy-primary.xml: |-
-{{ include "ignition-common.redundancyXml" (dict "role" "Master" "host" (printf "%s-0.%s" (include "ignition.name" .) (include "ignition.name" .)) "port" .Values.ignition.service.ports.gan "redundancy" .Values.ignition.redundancy) | indent 4 }}
+{{ include "ignition-common.redundancyXml" (dict "role" "Master" "host" (printf "%s-1.%s" (include "ignition.name" .) (include "ignition.name" .)) "port" .Values.ignition.service.ports.gan "redundancy" .Values.ignition.redundancy) | indent 4 }}
   redundancy-backup.xml: |-
 {{ include "ignition-common.redundancyXml" (dict "role" "Backup" "host" (printf "%s-0.%s" (include "ignition.name" .) (include "ignition.name" .)) "port" .Values.ignition.service.ports.gan "redundancy" .Values.ignition.redundancy) | indent 4 }}
 
