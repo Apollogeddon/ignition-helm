@@ -56,5 +56,6 @@ jobs:
         with:
           charts_dir: charts
           pages_branch: main
+          skip_existing: true
         env:
           CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
