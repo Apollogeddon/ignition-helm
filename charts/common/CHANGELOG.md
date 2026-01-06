@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.2](https://github.com/Apollogeddon/ignition-helm/compare/ignition-common-v0.2.1...ignition-common-v0.2.2) (2026-01-06)
+
+
+### Bug Fixes
+
+* **scripts:** Ensure keystore directory exists for population ([d0ebbf7](https://github.com/Apollogeddon/ignition-helm/commit/d0ebbf7e988c2358228c2124b03800173419e425))
+
 ## [0.2.1](https://github.com/Apollogeddon/ignition-helm/compare/ignition-common-v0.2.0...ignition-common-v0.2.1) (2026-01-06)
 
 

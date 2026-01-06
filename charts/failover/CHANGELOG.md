@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://github.com/Apollogeddon/ignition-helm/compare/ignition-failover-1.1.2...ignition-failover-v1.2.0) (2026-01-06)
+
+
+### Features
+
+* **failover:** Set default redundancy to disabled ([c5386cb](https://github.com/Apollogeddon/ignition-helm/commit/c5386cb7b13431cdb7fb4f10a7f297e08ca109e1))
+
 ## [1.1.2](https://github.com/Apollogeddon/ignition-helm/compare/ignition-failover-1.1.1...ignition-failover-v1.1.2) (2026-01-06)
 
 
