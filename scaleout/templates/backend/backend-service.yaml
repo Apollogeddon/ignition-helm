@@ -1,0 +1,78 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "helm.name" . }}-backend
+  labels:
+    {{- include "helm.labels" . | nindent 4 }}
+  annotations:
+    {{- if .Values.backend.service.annotations }}
+    {{- toYaml .Values.backend.service.annotations | nindent 4 }}
+    {{- end }}
+spec:
+  selector:
+    name: {{ include "helm.name" . }}-backend
+    {{- include "helm.selectorLabels" . | nindent 4 }}
+  ports:
+  - name: http
+    port: 8088
+    protocol: TCP
+  - name: https
+    port: 8043
+    protocol: TCP
+  - name: gan
+    port: 8060
+    protocol: TCP
+  type: {{ .Values.backend.service.type | default "LoadBalancer" }}
+  sessionAffinity: {{ .Values.backend.service.sessionAffinity | default "ClientIP" }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "helm.name" . }}-backend-primary
+  labels:
+    {{- include "helm.labels" . | nindent 4 }}
+spec:
+  selector:
+    statefulset.kubernetes.io/pod-name: {{ include "helm.name" . }}-backend-0
+    {{- include "helm.selectorLabels" . | nindent 4 }}
+  ports:
+  - name: http
+    port: 8088
+    protocol: TCP
+    targetPort: http
+  - name: https
+    port: 8043
+    protocol: TCP
+    targetPort: https
+  - name: gan
+    port: 8060
+    protocol: TCP
+    targetPort: gan
+  type: ClusterIP
+  clusterIP: None
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "helm.name" . }}-backend-backup
+  labels:
+    {{- include "helm.labels" . | nindent 4 }}
+spec:
+  selector:
+    statefulset.kubernetes.io/pod-name: {{ include "helm.name" . }}-backend-1
+    {{- include "helm.selectorLabels" . | nindent 4 }}
+  ports:
+  - name: http
+    port: 8088
+    protocol: TCP
+    targetPort: http
+  - name: https
+    port: 8043
+    protocol: TCP
+    targetPort: https
+  - name: gan
+    port: 8060
+    protocol: TCP
+    targetPort: gan
+  type: ClusterIP
+  clusterIP: None

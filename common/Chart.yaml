@@ -1,0 +1,6 @@
+apiVersion: v2
+name: ignition-common
+description: Shared library chart for Ignition Helm Charts
+type: library
+version: 0.1.0
+appVersion: "8.1.47"

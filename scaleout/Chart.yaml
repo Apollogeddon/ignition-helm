@@ -1,0 +1,11 @@
+apiVersion: v2
+name: ignition-scaleout
+description: A Helm chart for redundant Ignition Gateway with scalable
+    frontend client functionality
+type: application
+version: 1.0.0
+appVersion: "8.1.47"
+dependencies:
+  - name: ignition-common
+    version: 0.1.0
+    repository: "file://../common"

@@ -1,0 +1,61 @@
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ include "helm.name" . }}-gan-ca
+  labels:
+    {{- include "helm.labels" . | nindent 4 }}
+spec:
+  isCA: true
+  commonName: {{ include "helm.name" . }}-gan-ca
+  secretName: {{ include "helm.name" . }}-gan-ca
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+  duration: 17520h0m0s  # 2 years
+  issuerRef:
+    name: {{ .Values.certManager.issuer.name }}
+    kind: {{ .Values.certManager.issuer.kind }}
+    group: cert-manager.io
+---
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: {{ include "helm.name" . }}-gan-issuer
+  labels:
+    {{- include "helm.labels" . | nindent 4 }}
+spec:
+  ca:
+    secretName: {{ include "helm.name" . }}-gan-ca
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ include "helm.name" . }}-gan-metro-keystore
+  labels:
+    {{- include "helm.labels" . | nindent 4 }}
+type: Opaque
+data:
+  metro.keystore.password: {{ .Values.ignition.gan.keystorePassword | b64enc }}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ include "helm.name" . }}-gan
+  labels:
+    {{- include "helm.labels" . | nindent 4 }}
+spec:
+  secretName: {{ include "helm.name" . }}-gan-tls
+  issuerRef:
+    name: {{ include "helm.name" . }}-gan-issuer
+    kind: Issuer
+  commonName: "ignition"
+  dnsNames:
+  - "*.{{ include "helm.name" . }}"
+  duration: 8760h0m0s  # 1 year
+  keystores:
+    pkcs12:
+      create: true
+      passwordSecretRef:
+        name: {{ include "helm.name" . }}-gan-metro-keystore
+        key: metro.keystore.password

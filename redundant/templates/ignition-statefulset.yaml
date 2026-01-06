@@ -1,0 +1,212 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "helm.name" . }}
+  labels:
+    {{- include "helm.labels" $ | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      name: {{ include "helm.name" . }}
+      {{- include "helm.selectorLabels" . | nindent 6 }}
+  serviceName: {{ include "helm.name" . }}
+  replicas: {{ if .Values.ignition.redundancy.enabled }}2{{ else }}1{{ end }}
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      partition: 0
+  template:
+    metadata:
+      labels:
+        {{- include "helm.selectorLabels" . | nindent 8 }}
+        name: {{ include "helm.name" . }}
+    spec:
+      serviceAccountName: {{ include "helm.serviceAccountName" . }}
+      terminationGracePeriodSeconds: 60
+      securityContext:
+        {{- toYaml .Values.ignition.securityContext | nindent 8 }}
+      {{- if .Values.affinity.enabled }}
+      affinity:
+        podAntiAffinity:
+          {{- if eq .Values.affinity.type "soft" }}
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: name
+                  operator: In
+                  values:
+                  - {{ include "helm.name" . }}
+              topologyKey: {{ .Values.affinity.topologyKey }}
+          {{- else }}
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: name
+                operator: In
+                values:
+                - {{ include "helm.name" . }}
+            topologyKey: {{ .Values.affinity.topologyKey }}
+          {{- end }}
+      {{- end }}
+      {{- with .Values.image.imagePullSecrets }}
+      imagePullSecrets:
+      {{- toYaml . | nindent 6 }}
+      {{- end }}
+      containers:
+      - name: gateway
+        image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        resources: {{ .Values.ignition.resources | toYaml | nindent 10 }}
+        args: {{ .Values.ignition.args | toYaml | nindent 8 }}
+        ports:
+        - name: http
+          containerPort: {{ .Values.ignition.service.ports.http }}
+        - name: https
+          containerPort: {{ .Values.ignition.service.ports.https }}
+        - name: gan
+          containerPort: {{ .Values.ignition.service.ports.gan }}
+        envFrom:
+        - configMapRef:
+            name: {{ include "helm.name" . }}-config
+        - secretRef:
+            name: {{ include "helm.name" . }}-secrets
+        env:
+        - name: EAM_SETUP_INSTALLSELECTION
+          value: {{ .Values.ignition.eam.role | quote }}
+        - name: GATEWAY_SYSTEM_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+
+        volumeMounts:
+        - mountPath: /usr/local/bin/ignition/data
+          name: data
+        - mountPath: /config/scripts
+          name: {{ include "helm.name" . }}-config-scripts
+          readOnly: true
+        - mountPath: /run/secrets/gan-tls
+          name: {{ include "helm.name" . }}-gan-tls
+          readOnly: true
+        {{- if .Values.ignition.spoofMachineId }}
+        - mountPath: /etc/machine-id
+          name: {{ include "helm.name" . }}-config-files
+          subPath: machine-id
+          readOnly: true
+        {{- end }}
+        {{- if .Values.ignition.localMounts }}
+        {{- range $index, $localMounts := .Values.ignition.localMounts }}
+        - mountPath: /usr/local/bin/ignition/{{ $localMounts.mountPath }}
+          name: local-mount-{{ $index }}
+        {{- end }}
+        {{- end }}
+        {{- if .Values.ignition.extraVolumeMounts }}
+        {{- toYaml .Values.ignition.extraVolumeMounts | nindent 8 }}
+        {{- end }}
+        {{- if .Values.ignition.lifecycle }}
+        lifecycle:
+          {{- toYaml .Values.ignition.lifecycle | nindent 10 }}
+        {{- end }}
+        {{- if .Values.ignition.readinessProbe.enabled }}
+        readinessProbe:
+          exec:
+            command: {{- toYaml .Values.ignition.readinessProbe.command | nindent 14 }}
+          initialDelaySeconds: {{ .Values.ignition.readinessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.ignition.readinessProbe.periodSeconds }}
+          failureThreshold: {{ .Values.ignition.readinessProbe.failureThreshold }}
+          timeoutSeconds: {{ .Values.ignition.readinessProbe.timeoutSeconds }}
+        {{- end }}
+        {{- if .Values.ignition.livenessProbe.enabled }}
+        livenessProbe:
+          exec:
+            command: {{- toYaml .Values.ignition.livenessProbe.command | nindent 14 }}
+          initialDelaySeconds: {{ .Values.ignition.livenessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.ignition.livenessProbe.periodSeconds }}
+          failureThreshold: {{ .Values.ignition.livenessProbe.failureThreshold }}
+          timeoutSeconds: {{ .Values.ignition.livenessProbe.timeoutSeconds }}
+        {{- end }}
+      initContainers:
+      - name: preconfigure
+        image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        env:
+        - name: SPOOF_MACHINE_ID
+          value: {{ .Values.ignition.spoofMachineId | default "" | quote }}
+        - name: TLS_KEYSTORE_PASSWORD
+          value: {{ .Values.ignition.tls.keystorePassword | quote }}
+        - name: METRO_KEYSTORE_PASSPHRASE
+          value: {{ .Values.ignition.gan.keystorePassword | quote }}
+        - name: IGNITION_REPLICAS
+          value: {{ if .Values.ignition.redundancy.enabled }}"2"{{ else }}"1"{{ end }}
+        {{- if .Values.ignition.restore.enabled }}
+        {{- if .Values.ignition.restore.url }}
+        - name: IGNITION_RESTORE_URL
+          value: {{ .Values.ignition.restore.url | quote }}
+        {{- end }}
+        {{- if .Values.ignition.restore.path }}
+        - name: IGNITION_RESTORE_PATH
+          value: {{ .Values.ignition.restore.path | quote }}
+        {{- end }}
+        {{- end }}
+        command:
+        - /config/scripts/invoke-args.sh
+        args:
+        - /config/scripts/seed-data-volume.sh
+        - /config/scripts/seed-redundancy.sh
+        - /config/scripts/prepare-gan-certificates.sh
+        - cp /config/files/logback.xml /data/logback.xml
+        - /config/scripts/configure-ignition.sh
+        volumeMounts:
+        - mountPath: /data
+          name: data
+        - mountPath: /config/files
+          name: {{ include "helm.name" . }}-config-files
+        - mountPath: /config/scripts
+          name: {{ include "helm.name" . }}-config-scripts
+        - mountPath: /run/secrets/gan-tls
+          name: {{ include "helm.name" . }}-gan-tls
+        - mountPath: /run/secrets/ignition-gan-ca
+          name: {{ include "helm.name" . }}-gan-ca
+          readOnly: true
+      volumes:
+      - name: {{ include "helm.name" . }}-config-scripts
+        configMap:
+          name: {{ .Release.Name }}-ignition-common-scripts
+          defaultMode: 0755
+      - name: {{ include "helm.name" . }}-config-files
+        configMap:
+          name: {{ include "helm.name" . }}-config-files
+          defaultMode: 0644
+      - name: {{ include "helm.name" . }}-gan-ca
+        secret:
+          secretName: {{ include "helm.name" . }}-gan-ca
+      - name: {{ include "helm.name" . }}-gan-tls
+        secret:
+          secretName: {{ include "helm.name" . }}-gan-tls
+      {{- if .Values.ignition.localMounts }}
+      {{- range $index, $localMounts := .Values.ignition.localMounts }}
+      - name: local-mount-{{ $index }}
+        hostPath:
+          path: {{ $localMounts.hostPath }}
+          type: Directory
+      {{- end }}
+      {{- end }}
+      {{- if .Values.ignition.extraVolumes }}
+      {{- toYaml .Values.ignition.extraVolumes | nindent 6 }}
+      {{- end }}
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes: {{- toYaml .Values.ignition.persistence.accessModes | nindent 8 }}
+    {{- if .Values.ignition.persistence.storageClassName }}
+    {{- if (eq "-" .Values.ignition.persistence.storageClassName) }}
+      storageClassName: ""
+    {{- else }}
+      storageClassName: "{{ .Values.ignition.persistence.storageClassName }}"
+    {{- end }}
+    {{- end }}
+      resources:
+        requests:
+          storage: {{ .Values.ignition.persistence.size }}

@@ -1,0 +1,316 @@
+# Default values for ignition-scaleout.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# -- Application name used for naming resources
+applicationName: "ignition-scaleout"
+
+serviceAccount:
+  # -- Specifies whether a service account should be created
+  create: false
+  # -- Annotations to add to the service account
+  annotations: {}
+  # -- The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+image:
+  # -- The Docker image repository
+  repository: inductiveautomation/ignition
+  # -- The Docker image pull policy
+  pullPolicy: IfNotPresent
+  # -- The Docker image tag (Ignition version)
+  tag: "8.1"
+  # -- Optional: Secrets for pulling images from private registries
+  # imagePullSecrets: []
+
+certManager:
+  issuer:
+    # -- The name of the cert-manager Issuer or ClusterIssuer
+    name: cluster-issuer
+    # -- The kind of the cert-manager Issuer (Issuer or ClusterIssuer)
+    kind: ClusterIssuer
+
+affinity:
+  # -- Enable or disable pod anti-affinity
+  enabled: false
+  # -- Topology key for anti-affinity (e.g., kubernetes.io/hostname)
+  topologyKey: "kubernetes.io/hostname"
+
+frontend:
+  # -- Redundancy settings
+  redundancy:
+    # -- Number of frontend replicas
+    replicas: 1
+
+  # -- Pod security context
+  securityContext:
+    runAsUser: 2003
+    runAsGroup: 2003
+    fsGroup: 2003
+    runAsNonRoot: true
+
+  logging:
+    # -- Log level for the Frontend Gateway (INFO, DEBUG, WARN, ERROR)
+    level: "INFO"
+
+  eam:
+    # -- EAM Role (Agent for Frontend)
+    role: "Agent"
+
+  resources:
+    # -- Resource requests and limits
+    requests:
+      memory: "1Gi"
+      cpu: "500m"
+    limits:
+      memory: "2Gi"
+      cpu: "1000m"
+
+  # -- Additional arguments passed to the Ignition Gateway
+  args:
+    - -m
+    - "1024"
+    - -n
+    - "$(GATEWAY_SYSTEM_NAME)"
+    - --
+    - gateway.useProxyForwardedHeader=true
+
+  # -- Simplified project mounting.
+  # Mounts local directories to /usr/local/bin/ignition/<mountPath>
+  localMounts: []
+  # - hostPath: "C:/MyProjects/SiteA"
+  #   mountPath: "assets/projects/SiteA"
+
+  # -- Environment variables for configuration (will be mapped to ConfigMap)
+  config:
+    GATEWAY_ADMIN_USERNAME: "admin"
+    IGNITION_EDITION: "standard"
+    ACCEPT_IGNITION_EULA: "Y"
+    DISABLE_QUICKSTART: "true"
+    GATEWAY_NETWORK_SECURITYPOLICY: "Unrestricted"
+    GATEWAY_NETWORK_REQUIRETWOWAYAUTH: "true"
+    GATEWAY_MODULES_ENABLED: "perspective,symbol-factory"
+
+  # -- Static Machine ID for licensing.
+  spoofMachineId: ""
+
+  # -- Use SealedSecrets instead of plain Kubernetes Secrets
+  sealedSecrets: false
+
+  # -- Sensitive configuration values (will be mapped to Secret/SealedSecret)
+  secrets:
+    GATEWAY_ADMIN_PASSWORD: "admin"
+
+  service:
+    # -- Service type (LoadBalancer, NodePort, ClusterIP)
+    type: NodePort
+    # -- Session affinity (ClientIP or None)
+    sessionAffinity: ClientIP
+    # -- Port configuration
+    ports:
+      http: 8088
+      https: 8043
+      gan: 8060
+    # -- Service annotations
+    # annotations:
+    #   kube-vip.io/loadbalancerIPs: "192.168.10.202"
+
+  ingress:
+    # -- Enable Ingress
+    enabled: false
+    # -- TLS configuration for Ingress
+    tls: []
+    # -- Host and path configuration for Ingress
+    # hosts:
+    #   - host: "ignition-frontend.local"
+    #     paths:
+    #       - path: /
+    #         pathType: Prefix
+
+  tls:
+    # -- Keystore password for the Web Server TLS certificate
+    keystorePassword: "ignition"
+
+  gan:
+    # -- Keystore password for the Gateway Network certificate
+    keystorePassword: "metro"
+
+  # -- Readiness Probe configuration
+  readinessProbe:
+    enabled: true
+    initialDelaySeconds: 15
+    periodSeconds: 5
+    failureThreshold: 10
+    timeoutSeconds: 3
+    command:
+      - health-check.sh
+      - -t
+      - "3"
+
+  # -- Liveness Probe configuration
+  livenessProbe:
+    enabled: true
+    initialDelaySeconds: 120
+    periodSeconds: 10
+    failureThreshold: 3
+    timeoutSeconds: 5
+    command:
+      - health-check.sh
+      - -t
+      - "5"
+
+backend:
+  # -- Redundancy settings
+  redundancy:
+    # -- Enable redundancy (Master/Backup). If false, deploys a single Standalone node.
+    enabled: false
+    pingRate: 1000
+    pingTimeout: 300
+    pingMaxMissed: 10
+    enableSsl: true
+    joinWaitTime: 30000
+    websocketTimeout: 10000
+    syncTimeoutSecs: 60
+    maxDiskMb: 100
+    masterRecoveryMode: Automatic
+    httpConnectTimeout: 10000
+    httpReadTimeout: 60000
+    backupFailoverTimeout: 10000
+
+  # -- Pod security context
+  securityContext:
+    runAsUser: 2003
+    runAsGroup: 2003
+    fsGroup: 2003
+    runAsNonRoot: true
+
+  logging:
+    # -- Log level for the Backend Gateway (INFO, DEBUG, WARN, ERROR)
+    level: "INFO"
+
+  eam:
+    # -- EAM Role (Controller for Backend)
+    role: "Controller"
+
+  resources:
+    # -- Resource requests and limits
+    requests:
+      memory: "1Gi"
+      cpu: "500m"
+    limits:
+      memory: "2Gi"
+      cpu: "1000m"
+
+  persistence:
+    # -- Access modes for the PersistentVolumeClaim
+    accessModes:
+      - ReadWriteOnce
+    # -- Size of the persistent volume
+    size: 3Gi
+    # -- Storage class name (set to "-" to disable dynamic provisioning or use default)
+    storageClassName: ""
+
+  # -- Additional arguments passed to the Ignition Gateway
+  args:
+    - -m
+    - "1024"
+    - -n
+    - "$(GATEWAY_SYSTEM_NAME)"
+    - --
+    - gateway.useProxyForwardedHeader=true
+
+  # -- Simplified project mounting.
+  # Mounts local directories to /usr/local/bin/ignition/<mountPath>
+  localMounts: []
+  # - hostPath: "C:/MyProjects/SiteA"
+  #   mountPath: "assets/projects/SiteA"
+
+  # -- Environment variables for configuration (will be mapped to ConfigMap)
+  config:
+    GATEWAY_ADMIN_USERNAME: "admin"
+    IGNITION_EDITION: "standard"
+    ACCEPT_IGNITION_EULA: "Y"
+    DISABLE_QUICKSTART: "true"
+    GATEWAY_NETWORK_SECURITYPOLICY: "Unrestricted"
+    GATEWAY_NETWORK_REQUIRETWOWAYAUTH: "true"
+    GATEWAY_MODULES_ENABLED: "alarm-notification,modbus-driver-v2,opc-ua,reporting,siemens-drivers,sql-bridge,tag-historian,udp-tcp-drivers"
+
+  # -- Static Machine ID for licensing.
+  spoofMachineId: ""
+
+  # -- Use SealedSecrets instead of plain Kubernetes Secrets
+  sealedSecrets: false
+
+  # -- Sensitive configuration values (will be mapped to Secret/SealedSecret)
+  secrets:
+    GATEWAY_ADMIN_PASSWORD: "admin"
+
+  service:
+    # -- Service type (LoadBalancer, NodePort, ClusterIP)
+    type: NodePort
+    # -- Session affinity (ClientIP or None)
+    sessionAffinity: ClientIP
+    # -- Port configuration
+    ports:
+      http: 8088
+      https: 8043
+      gan: 8060
+    # -- Service annotations
+    # annotations:
+    #   kube-vip.io/loadbalancerIPs: "192.168.10.202"
+
+  ingress:
+    # -- Enable Ingress
+    enabled: false
+    # -- TLS configuration for Ingress
+    tls: []
+    # -- Host and path configuration for Ingress
+    # hosts:
+    #   - host: "ignition-backend.local"
+    #     paths:
+    #       - path: /
+    #         pathType: Prefix
+
+  tls:
+    # -- Keystore password for the Web Server TLS certificate
+    keystorePassword: "ignition"
+
+  gan:
+    # -- Keystore password for the Gateway Network certificate
+    keystorePassword: "metro"
+
+  # -- Gateway Restore Configuration
+  # To configure Database connections, MQTT clients, and other Gateway settings,
+  # provide a Gateway Backup (.gwbk) file via URL or local path (if mounted).
+  restore:
+    # -- Enable Gateway Restore
+    enabled: false
+    # -- URL to download the .gwbk file from (e.g. "http://fileserver/backend-initial.gwbk")
+    url: ""
+    # -- OR, path to a mounted .gwbk file (e.g. "/restore/backend-initial.gwbk")
+    # path: ""
+
+  # -- Readiness Probe configuration
+  readinessProbe:
+    enabled: true
+    initialDelaySeconds: 60
+    periodSeconds: 5
+    failureThreshold: 10
+    timeoutSeconds: 3
+    command:
+      - health-check.sh
+      - -t
+      - "3"
+
+  # -- Liveness Probe configuration
+  livenessProbe:
+    enabled: true
+    initialDelaySeconds: 120
+    periodSeconds: 10
+    failureThreshold: 3
+    timeoutSeconds: 5
+    command:
+      - health-check.sh
+      - -t
+      - "5"

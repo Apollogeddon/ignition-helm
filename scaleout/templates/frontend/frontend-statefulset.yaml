@@ -1,0 +1,169 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "helm.name" . }}-frontend
+  labels:
+    {{- include "helm.labels" $ | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      name: {{ include "helm.name" . }}-frontend
+      {{- include "helm.selectorLabels" . | nindent 6 }}
+  serviceName: {{ include "helm.name" . }}-frontend
+  replicas: {{ .Values.frontend.redundancy.replicas }}
+  template:
+    metadata:
+      labels:
+        name: {{ include "helm.name" . }}-frontend
+        {{- include "helm.selectorLabels" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "helm.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.frontend.securityContext | nindent 8 }}
+      {{- if .Values.affinity.enabled }}
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: name
+                operator: In
+                values:
+                - {{ include "helm.name" . }}-frontend
+            topologyKey: kubernetes.io/hostname
+      {{- end }}
+      {{- with .Values.image.imagePullSecrets }}
+      imagePullSecrets:
+      {{- toYaml . | nindent 6 }}
+      {{- end }}
+      containers:
+      - name: gateway
+        image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        resources: {{ .Values.frontend.resources | toYaml | nindent 10 }}
+        args: {{ .Values.frontend.args | toYaml | nindent 8 }}
+        ports:
+        - name: http
+          containerPort: {{ .Values.frontend.service.ports.http }}
+        - name: https
+          containerPort: {{ .Values.frontend.service.ports.https }}
+        - name: gan
+          containerPort: {{ .Values.frontend.service.ports.gan }}
+        envFrom:
+        - configMapRef:
+            name: {{ include "helm.name" . }}-frontend-config
+        - secretRef:
+            name: {{ include "helm.name" . }}-frontend-secrets
+        env:
+        {{- $backendReplicas := (ternary 2 1 .Values.backend.redundancy.enabled) }}
+        {{- range $i, $e := until (int $backendReplicas) }}
+        - name: GATEWAY_NETWORK_{{ $i }}_HOST
+          value: "{{ include "helm.name" $ }}-backend-{{ $i }}.{{ include "helm.name" $ }}-backend"
+        {{- end }}
+        - name: EAM_SETUP_INSTALLSELECTION
+          value: {{ .Values.frontend.eam.role | quote }}
+        - name: EAM_AGENT_CONTROLLERSERVERNAME
+          value: "backend"
+        - name: GATEWAY_SYSTEM_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        volumeMounts:
+        - mountPath: /usr/local/bin/ignition/data
+          name: data
+        - mountPath: /run/secrets/gan-tls
+          name: {{ include "helm.name" . }}-gan-tls
+          readOnly: true
+        {{- if .Values.frontend.spoofMachineId }}
+        - mountPath: /etc/machine-id
+          name: {{ include "helm.name" . }}-config-files
+          subPath: frontend-machine-id
+          readOnly: true
+        {{- end }}
+        {{- if .Values.frontend.localMounts }}
+        {{- range $index, $localMounts := .Values.frontend.localMounts }}
+        - mountPath: /usr/local/bin/ignition/{{ $localMounts.mountPath }}
+          name: local-mount-{{ $index }}
+        {{- end }}
+        {{- end }}
+        {{- if .Values.frontend.extraVolumeMounts }}
+        {{- toYaml .Values.frontend.extraVolumeMounts | nindent 8 }}
+        {{- end }}
+        {{- if .Values.frontend.lifecycle }}
+        lifecycle:
+          {{- toYaml .Values.frontend.lifecycle | nindent 10 }}
+        {{- end }}
+        {{- if .Values.frontend.readinessProbe.enabled }}
+        readinessProbe:
+          exec:
+            command: {{- toYaml .Values.frontend.readinessProbe.command | nindent 14 }}
+          initialDelaySeconds: {{ .Values.frontend.readinessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.frontend.readinessProbe.periodSeconds }}
+          failureThreshold: {{ .Values.frontend.readinessProbe.failureThreshold }}
+          timeoutSeconds: {{ .Values.frontend.readinessProbe.timeoutSeconds }}
+        {{- end }}
+        {{- if .Values.frontend.livenessProbe.enabled }}
+        livenessProbe:
+          exec:
+            command: {{- toYaml .Values.frontend.livenessProbe.command | nindent 14 }}
+          initialDelaySeconds: {{ .Values.frontend.livenessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.frontend.livenessProbe.periodSeconds }}
+          failureThreshold: {{ .Values.frontend.livenessProbe.failureThreshold }}
+          timeoutSeconds: {{ .Values.frontend.livenessProbe.timeoutSeconds }}
+        {{- end }}
+      initContainers:
+      - name: preconfigure
+        image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        env:
+        - name: SPOOF_MACHINE_ID
+          value: {{ .Values.frontend.spoofMachineId | default "" | quote }}
+        - name: TLS_KEYSTORE_PASSWORD
+          value: {{ .Values.frontend.tls.keystorePassword | quote }}
+        - name: METRO_KEYSTORE_PASSPHRASE
+          value: {{ .Values.frontend.gan.keystorePassword | quote }}
+        command:
+        - /config/scripts/invoke-args.sh
+        args:
+        - /config/scripts/seed-data-volume.sh
+        - /config/scripts/prepare-gan-certificates.sh
+        volumeMounts:
+        - mountPath: /data
+          name: data
+        - mountPath: /config/scripts
+          name: {{ include "helm.name" . }}-config-scripts
+        - mountPath: /config/files
+          name: {{ include "helm.name" . }}-config-files
+        - mountPath: /run/secrets/gan-tls
+          name: {{ include "helm.name" . }}-gan-tls
+        - mountPath: /run/secrets/ignition-gan-ca
+          name: {{ include "helm.name" . }}-gan-ca
+          readOnly: true
+      volumes:
+      - name: data
+        emptyDir: {}
+      - name: {{ include "helm.name" . }}-config-scripts
+        configMap:
+          name: {{ .Release.Name }}-ignition-common-scripts
+          defaultMode: 0755
+      - name: {{ include "helm.name" . }}-config-files
+        configMap:
+          name: {{ include "helm.name" . }}-config-files
+          defaultMode: 0644
+      - name: {{ include "helm.name" . }}-gan-ca
+        secret:
+          secretName: {{ include "helm.name" . }}-gan-ca
+      - name: {{ include "helm.name" . }}-gan-tls
+        secret:
+          secretName: {{ include "helm.name" . }}-frontend-gan-tls
+      {{- if .Values.frontend.localMounts }}
+      {{- range $index, $localMounts := .Values.frontend.localMounts }}
+      - name: local-mount-{{ $index }}
+        hostPath:
+          path: {{ $localMounts.hostPath }}
+          type: Directory
+      {{- end }}
+      {{- end }}
+      {{- if .Values.frontend.extraVolumes }}
+      {{- toYaml .Values.frontend.extraVolumes | nindent 6 }}
+      {{- end }}

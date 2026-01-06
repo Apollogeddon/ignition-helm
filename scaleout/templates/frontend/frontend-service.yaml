@@ -1,0 +1,29 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "helm.name" . }}-frontend
+  labels:
+    {{- include "helm.labels" . | nindent 4 }}
+  annotations:
+    {{- if .Values.frontend.service.annotations }}
+    {{- toYaml .Values.frontend.service.annotations | nindent 4 }}
+    {{- end }}
+spec:
+  selector:
+    name: {{ include "helm.name" . }}-frontend
+    {{- include "helm.selectorLabels" . | nindent 4 }}
+  ports:
+  - name: http
+    port: 80
+    protocol: TCP
+    targetPort: http
+  - name: https
+    port: 443
+    protocol: TCP
+    targetPort: https
+  - name: gan
+    port: 8060
+    protocol: TCP
+    targetPort: gan
+  type: {{ .Values.frontend.service.type | default "LoadBalancer" }}
+  sessionAffinity: {{ .Values.frontend.service.sessionAffinity | default "ClientIP" }}

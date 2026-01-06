@@ -1,0 +1,78 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "helm.name" . }}
+  labels:
+    {{- include "helm.labels" . | nindent 4 }}
+  annotations:
+    {{- if .Values.ignition.service.annotations }}
+    {{- toYaml .Values.ignition.service.annotations | nindent 4 }}
+    {{- end }}
+spec:
+  selector:
+    name: {{ include "helm.name" . }}
+    {{- include "helm.selectorLabels" . | nindent 4 }}
+  ports:
+  - name: http
+    port: {{ .Values.ignition.service.ports.http }}
+    protocol: TCP
+  - name: https
+    port: {{ .Values.ignition.service.ports.https }}
+    protocol: TCP
+  - name: gan
+    port: {{ .Values.ignition.service.ports.gan }}
+    protocol: TCP
+  type: {{ .Values.ignition.service.type | default "LoadBalancer" }}
+  sessionAffinity: {{ .Values.ignition.service.sessionAffinity | default "ClientIP" }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "helm.name" . }}-primary
+  labels:
+    {{- include "helm.labels" . | nindent 4 }}
+spec:
+  selector:
+    statefulset.kubernetes.io/pod-name: {{ include "helm.name" . }}-0
+    {{- include "helm.selectorLabels" . | nindent 4 }}
+  ports:
+  - name: http
+    port: {{ .Values.ignition.service.ports.http }}
+    protocol: TCP
+    targetPort: http
+  - name: https
+    port: {{ .Values.ignition.service.ports.https }}
+    protocol: TCP
+    targetPort: https
+  - name: gan
+    port: {{ .Values.ignition.service.ports.gan }}
+    protocol: TCP
+    targetPort: gan
+  type: ClusterIP
+  clusterIP: None
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "helm.name" . }}-backup
+  labels:
+    {{- include "helm.labels" . | nindent 4 }}
+spec:
+  selector:
+    statefulset.kubernetes.io/pod-name: {{ include "helm.name" . }}-1
+    {{- include "helm.selectorLabels" . | nindent 4 }}
+  ports:
+  - name: http
+    port: {{ .Values.ignition.service.ports.http }}
+    protocol: TCP
+    targetPort: http
+  - name: https
+    port: {{ .Values.ignition.service.ports.https }}
+    protocol: TCP
+    targetPort: https
+  - name: gan
+    port: {{ .Values.ignition.service.ports.gan }}
+    protocol: TCP
+    targetPort: gan
+  type: ClusterIP
+  clusterIP: None
