@@ -83,5 +83,5 @@ spec:
       volumes:
       - name: data
         emptyDir: {}
-{{ include "ignition-common.volumes" (dict "name" (include "ignition.name" .) "values" .Values.frontend "ganTlsSecretName" (printf "%s-frontend-gan-tls" (include "ignition.name" .)) "commonScriptsConfigMapName" (printf "%s-ignition-common-scripts" .Release.Name)) | nindent 6 }}
+{{ include "ignition-common.volumes" (dict "name" (include "ignition.name" .) "values" .Values.frontend "ganTlsSecretName" (printf "%s-frontend-gan-tls" (include "ignition.name" .)) "commonScriptsConfigMapName" (include "ignition-common.scriptsName" .)) | nindent 6 }}
 

@@ -63,7 +63,14 @@ Create the name of the service account to use
 Create a default fully qualified app name for common resources.
 */}}
 {{- define "ignition-common.fullname" -}}
-{{- printf "%s-ignition-common" .Release.Name | trunc 63 | trimSuffix "-" -}}
+{{- printf "%s-common" (include "ignition.name" .) | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+
+{{/*
+Create the name for the common scripts ConfigMap.
+*/}}
+{{- define "ignition-common.scriptsName" -}}
+{{- include "ignition-common.fullname" . }}-scripts
 {{- end -}}
 
 {{/*

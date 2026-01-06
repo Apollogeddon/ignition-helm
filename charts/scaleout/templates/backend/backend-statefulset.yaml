@@ -77,7 +77,7 @@ spec:
       initContainers:
 {{ include "ignition-common.initContainer.preconfigure" (dict "name" (include "ignition.name" .) "image" .Values.image "values" .Values.backend "replicas" (ternary 2 1 .Values.backend.redundancy.enabled)) | nindent 6 }}
       volumes:
-{{ include "ignition-common.volumes" (dict "name" (include "ignition.name" .) "values" .Values.backend "ganTlsSecretName" (printf "%s-backend-gan-tls" (include "ignition.name" .)) "commonScriptsConfigMapName" (printf "%s-ignition-common-scripts" .Release.Name)) | nindent 6 }}
+{{ include "ignition-common.volumes" (dict "name" (include "ignition.name" .) "values" .Values.backend "ganTlsSecretName" (printf "%s-backend-gan-tls" (include "ignition.name" .)) "commonScriptsConfigMapName" (include "ignition-common.scriptsName" .)) | nindent 6 }}
 
   volumeClaimTemplates:
   - metadata:

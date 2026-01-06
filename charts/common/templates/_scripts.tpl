@@ -2,7 +2,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ include "ignition-common.fullname" . }}-scripts
+  name: {{ include "ignition-common.scriptsName" . }}
   labels:
     {{- include "ignition-common.labels" . | nindent 4 }}
 data:
