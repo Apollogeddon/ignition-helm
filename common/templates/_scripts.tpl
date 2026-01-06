@@ -1,3 +1,4 @@
+{{- define "ignition-common.scripts" -}}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -17,3 +18,4 @@ data:
     {{- .Files.Get "scripts/invoke-args.sh" | nindent 4 }}
   configure-ignition.sh: |-
     {{- .Files.Get "scripts/configure-ignition.sh" | nindent 4 }}
+{{- end -}}

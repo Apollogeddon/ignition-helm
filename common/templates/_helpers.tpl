@@ -60,6 +60,26 @@ Create the name of the service account to use
 {{- end }}
 
 {{/*
+Create a default fully qualified app name for common resources.
+*/}}
+{{- define "ignition-common.fullname" -}}
+{{- printf "%s-ignition-common" .Release.Name | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+
+{{/*
+Common labels for common resources.
+*/}}
+{{- define "ignition-common.labels" -}}
+helm.sh/chart: {{ include "ignition.chart" . }}
+app.kubernetes.io/name: {{ include "ignition-common.fullname" . }}
+app.kubernetes.io/instance: {{ .Release.Name }}
+{{- if .Chart.AppVersion }}
+app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
+{{- end }}
+app.kubernetes.io/managed-by: {{ .Release.Service }}
+{{- end }}
+
+{{/*
 Standard Ingress
 Params:
   name: The component name suffix (e.g. "frontend" or "")
