@@ -1,14 +1,14 @@
 {{/*
 Expand the name of the chart.
 */}}
-{{- define "ignition-common.name" -}}
-{{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" }}
+{{- define "ignition.name" -}}
+{{- default .Chart.Name .Values.applicationName | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
 Create a default fully qualified app name.
 */}}
-{{- define "ignition-common.fullname" -}}
+{{- define "ignition.fullname" -}}
 {{- if .Values.fullnameOverride }}
 {{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" }}
 {{- else }}
@@ -24,16 +24,16 @@ Create a default fully qualified app name.
 {{/*
 Create chart name and version as used by the chart label.
 */}}
-{{- define "ignition-common.chart" -}}
+{{- define "ignition.chart" -}}
 {{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
 Common labels
 */}}
-{{- define "ignition-common.labels" -}}
-helm.sh/chart: {{ include "ignition-common.chart" . }}
-{{ include "ignition-common.selectorLabels" . }}
+{{- define "ignition.labels" -}}
+helm.sh/chart: {{ include "ignition.chart" . }}
+{{ include "ignition.selectorLabels" . }}
 {{- if .Chart.AppVersion }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
@@ -43,9 +43,119 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{/*
 Selector labels
 */}}
-{{- define "ignition-common.selectorLabels" -}}
-app.kubernetes.io/name: {{ include "ignition-common.name" . }}
+{{- define "ignition.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "ignition.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end }}
+
+{{/*
+Create the name of the service account to use
+*/}}
+{{- define "ignition.serviceAccountName" -}}
+{{- if .Values.serviceAccount.create }}
+{{- default (include "ignition.name" .) .Values.serviceAccount.name }}
+{{- else }}
+{{- default "default" .Values.serviceAccount.name }}
+{{- end }}
+{{- end }}
+
+{{/*
+Standard Ingress
+Params:
+  name: The component name suffix (e.g. "frontend" or "")
+  values: The component-specific values object
+*/}}
+{{- define "ignition-common.ingress" -}}
+{{- if .values.ingress.enabled -}}
+{{- $fullname := include "ignition.name" . }}
+{{- if .name }}
+{{- $fullname = printf "%s-%s" $fullname .name }}
+{{- end }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ $fullname }}
+  labels:
+    {{- include "ignition.labels" . | nindent 4 }}
+  {{- if .values.ingress.annotations }}
+  annotations:
+    {{- toYaml .values.ingress.annotations | nindent 4 }}
+  {{- end }}
+spec:
+  {{- if .values.ingress.tls }}
+  tls:
+    {{- range .values.ingress.tls }}
+    - hosts:
+        {{- range .hosts }}
+        - {{ . | quote }}
+        {{- end }}
+      secretName: {{ .secretName }}
+    {{- end }}
+  {{- end }}
+  rules:
+    {{- range .values.ingress.hosts }}
+    - host: {{ .host | quote }}
+      http:
+        paths:
+          {{- range .paths }}
+          - path: {{ .path }}
+            pathType: {{ .pathType }}
+            backend:
+              service:
+                name: {{ $fullname }}
+                port:
+                  number: {{ $.values.service.ports.http }}
+          {{- end }}
+    {{- end }}
+{{- end }}
+{{- end }}
+
+{{/*
+Standard Service
+Params:
+  name: The component name suffix (e.g. "frontend" or "")
+  values: The component-specific values object
+*/}}
+{{- define "ignition-common.service" -}}
+{{- $fullname := include "ignition.name" . }}
+{{- if .name }}
+{{- $fullname = printf "%s-%s" $fullname .name }}
+{{- end }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $fullname }}
+  labels:
+    {{- include "ignition.labels" . | nindent 4 }}
+  {{- if .values.service.annotations }}
+  annotations:
+    {{- toYaml .values.service.annotations | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .values.service.type }}
+  {{- if .values.service.sessionAffinity }}
+  sessionAffinity: {{ .values.service.sessionAffinity }}
+  {{- end }}
+  ports:
+    - port: {{ .values.service.ports.http }}
+      targetPort: http
+      protocol: TCP
+      name: http
+    - port: {{ .values.service.ports.https }}
+      targetPort: https
+      protocol: TCP
+      name: https
+    - port: {{ .values.service.ports.gan }}
+      targetPort: gan
+      protocol: TCP
+      name: gan
+  selector:
+    {{- include "ignition.selectorLabels" . | nindent 4 }}
+    {{- if .name }}
+    name: {{ $fullname }}
+    {{- else }}
+    name: {{ include "ignition.name" . }}
+    {{- end }}
 {{- end }}
 
 {{/*
@@ -100,4 +210,182 @@ Params:
   </root>
   <logger name="gateway.SslManager" level="DEBUG" />
 </configuration>
+{{- end }}
+
+{{/*
+Redundancy XML Properties
+Params:
+  role: Master or Backup
+  host: The GAN host address
+  port: The GAN port
+  redundancy: The redundancy values object
+*/}}
+{{- define "ignition-common.redundancyXml" -}}
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">
+<properties>
+<comment>Redundancy Settings</comment>
+<entry key="redundancy.noderole">{{ .role }}</entry>
+<entry key="redundancy.gan.pingTimeout">{{ .redundancy.pingTimeout }}</entry>
+<entry key="redundancy.gan.pingMaxMissed">{{ .redundancy.pingMaxMissed }}</entry>
+<entry key="redundancy.activehistorylevel">Full</entry>
+<entry key="redundancy.standbyactivitylevel">Cold</entry>
+<entry key="redundancy.gan.pingRate">{{ .redundancy.pingRate }}</entry>
+<entry key="redundancy.bindinterface"></entry>
+<entry key="redundancy.gan.enableSsl">{{ .redundancy.enableSsl }}</entry>
+<entry key="redundancy.backupreconnectperiod">10000</entry>
+<entry key="redundancy.joinwaittime">{{ .redundancy.joinWaitTime }}</entry>
+<entry key="redundancy.gan.websocketTimeout">{{ .redundancy.websocketTimeout }}</entry>
+<entry key="redundancy.systemstaterevision">0</entry>
+<entry key="redundancy.sync.timeoutSecs">{{ .redundancy.syncTimeoutSecs }}</entry>
+<entry key="redundancy.maxdisk_mb">{{ .redundancy.maxDiskMb }}</entry>
+<entry key="redundancy.systemstateuid">00000000-0000-0000-0000-000000000000</entry>
+<entry key="redundancy.masterrecoverymode">{{ .redundancy.masterRecoveryMode }}</entry>
+<entry key="redundancy.gan.httpConnectTimeout">{{ .redundancy.httpConnectTimeout }}</entry>
+<entry key="redundancy.gan.httpReadTimeout">{{ .redundancy.httpReadTimeout }}</entry>
+<entry key="redundancy.gan.host">{{ .host }}</entry>
+<entry key="redundancy.backupfailovertimeout">{{ .redundancy.backupFailoverTimeout }}</entry>
+<entry key="redundancy.gan.port">{{ .port }}</entry>
+<entry key="redundancy.autodetectlocalinterface">true</entry>
+</properties>
+{{- end }}
+
+{{/*
+Standard Probes
+Params:
+  probe: The probe values object (livenessProbe or readinessProbe)
+*/}}
+{{- define "ignition-common.probes" -}}
+exec:
+  command: {{- toYaml .probe.command | nindent 4 }}
+initialDelaySeconds: {{ .probe.initialDelaySeconds }}
+periodSeconds: {{ .probe.periodSeconds }}
+failureThreshold: {{ .probe.failureThreshold }}
+timeoutSeconds: {{ .probe.timeoutSeconds }}
+{{- end }}
+
+{{/*
+Standard Volume Mounts
+Params:
+  name: The base name of the application/component
+  values: The component-specific values object
+  machineIdSubPath: (Optional) The subPath for machine-id
+*/}}
+{{- define "ignition-common.volumeMounts" -}}
+- mountPath: /usr/local/bin/ignition/data
+  name: data
+- mountPath: /config/scripts
+  name: {{ .name }}-config-scripts
+  readOnly: true
+- mountPath: /run/secrets/gan-tls
+  name: {{ .name }}-gan-tls
+  readOnly: true
+{{- if .values.spoofMachineId }}
+- mountPath: /etc/machine-id
+  name: {{ .name }}-config-files
+  subPath: {{ .machineIdSubPath | default "machine-id" }}
+  readOnly: true
+{{- end }}
+{{- if .values.localMounts }}
+{{- range $index, $localMounts := .values.localMounts }}
+- mountPath: /usr/local/bin/ignition/{{ $localMounts.mountPath }}
+  name: local-mount-{{ $index }}
+{{- end }}
+{{- end }}
+{{- if .values.extraVolumeMounts }}
+{{- toYaml .values.extraVolumeMounts | nindent 0 }}
+{{- end }}
+{{- end }}
+
+{{/*
+Standard Volumes
+Params:
+  name: The base name of the application/component
+  values: The component-specific values object
+  ganTlsSecretName: The secret name for GAN TLS
+  commonScriptsConfigMapName: The name of the common scripts configmap
+*/}}
+{{- define "ignition-common.volumes" -}}
+- name: {{ .name }}-config-scripts
+  configMap:
+    name: {{ .commonScriptsConfigMapName }}
+    defaultMode: 0755
+- name: {{ .name }}-config-files
+  configMap:
+    name: {{ .name }}-config-files
+    defaultMode: 0644
+- name: {{ .name }}-gan-ca
+  secret:
+    secretName: {{ .name }}-gan-ca
+- name: {{ .name }}-gan-tls
+  secret:
+    secretName: {{ .ganTlsSecretName }}
+{{- if .values.localMounts }}
+{{- range $index, $localMounts := .values.localMounts }}
+- name: local-mount-{{ $index }}
+  hostPath:
+    path: {{ $localMounts.hostPath }}
+    type: Directory
+{{- end }}
+{{- end }}
+{{- if .values.extraVolumes }}
+{{- toYaml .values.extraVolumes | nindent 0 }}
+{{- end }}
+{{- end }}
+
+{{/*
+Preconfigure Init Container
+Params:
+  name: The base name of the application/component
+  image: The image definition (repository and tag)
+  values: The component-specific values object
+  replicas: Number of replicas (for redundancy initialization)
+*/}}
+{{- define "ignition-common.initContainer.preconfigure" -}}
+- name: preconfigure
+  image: {{ .image.repository }}:{{ .image.tag }}
+  imagePullPolicy: {{ .image.pullPolicy }}
+  env:
+  - name: SPOOF_MACHINE_ID
+    value: {{ .values.spoofMachineId | default "" | quote }}
+  - name: TLS_KEYSTORE_PASSWORD
+    value: {{ .values.tls.keystorePassword | quote }}
+  - name: METRO_KEYSTORE_PASSPHRASE
+    value: {{ .values.gan.keystorePassword | quote }}
+  - name: IGNITION_REPLICAS
+    value: {{ .replicas | quote }}
+  {{- if .values.restore }}
+  {{- if .values.restore.enabled }}
+  {{- if .values.restore.url }}
+  - name: IGNITION_RESTORE_URL
+    value: {{ .values.restore.url | quote }}
+  {{- end }}
+  {{- if .values.restore.path }}
+  - name: IGNITION_RESTORE_PATH
+    value: {{ .values.restore.path | quote }}
+  {{- end }}
+  {{- end }}
+  {{- end }}
+  command:
+  - /config/scripts/invoke-args.sh
+  args:
+  - /config/scripts/seed-data-volume.sh
+  {{- if gt (int .replicas) 1 }}
+  - /config/scripts/seed-redundancy.sh
+  {{- end }}
+  - /config/scripts/prepare-gan-certificates.sh
+  - cp /config/files/logback.xml /data/logback.xml
+  - /config/scripts/configure-ignition.sh
+  volumeMounts:
+  - mountPath: /data
+    name: data
+  - mountPath: /config/files
+    name: {{ .name }}-config-files
+  - mountPath: /config/scripts
+    name: {{ .name }}-config-scripts
+  - mountPath: /run/secrets/gan-tls
+    name: {{ .name }}-gan-tls
+  - mountPath: /run/secrets/ignition-gan-ca
+    name: {{ .name }}-gan-ca
+    readOnly: true
 {{- end }}

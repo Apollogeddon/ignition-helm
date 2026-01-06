@@ -1,15 +1,15 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: {{ include "helm.name" . }}
+  name: {{ include "ignition.name" . }}
   labels:
-    {{- include "helm.labels" $ | nindent 4 }}
+    {{- include "ignition.labels" $ | nindent 4 }}
 spec:
   selector:
     matchLabels:
-      name: {{ include "helm.name" . }}
-      {{- include "helm.selectorLabels" . | nindent 6 }}
-  serviceName: {{ include "helm.name" . }}
+      name: {{ include "ignition.name" . }}
+      {{- include "ignition.selectorLabels" . | nindent 6 }}
+  serviceName: {{ include "ignition.name" . }}
   replicas: {{ if .Values.ignition.redundancy.enabled }}2{{ else }}1{{ end }}
   updateStrategy:
     type: RollingUpdate
@@ -18,10 +18,10 @@ spec:
   template:
     metadata:
       labels:
-        {{- include "helm.selectorLabels" . | nindent 8 }}
-        name: {{ include "helm.name" . }}
+        {{- include "ignition.selectorLabels" . | nindent 8 }}
+        name: {{ include "ignition.name" . }}
     spec:
-      serviceAccountName: {{ include "helm.serviceAccountName" . }}
+      serviceAccountName: {{ include "ignition.serviceAccountName" . }}
       terminationGracePeriodSeconds: 60
       securityContext:
         {{- toYaml .Values.ignition.securityContext | nindent 8 }}
@@ -37,7 +37,7 @@ spec:
                 - key: name
                   operator: In
                   values:
-                  - {{ include "helm.name" . }}
+                  - {{ include "ignition.name" . }}
               topologyKey: {{ .Values.affinity.topologyKey }}
           {{- else }}
           requiredDuringSchedulingIgnoredDuringExecution:
@@ -46,7 +46,7 @@ spec:
               - key: name
                 operator: In
                 values:
-                - {{ include "helm.name" . }}
+                - {{ include "ignition.name" . }}
             topologyKey: {{ .Values.affinity.topologyKey }}
           {{- end }}
       {{- end }}
@@ -69,9 +69,9 @@ spec:
           containerPort: {{ .Values.ignition.service.ports.gan }}
         envFrom:
         - configMapRef:
-            name: {{ include "helm.name" . }}-config
+            name: {{ include "ignition.name" . }}-config
         - secretRef:
-            name: {{ include "helm.name" . }}-secrets
+            name: {{ include "ignition.name" . }}-secrets
         env:
         - name: EAM_SETUP_INSTALLSELECTION
           value: {{ .Values.ignition.eam.role | quote }}
@@ -81,120 +81,20 @@ spec:
               fieldPath: metadata.name
 
         volumeMounts:
-        - mountPath: /usr/local/bin/ignition/data
-          name: data
-        - mountPath: /config/scripts
-          name: {{ include "helm.name" . }}-config-scripts
-          readOnly: true
-        - mountPath: /run/secrets/gan-tls
-          name: {{ include "helm.name" . }}-gan-tls
-          readOnly: true
-        {{- if .Values.ignition.spoofMachineId }}
-        - mountPath: /etc/machine-id
-          name: {{ include "helm.name" . }}-config-files
-          subPath: machine-id
-          readOnly: true
-        {{- end }}
-        {{- if .Values.ignition.localMounts }}
-        {{- range $index, $localMounts := .Values.ignition.localMounts }}
-        - mountPath: /usr/local/bin/ignition/{{ $localMounts.mountPath }}
-          name: local-mount-{{ $index }}
-        {{- end }}
-        {{- end }}
-        {{- if .Values.ignition.extraVolumeMounts }}
-        {{- toYaml .Values.ignition.extraVolumeMounts | nindent 8 }}
-        {{- end }}
-        {{- if .Values.ignition.lifecycle }}
-        lifecycle:
-          {{- toYaml .Values.ignition.lifecycle | nindent 10 }}
-        {{- end }}
+{{ include "ignition-common.volumeMounts" (dict "name" (include "ignition.name" .) "values" .Values.ignition) | nindent 8 }}
         {{- if .Values.ignition.readinessProbe.enabled }}
         readinessProbe:
-          exec:
-            command: {{- toYaml .Values.ignition.readinessProbe.command | nindent 14 }}
-          initialDelaySeconds: {{ .Values.ignition.readinessProbe.initialDelaySeconds }}
-          periodSeconds: {{ .Values.ignition.readinessProbe.periodSeconds }}
-          failureThreshold: {{ .Values.ignition.readinessProbe.failureThreshold }}
-          timeoutSeconds: {{ .Values.ignition.readinessProbe.timeoutSeconds }}
+{{ include "ignition-common.probes" (dict "probe" .Values.ignition.readinessProbe) | nindent 10 }}
         {{- end }}
         {{- if .Values.ignition.livenessProbe.enabled }}
         livenessProbe:
-          exec:
-            command: {{- toYaml .Values.ignition.livenessProbe.command | nindent 14 }}
-          initialDelaySeconds: {{ .Values.ignition.livenessProbe.initialDelaySeconds }}
-          periodSeconds: {{ .Values.ignition.livenessProbe.periodSeconds }}
-          failureThreshold: {{ .Values.ignition.livenessProbe.failureThreshold }}
-          timeoutSeconds: {{ .Values.ignition.livenessProbe.timeoutSeconds }}
+{{ include "ignition-common.probes" (dict "probe" .Values.ignition.livenessProbe) | nindent 10 }}
         {{- end }}
       initContainers:
-      - name: preconfigure
-        image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
-        imagePullPolicy: {{ .Values.image.pullPolicy }}
-        env:
-        - name: SPOOF_MACHINE_ID
-          value: {{ .Values.ignition.spoofMachineId | default "" | quote }}
-        - name: TLS_KEYSTORE_PASSWORD
-          value: {{ .Values.ignition.tls.keystorePassword | quote }}
-        - name: METRO_KEYSTORE_PASSPHRASE
-          value: {{ .Values.ignition.gan.keystorePassword | quote }}
-        - name: IGNITION_REPLICAS
-          value: {{ if .Values.ignition.redundancy.enabled }}"2"{{ else }}"1"{{ end }}
-        {{- if .Values.ignition.restore.enabled }}
-        {{- if .Values.ignition.restore.url }}
-        - name: IGNITION_RESTORE_URL
-          value: {{ .Values.ignition.restore.url | quote }}
-        {{- end }}
-        {{- if .Values.ignition.restore.path }}
-        - name: IGNITION_RESTORE_PATH
-          value: {{ .Values.ignition.restore.path | quote }}
-        {{- end }}
-        {{- end }}
-        command:
-        - /config/scripts/invoke-args.sh
-        args:
-        - /config/scripts/seed-data-volume.sh
-        - /config/scripts/seed-redundancy.sh
-        - /config/scripts/prepare-gan-certificates.sh
-        - cp /config/files/logback.xml /data/logback.xml
-        - /config/scripts/configure-ignition.sh
-        volumeMounts:
-        - mountPath: /data
-          name: data
-        - mountPath: /config/files
-          name: {{ include "helm.name" . }}-config-files
-        - mountPath: /config/scripts
-          name: {{ include "helm.name" . }}-config-scripts
-        - mountPath: /run/secrets/gan-tls
-          name: {{ include "helm.name" . }}-gan-tls
-        - mountPath: /run/secrets/ignition-gan-ca
-          name: {{ include "helm.name" . }}-gan-ca
-          readOnly: true
+{{ include "ignition-common.initContainer.preconfigure" (dict "name" (include "ignition.name" .) "image" .Values.image "values" .Values.ignition "replicas" (ternary 2 1 .Values.ignition.redundancy.enabled)) | nindent 6 }}
       volumes:
-      - name: {{ include "helm.name" . }}-config-scripts
-        configMap:
-          name: {{ .Release.Name }}-ignition-common-scripts
-          defaultMode: 0755
-      - name: {{ include "helm.name" . }}-config-files
-        configMap:
-          name: {{ include "helm.name" . }}-config-files
-          defaultMode: 0644
-      - name: {{ include "helm.name" . }}-gan-ca
-        secret:
-          secretName: {{ include "helm.name" . }}-gan-ca
-      - name: {{ include "helm.name" . }}-gan-tls
-        secret:
-          secretName: {{ include "helm.name" . }}-gan-tls
-      {{- if .Values.ignition.localMounts }}
-      {{- range $index, $localMounts := .Values.ignition.localMounts }}
-      - name: local-mount-{{ $index }}
-        hostPath:
-          path: {{ $localMounts.hostPath }}
-          type: Directory
-      {{- end }}
-      {{- end }}
-      {{- if .Values.ignition.extraVolumes }}
-      {{- toYaml .Values.ignition.extraVolumes | nindent 6 }}
-      {{- end }}
+{{ include "ignition-common.volumes" (dict "name" (include "ignition.name" .) "values" .Values.ignition "ganTlsSecretName" (printf "%s-gan-tls" (include "ignition.name" .)) "commonScriptsConfigMapName" (printf "%s-ignition-common-scripts" .Release.Name)) | nindent 6 }}
+
   volumeClaimTemplates:
   - metadata:
       name: data

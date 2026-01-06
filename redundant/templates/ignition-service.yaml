@@ -1,40 +1,15 @@
-apiVersion: v1
-kind: Service
-metadata:
-  name: {{ include "helm.name" . }}
-  labels:
-    {{- include "helm.labels" . | nindent 4 }}
-  annotations:
-    {{- if .Values.ignition.service.annotations }}
-    {{- toYaml .Values.ignition.service.annotations | nindent 4 }}
-    {{- end }}
-spec:
-  selector:
-    name: {{ include "helm.name" . }}
-    {{- include "helm.selectorLabels" . | nindent 4 }}
-  ports:
-  - name: http
-    port: {{ .Values.ignition.service.ports.http }}
-    protocol: TCP
-  - name: https
-    port: {{ .Values.ignition.service.ports.https }}
-    protocol: TCP
-  - name: gan
-    port: {{ .Values.ignition.service.ports.gan }}
-    protocol: TCP
-  type: {{ .Values.ignition.service.type | default "LoadBalancer" }}
-  sessionAffinity: {{ .Values.ignition.service.sessionAffinity | default "ClientIP" }}
+{{ include "ignition-common.service" (dict "values" .Values.ignition "Release" .Release "Chart" .Chart "Values" .Values) }}
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "helm.name" . }}-primary
+  name: {{ include "ignition.name" . }}-primary
   labels:
-    {{- include "helm.labels" . | nindent 4 }}
+    {{- include "ignition.labels" . | nindent 4 }}
 spec:
   selector:
-    statefulset.kubernetes.io/pod-name: {{ include "helm.name" . }}-0
-    {{- include "helm.selectorLabels" . | nindent 4 }}
+    statefulset.kubernetes.io/pod-name: {{ include "ignition.name" . }}-0
+    {{- include "ignition.selectorLabels" . | nindent 4 }}
   ports:
   - name: http
     port: {{ .Values.ignition.service.ports.http }}
@@ -54,13 +29,13 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "helm.name" . }}-backup
+  name: {{ include "ignition.name" . }}-backup
   labels:
-    {{- include "helm.labels" . | nindent 4 }}
+    {{- include "ignition.labels" . | nindent 4 }}
 spec:
   selector:
-    statefulset.kubernetes.io/pod-name: {{ include "helm.name" . }}-1
-    {{- include "helm.selectorLabels" . | nindent 4 }}
+    statefulset.kubernetes.io/pod-name: {{ include "ignition.name" . }}-1
+    {{- include "ignition.selectorLabels" . | nindent 4 }}
   ports:
   - name: http
     port: {{ .Values.ignition.service.ports.http }}

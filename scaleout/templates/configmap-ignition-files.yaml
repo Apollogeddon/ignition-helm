@@ -1,66 +1,15 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ include "helm.name" . }}-config-files
+  name: {{ include "ignition.name" . }}-config-files
   labels:
-    {{- include "helm.labels" . | nindent 4 }}
+    {{- include "ignition.labels" . | nindent 4 }}
 data:
   redundancy-primary.xml: |-
-    <?xml version="1.0" encoding="UTF-8"?>
-    <!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">
-    <properties>
-    <comment>Redundancy Settings</comment>
-    <entry key="redundancy.noderole">Master</entry>
-    <entry key="redundancy.gan.pingTimeout">{{ .Values.backend.redundancy.pingTimeout }}</entry>
-    <entry key="redundancy.gan.pingMaxMissed">{{ .Values.backend.redundancy.pingMaxMissed }}</entry>
-    <entry key="redundancy.activehistorylevel">Full</entry>
-    <entry key="redundancy.standbyactivitylevel">Cold</entry>
-    <entry key="redundancy.gan.pingRate">{{ .Values.backend.redundancy.pingRate }}</entry>
-    <entry key="redundancy.bindinterface"></entry>
-    <entry key="redundancy.gan.enableSsl">{{ .Values.backend.redundancy.enableSsl }}</entry>
-    <entry key="redundancy.backupreconnectperiod">10000</entry>
-    <entry key="redundancy.joinwaittime">{{ .Values.backend.redundancy.joinWaitTime }}</entry>
-    <entry key="redundancy.gan.websocketTimeout">{{ .Values.backend.redundancy.websocketTimeout }}</entry>
-    <entry key="redundancy.systemstaterevision">0</entry>
-    <entry key="redundancy.sync.timeoutSecs">{{ .Values.backend.redundancy.syncTimeoutSecs }}</entry>
-    <entry key="redundancy.maxdisk_mb">{{ .Values.backend.redundancy.maxDiskMb }}</entry>
-    <entry key="redundancy.systemstateuid">00000000-0000-0000-0000-000000000000</entry>
-    <entry key="redundancy.masterrecoverymode">{{ .Values.backend.redundancy.masterRecoveryMode }}</entry>
-    <entry key="redundancy.gan.httpConnectTimeout">{{ .Values.backend.redundancy.httpConnectTimeout }}</entry>
-    <entry key="redundancy.gan.httpReadTimeout">{{ .Values.backend.redundancy.httpReadTimeout }}</entry>
-    <entry key="redundancy.gan.host">{{ include "helm.name" . }}-backend-0.{{ include "helm.name" . }}-backend</entry>
-    <entry key="redundancy.backupfailovertimeout">{{ .Values.backend.redundancy.backupFailoverTimeout }}</entry>
-    <entry key="redundancy.gan.port">{{ .Values.backend.service.ports.gan }}</entry>
-    <entry key="redundancy.autodetectlocalinterface">true</entry>
-    </properties>
+{{ include "ignition-common.redundancyXml" (dict "role" "Master" "host" (printf "%s-backend-0.%s-backend" (include "ignition.name" .) (include "ignition.name" .)) "port" .Values.backend.service.ports.gan "redundancy" .Values.backend.redundancy) | indent 4 }}
   redundancy-backup.xml: |-
-    <?xml version="1.0" encoding="UTF-8"?>
-    <!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">
-    <properties>
-    <comment>Redundancy Settings</comment>
-    <entry key="redundancy.noderole">Backup</entry>
-    <entry key="redundancy.gan.pingTimeout">{{ .Values.backend.redundancy.pingTimeout }}</entry>
-    <entry key="redundancy.gan.pingMaxMissed">{{ .Values.backend.redundancy.pingMaxMissed }}</entry>
-    <entry key="redundancy.activehistorylevel">Full</entry>
-    <entry key="redundancy.standbyactivitylevel">Cold</entry>
-    <entry key="redundancy.gan.pingRate">{{ .Values.backend.redundancy.pingRate }}</entry>
-    <entry key="redundancy.bindinterface"></entry>
-    <entry key="redundancy.gan.enableSsl">{{ .Values.backend.redundancy.enableSsl }}</entry>
-    <entry key="redundancy.backupreconnectperiod">10000</entry>
-    <entry key="redundancy.joinwaittime">{{ .Values.backend.redundancy.joinWaitTime }}</entry>
-    <entry key="redundancy.gan.websocketTimeout">{{ .Values.backend.redundancy.websocketTimeout }}</entry>
-    <entry key="redundancy.systemstaterevision">0</entry>
-    <entry key="redundancy.sync.timeoutSecs">{{ .Values.backend.redundancy.syncTimeoutSecs }}</entry>
-    <entry key="redundancy.maxdisk_mb">{{ .Values.backend.redundancy.maxDiskMb }}</entry>
-    <entry key="redundancy.systemstateuid">00000000-0000-0000-0000-000000000000</entry>
-    <entry key="redundancy.masterrecoverymode">{{ .Values.backend.redundancy.masterRecoveryMode }}</entry>
-    <entry key="redundancy.gan.httpConnectTimeout">{{ .Values.backend.redundancy.httpConnectTimeout }}</entry>
-    <entry key="redundancy.gan.httpReadTimeout">{{ .Values.backend.redundancy.httpReadTimeout }}</entry>
-    <entry key="redundancy.gan.host">{{ include "helm.name" . }}-backend-0.{{ include "helm.name" . }}-backend</entry>
-    <entry key="redundancy.backupfailovertimeout">{{ .Values.backend.redundancy.backupFailoverTimeout }}</entry>
-    <entry key="redundancy.gan.port">{{ .Values.backend.service.ports.gan }}</entry>
-    <entry key="redundancy.autodetectlocalinterface">true</entry>
-    </properties>
+{{ include "ignition-common.redundancyXml" (dict "role" "Backup" "host" (printf "%s-backend-0.%s-backend" (include "ignition.name" .) (include "ignition.name" .)) "port" .Values.backend.service.ports.gan "redundancy" .Values.backend.redundancy) | indent 4 }}
+
   {{- if .Values.frontend.spoofMachineId }}
   frontend-machine-id: |-
     {{ .Values.frontend.spoofMachineId }}

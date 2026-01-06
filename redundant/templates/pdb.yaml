@@ -2,13 +2,13 @@
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
-  name: {{ include "helm.name" . }}
+  name: {{ include "ignition.name" . }}
   labels:
-    {{- include "helm.labels" . | nindent 4 }}
+    {{- include "ignition.labels" . | nindent 4 }}
 spec:
   minAvailable: 1
   selector:
     matchLabels:
-      name: {{ include "helm.name" . }}
-      {{- include "helm.selectorLabels" . | nindent 6 }}
+      name: {{ include "ignition.name" . }}
+      {{- include "ignition.selectorLabels" . | nindent 6 }}
 {{- end }}

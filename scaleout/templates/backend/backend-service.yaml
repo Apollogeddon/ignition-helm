@@ -1,40 +1,15 @@
-apiVersion: v1
-kind: Service
-metadata:
-  name: {{ include "helm.name" . }}-backend
-  labels:
-    {{- include "helm.labels" . | nindent 4 }}
-  annotations:
-    {{- if .Values.backend.service.annotations }}
-    {{- toYaml .Values.backend.service.annotations | nindent 4 }}
-    {{- end }}
-spec:
-  selector:
-    name: {{ include "helm.name" . }}-backend
-    {{- include "helm.selectorLabels" . | nindent 4 }}
-  ports:
-  - name: http
-    port: 8088
-    protocol: TCP
-  - name: https
-    port: 8043
-    protocol: TCP
-  - name: gan
-    port: 8060
-    protocol: TCP
-  type: {{ .Values.backend.service.type | default "LoadBalancer" }}
-  sessionAffinity: {{ .Values.backend.service.sessionAffinity | default "ClientIP" }}
+{{ include "ignition-common.service" (dict "name" "backend" "values" .Values.backend "Release" .Release "Chart" .Chart "Values" .Values) }}
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "helm.name" . }}-backend-primary
+  name: {{ include "ignition.name" . }}-backend-primary
   labels:
-    {{- include "helm.labels" . | nindent 4 }}
+    {{- include "ignition.labels" . | nindent 4 }}
 spec:
   selector:
-    statefulset.kubernetes.io/pod-name: {{ include "helm.name" . }}-backend-0
-    {{- include "helm.selectorLabels" . | nindent 4 }}
+    statefulset.kubernetes.io/pod-name: {{ include "ignition.name" . }}-backend-0
+    {{- include "ignition.selectorLabels" . | nindent 4 }}
   ports:
   - name: http
     port: 8088
@@ -54,13 +29,13 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "helm.name" . }}-backend-backup
+  name: {{ include "ignition.name" . }}-backend-backup
   labels:
-    {{- include "helm.labels" . | nindent 4 }}
+    {{- include "ignition.labels" . | nindent 4 }}
 spec:
   selector:
-    statefulset.kubernetes.io/pod-name: {{ include "helm.name" . }}-backend-1
-    {{- include "helm.selectorLabels" . | nindent 4 }}
+    statefulset.kubernetes.io/pod-name: {{ include "ignition.name" . }}-backend-1
+    {{- include "ignition.selectorLabels" . | nindent 4 }}
   ports:
   - name: http
     port: 8088
