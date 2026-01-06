@@ -1,5 +1,5 @@
 {
-  "charts/common": "0.1.0",
-  "charts/failover": "1.0.0",
-  "charts/scaleout": "1.0.0"
+  "charts/common": "0.2.0",
+  "charts/failover": "1.1.0",
+  "charts/scaleout": "1.1.0"
 }
