@@ -6,8 +6,7 @@
     "start": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "astro": "astro",
-    "gen-docs": "cd .. && helm-docs"
+    "astro": "astro"
   },
   "dependencies": {
     "@astrojs/starlight": "^0.37.2",
