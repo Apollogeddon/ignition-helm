@@ -10,17 +10,22 @@ permissions:
   pull-requests: write
 
 jobs:
-  call-testing:
+  testing:
     uses: ./.github/workflows/testing.yaml
 
   version:
-    needs: call-testing
+    needs: testing
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
 
       - name: Release Please
         id: release

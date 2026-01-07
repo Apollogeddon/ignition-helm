@@ -1,0 +1,27 @@
+{{- define "chart.header" -}}
+---
+title: {{ .Name }}
+description: {{ .Description }}
+---
+
+{{ .Description }}
+
+{{ end -}}
+
+{{- define "chart.valuesTable" -}}
+## Configuration
+
+The following table lists the configurable parameters of the {{ .Name }} chart and their default values.
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+{{- range .Values }}
+| `{{ .Key }}` | {{ .Type }} | `{{ template "chart.valueDefaultColumn" . }}` | {{ if .Description }}{{ .Description }}{{ else }}{{ .Key }}{{ end }} |
+{{- end }}
+{{ end -}}
+
+{{ template "chart.header" . }}
+
+{{ template "chart.requirementsSection" . }}
+
+{{ template "chart.valuesTable" . }}
