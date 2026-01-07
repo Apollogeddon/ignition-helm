@@ -25,3 +25,7 @@ The following table lists the configurable parameters of the {{ .Name }} chart a
 {{ template "chart.requirementsSection" . }}
 
 {{ template "chart.valuesTable" . }}
+
+{{- define "chart.valueDefaultColumn" -}}
+{{ .Default }}
+{{- end -}}
