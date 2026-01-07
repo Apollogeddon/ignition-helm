@@ -1,0 +1,36 @@
+---
+title: Ignition Helm Charts
+description: Enterprise-grade Helm charts for deploying Inductive Automation Ignition on Kubernetes.
+template: splash
+hero:
+  tagline: Deploy scalable, resilient Ignition architectures on Kubernetes with ease.
+  image:
+    file: ../../assets/favicon.png
+  actions:
+    - text: Get Started
+      link: /ignition-helm/guides/installation/
+      icon: right-arrow
+      variant: primary
+    - text: View Reference
+      link: /ignition-helm/reference/failover/
+      icon: external
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+## Features
+
+<CardGrid stagger>
+	<Card title="Failover Architecture" icon="pencil">
+		Deploy standard Master/Backup redundancy with automatic failover handling.
+	</Card>
+	<Card title="Scaleout Architecture" icon="add-document">
+		Separate Frontend and Backend workloads for high-scale environments.
+	</Card>
+	<Card title="Security First" icon="setting">
+		Non-root containers, SealedSecrets support, and automatic TLS generation.
+	</Card>
+	<Card title="Automated Ops" icon="open-book">
+		Built-in "preconfigure" containers handle redundancy seeding and certificate exchange.
+	</Card>
+</CardGrid>

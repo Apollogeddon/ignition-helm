@@ -1,0 +1,8 @@
+template: docs/templates/starlight.gotmpl
+charts:
+  - searchRoot: charts/failover
+    destination: ../../docs/src/content/docs/reference/failover.md
+  - searchRoot: charts/scaleout
+    destination: ../../docs/src/content/docs/reference/scaleout.md
+  - searchRoot: charts/common
+    destination: ../../docs/src/content/docs/reference/common.md
