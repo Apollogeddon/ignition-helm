@@ -44,9 +44,9 @@ helm install my-ignition ignition-charts/ignition-failover \
 3. You will see your spoofed Machine ID (`9a2b3c4d`) listed.
 4. Activate your licence against this ID on the Inductive Automation website.
 
-## Multiple Pods (Scale-out)
+## Multiple Pods (Scaleout)
 
-For the **Scale-out** architecture, you typically only licence the **Backend** gateway, as Frontends are often unlicenced (using the 2-hour trial for Perspective sessions) or use a flexible licence model.
+For the **Scaleout** architecture, you typically only licence the **Backend** gateway, as Frontends are often unlicenced (using the 2-hour trial for Perspective sessions) or use a flexible licence model.
 
 However, if you need licenced Frontends, you must ensure each replica gets a unique licence or use the **Leased Licencing** model (supported by Ignition 8.1+).
 
