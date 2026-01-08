@@ -45,6 +45,19 @@ jobs:
             fi
           done
 
+      - name: Install helm-unittest
+        run: |
+          helm plugin install https://github.com/helm-unittest/helm-unittest.git
+
+      - name: Run unit tests
+        run: |
+          for dir in charts/*; do
+            if [ -d "$dir/tests" ]; then
+              echo "Running unit tests for $dir"
+              helm unittest "$dir"
+            fi
+          done
+
       - name: Run chart-testing (list-changed)
         id: list-changed
         run: |
