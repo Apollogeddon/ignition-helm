@@ -1,0 +1,57 @@
+suite: Ignition Failover Ingress
+templates:
+  - ignition-ingress.yaml
+tests:
+  - it: should not create ingress by default
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should create ingress when enabled
+    set:
+      ignition:
+        ingress:
+          enabled: true
+          hosts:
+            - host: ignition.local
+              paths:
+                - path: /
+                  pathType: Prefix
+    asserts:
+      - hasDocuments:
+          count: 1
+      - isKind:
+          of: Ingress
+      - equal:
+          path: spec.rules[0].host
+          value: ignition.local
+
+  - it: should configure TLS
+    set:
+      ignition:
+        ingress:
+          enabled: true
+          tls:
+            - secretName: ignition-tls
+              hosts:
+                - ignition.local
+    asserts:
+      - equal:
+          path: spec.tls[0].secretName
+          value: ignition-tls
+      - equal:
+          path: spec.tls[0].hosts[0]
+          value: ignition.local
+
+  - it: should add annotations
+    set:
+      ignition:
+        ingress:
+          enabled: true
+          annotations:
+            kubernetes.io/ingress.class: nginx
+    asserts:
+      - equal:
+          path: metadata.annotations
+          value:
+            kubernetes.io/ingress.class: nginx

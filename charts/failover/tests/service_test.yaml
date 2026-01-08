@@ -1,0 +1,51 @@
+suite: Ignition Failover Service
+templates:
+  - ignition-service.yaml
+tests:
+  - it: should match snapshot
+    asserts:
+      - matchSnapshot: {}
+
+  - it: should configure NodePort service
+    documentIndex: 0
+    set:
+      ignition:
+        service:
+          type: NodePort
+          ports:
+            http: 30080
+    asserts:
+      - equal:
+          path: spec.type
+          value: NodePort
+      - equal:
+          path: spec.ports[0].port
+          value: 30080
+
+  - it: should configure LoadBalancer service
+    documentIndex: 0
+    set:
+      ignition:
+        service:
+          type: LoadBalancer
+          annotations:
+            service.beta.kubernetes.io/aws-load-balancer-type: nlb
+    asserts:
+      - equal:
+          path: spec.type
+          value: LoadBalancer
+      - equal:
+          path: metadata.annotations
+          value:
+            service.beta.kubernetes.io/aws-load-balancer-type: nlb
+
+  - it: should set session affinity
+    documentIndex: 0
+    set:
+      ignition:
+        service:
+          sessionAffinity: None
+    asserts:
+      - equal:
+          path: spec.sessionAffinity
+          value: None

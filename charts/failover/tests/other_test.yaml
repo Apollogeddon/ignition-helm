@@ -1,0 +1,74 @@
+suite: Ignition Failover Other Resources
+templates:
+  - pdb.yaml
+  - secrets.yaml
+  - serviceaccount.yaml
+tests:
+  # PDB Tests
+  - it: should not create PDB by default (redundancy disabled)
+    template: pdb.yaml
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should create PDB when redundancy enabled
+    template: pdb.yaml
+    set:
+      ignition:
+        redundancy:
+          enabled: true
+    asserts:
+      - hasDocuments:
+          count: 1
+      - isKind:
+          of: PodDisruptionBudget
+      - equal:
+          path: spec.minAvailable
+          value: 1
+
+  # Secret Tests
+  - it: should create plain Secret by default
+    template: secrets.yaml
+    asserts:
+      - isKind:
+          of: Secret
+      - equal:
+          path: type
+          value: Opaque
+      - matchRegex:
+          path: metadata.name
+          pattern: -secrets$
+
+  - it: should create SealedSecret when enabled
+    template: secrets.yaml
+    set:
+      ignition:
+        sealedSecrets: true
+        secrets:
+          MY_SECRET: "encryptedvalue"
+    asserts:
+      - isKind:
+          of: SealedSecret
+      - equal:
+          path: spec.encryptedData.MY_SECRET
+          value: "encryptedvalue"
+
+  # ServiceAccount Tests
+  - it: should not create ServiceAccount by default
+    template: serviceaccount.yaml
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should create ServiceAccount when enabled
+    template: serviceaccount.yaml
+    set:
+      serviceAccount:
+        create: true
+        name: my-sa
+    asserts:
+      - isKind:
+          of: ServiceAccount
+      - equal:
+          path: metadata.name
+          value: my-sa

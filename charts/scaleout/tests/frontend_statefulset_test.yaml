@@ -1,0 +1,47 @@
+suite: Ignition Scaleout Frontend StatefulSet
+templates:
+  - templates/frontend/frontend-statefulset.yaml
+tests:
+  - it: should match snapshot with default values
+    asserts:
+      - matchSnapshot: {}
+
+  - it: should have correct default metadata
+    asserts:
+      - isKind:
+          of: StatefulSet
+      - matchRegex:
+          path: metadata.name
+          pattern: -frontend$
+      - equal:
+          path: spec.replicas
+          value: 1
+
+  - it: should scale replicas
+    set:
+      frontend:
+        redundancy:
+          replicas: 3
+    asserts:
+      - equal:
+          path: spec.replicas
+          value: 3
+
+  - it: should configure affinity
+    set:
+      affinity:
+        enabled: true
+    asserts:
+      - exists:
+          path: spec.template.spec.affinity
+
+  - it: should configure resources
+    set:
+      frontend:
+        resources:
+          requests:
+            memory: 2Gi
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].resources.requests.memory
+          value: 2Gi

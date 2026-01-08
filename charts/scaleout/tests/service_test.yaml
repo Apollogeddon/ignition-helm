@@ -1,0 +1,52 @@
+suite: Ignition Scaleout Services
+templates:
+  - templates/backend/backend-service.yaml
+  - templates/frontend/frontend-service.yaml
+tests:
+  - it: should create backend service
+    template: templates/backend/backend-service.yaml
+    documentIndex: 0
+    asserts:
+      - isKind:
+          of: Service
+      - matchRegex:
+          path: metadata.name
+          pattern: -backend$
+      - equal:
+          path: spec.ports[0].port
+          value: 8088
+
+  - it: should create frontend service
+    template: templates/frontend/frontend-service.yaml
+    asserts:
+      - isKind:
+          of: Service
+      - matchRegex:
+          path: metadata.name
+          pattern: -frontend$
+      - equal:
+          path: spec.ports[0].port
+          value: 8088
+
+  - it: should configure backend service type
+    template: templates/backend/backend-service.yaml
+    documentIndex: 0
+    set:
+      backend:
+        service:
+          type: LoadBalancer
+    asserts:
+      - equal:
+          path: spec.type
+          value: LoadBalancer
+
+  - it: should configure frontend service type
+    template: templates/frontend/frontend-service.yaml
+    set:
+      frontend:
+        service:
+          type: LoadBalancer
+    asserts:
+      - equal:
+          path: spec.type
+          value: LoadBalancer

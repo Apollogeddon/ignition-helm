@@ -1,0 +1,127 @@
+suite: Ignition Failover StatefulSet
+templates:
+  - ignition-statefulset.yaml
+tests:
+  - it: should match snapshot with default values
+    asserts:
+      - matchSnapshot: {}
+
+  - it: should have correct default metadata
+    asserts:
+      - isKind:
+          of: StatefulSet
+      - equal:
+          path: metadata.name
+          value: ignition-failover
+      - equal:
+          path: spec.serviceName
+          value: ignition-failover
+      - equal:
+          path: spec.replicas
+          value: 1
+
+  - it: should enable redundancy when configured
+    set:
+      ignition:
+        redundancy:
+          enabled: true
+    asserts:
+      - equal:
+          path: spec.replicas
+          value: 2
+      # Verify init container has 2 replicas env var
+      - equal:
+          path: spec.template.spec.initContainers[0].env[3].value
+          value: "2"
+
+  - it: should configure affinity (soft)
+    set:
+      affinity:
+        enabled: true
+        type: soft
+    asserts:
+      - exists:
+          path: spec.template.spec.affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution
+
+  - it: should configure affinity (hard)
+    set:
+      affinity:
+        enabled: true
+        type: hard
+    asserts:
+      - exists:
+          path: spec.template.spec.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution
+
+  - it: should set custom service account
+    set:
+      serviceAccount:
+        create: true
+        name: custom-sa
+    asserts:
+      - equal:
+          path: spec.template.spec.serviceAccountName
+          value: custom-sa
+
+  - it: should disable probes when configured
+    set:
+      ignition:
+        readinessProbe:
+          enabled: false
+        livenessProbe:
+          enabled: false
+    asserts:
+      - notExists:
+          path: spec.template.spec.containers[0].readinessProbe
+      - notExists:
+          path: spec.template.spec.containers[0].livenessProbe
+
+  - it: should add extra volume mounts
+    set:
+      ignition:
+        extraVolumeMounts:
+          - name: extra-vol
+            mountPath: /extra
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].volumeMounts
+          content:
+            name: extra-vol
+            mountPath: /extra
+
+  - it: should configure resources
+    set:
+      ignition:
+        resources:
+          requests:
+            memory: 512Mi
+            cpu: 250m
+          limits:
+            memory: 1Gi
+            cpu: 500m
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].resources.requests.memory
+          value: 512Mi
+      - equal:
+          path: spec.template.spec.containers[0].resources.limits.cpu
+          value: 500m
+
+  - it: should set storage class
+    set:
+      ignition:
+        persistence:
+          storageClassName: "fast-storage"
+    asserts:
+      - equal:
+          path: spec.volumeClaimTemplates[0].spec.storageClassName
+          value: "fast-storage"
+
+  - it: should disable dynamic provisioning (empty storageClass)
+    set:
+      ignition:
+        persistence:
+          storageClassName: "-"
+    asserts:
+      - equal:
+          path: spec.volumeClaimTemplates[0].spec.storageClassName
+          value: ""
