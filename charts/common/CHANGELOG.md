@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.3.0](https://github.com/Apollogeddon/ignition-helm/compare/ignition-common-v0.2.3...ignition-common-v0.3.0) (2026-01-08)
+
+
+### Features
+
+* **helm:** Introduce common GAN certificate templates ([17a261f](https://github.com/Apollogeddon/ignition-helm/commit/17a261fb9203f74d8c837182f0f8e0b46b51cb75))
+
+
+### Bug Fixes
+
+* **helm:** Introduce common resource templates ([c34286c](https://github.com/Apollogeddon/ignition-helm/commit/c34286c106ce75f7d2ea98dadfc71b48ddc0e0e1))
+
 ## [0.2.3](https://github.com/Apollogeddon/ignition-helm/compare/ignition-common-0.2.2...ignition-common-v0.2.3) (2026-01-08)
 
 
