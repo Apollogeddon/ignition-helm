@@ -2,12 +2,6 @@
 {{- $componentConfig := index $.Values $component }}
 {{- if $componentConfig.config }}
 ---
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: {{ include "ignition.name" $ }}-{{ $component }}-config
-  labels:
-    {{- include "ignition.labels" $ | nindent 4 }}
-data: {{ $componentConfig.config | toYaml | nindent 2 }}
+{{ include "ignition-common.configMap" (dict "name" $component "config" $componentConfig.config "context" $) }}
 {{- end }}
 {{- end }}
