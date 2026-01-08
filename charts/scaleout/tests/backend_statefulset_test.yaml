@@ -1,0 +1,57 @@
+suite: Ignition Scaleout Backend StatefulSet
+templates:
+  - templates/backend/backend-statefulset.yaml
+tests:
+  - it: should match snapshot with default values
+    asserts:
+      - matchSnapshot: {}
+
+  - it: should have correct default metadata
+    asserts:
+      - isKind:
+          of: StatefulSet
+      - matchRegex:
+          path: metadata.name
+          pattern: -backend$
+      - equal:
+          path: spec.replicas
+          value: 1
+
+  - it: should enable redundancy when configured
+    set:
+      backend:
+        redundancy:
+          enabled: true
+    asserts:
+      - equal:
+          path: spec.replicas
+          value: 2
+
+  - it: should configure affinity
+    set:
+      affinity:
+        enabled: true
+    asserts:
+      - exists:
+          path: spec.template.spec.affinity
+
+  - it: should configure resources
+    set:
+      backend:
+        resources:
+          requests:
+            memory: 2Gi
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].resources.requests.memory
+          value: 2Gi
+
+  - it: should set storage class
+    set:
+      backend:
+        persistence:
+          storageClassName: "fast"
+    asserts:
+      - equal:
+          path: spec.volumeClaimTemplates[0].spec.storageClassName
+          value: "fast"

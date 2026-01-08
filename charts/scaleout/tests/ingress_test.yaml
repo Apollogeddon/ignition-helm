@@ -1,0 +1,46 @@
+suite: Ignition Scaleout Ingress
+templates:
+  - templates/backend/backend-ingress.yaml
+  - templates/frontend/frontend-ingress.yaml
+tests:
+  - it: should not create ingress by default
+    template: templates/backend/backend-ingress.yaml
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should create backend ingress
+    template: templates/backend/backend-ingress.yaml
+    set:
+      backend:
+        ingress:
+          enabled: true
+          hosts:
+            - host: backend.local
+              paths:
+                - path: /
+                  pathType: Prefix
+    asserts:
+      - hasDocuments:
+          count: 1
+      - equal:
+          path: spec.rules[0].host
+          value: backend.local
+
+  - it: should create frontend ingress
+    template: templates/frontend/frontend-ingress.yaml
+    set:
+      frontend:
+        ingress:
+          enabled: true
+          hosts:
+            - host: frontend.local
+              paths:
+                - path: /
+                  pathType: Prefix
+    asserts:
+      - hasDocuments:
+          count: 1
+      - equal:
+          path: spec.rules[0].host
+          value: frontend.local

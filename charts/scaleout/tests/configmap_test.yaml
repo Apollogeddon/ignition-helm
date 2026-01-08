@@ -1,0 +1,43 @@
+suite: Ignition Scaleout ConfigMaps
+templates:
+  - configmap.yaml
+tests:
+  - it: should create frontend configmap (index 0)
+    documentIndex: 0
+    asserts:
+      - matchRegex:
+          path: metadata.name
+          pattern: -frontend-config$
+      - isKind:
+          of: ConfigMap
+
+  - it: should create backend configmap (index 1)
+    documentIndex: 1
+    asserts:
+      - matchRegex:
+          path: metadata.name
+          pattern: -backend-config$
+      - isKind:
+          of: ConfigMap
+
+  - it: should populate frontend config
+    documentIndex: 0
+    set:
+      frontend:
+        config:
+          FRONTEND_VAR: "true"
+    asserts:
+      - equal:
+          path: data.FRONTEND_VAR
+          value: "true"
+
+  - it: should populate backend config
+    documentIndex: 1
+    set:
+      backend:
+        config:
+          BACKEND_VAR: "true"
+    asserts:
+      - equal:
+          path: data.BACKEND_VAR
+          value: "true"
