@@ -91,3 +91,97 @@ data:
 {{- end }}
 {{- end }}
 {{- end }}
+
+{{/*
+GAN CA and Issuer
+Params:
+  context: The global context (Dot)
+*/}}
+{{- define "ignition-common.ganCA" -}}
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ include "ignition.name" .context }}-gan-ca
+  labels:
+    {{- include "ignition.labels" .context | nindent 4 }}
+spec:
+  isCA: true
+  commonName: {{ include "ignition.name" .context }}-gan-ca
+  secretName: {{ include "ignition.name" .context }}-gan-ca
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+  duration: 17520h0m0s  # 2 years
+  issuerRef:
+    name: {{ .context.Values.certManager.issuer.name }}
+    kind: {{ .context.Values.certManager.issuer.kind }}
+    group: cert-manager.io
+---
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: {{ include "ignition.name" .context }}-gan-issuer
+  labels:
+    {{- include "ignition.labels" .context | nindent 4 }}
+spec:
+  ca:
+    secretName: {{ include "ignition.name" .context }}-gan-ca
+{{- end }}
+
+{{/*
+GAN Metro Keystore Secret
+Params:
+  password: The keystore password
+  context: The global context (Dot)
+*/}}
+{{- define "ignition-common.ganMetroKeystore" -}}
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ include "ignition.name" .context }}-gan-metro-keystore
+  labels:
+    {{- include "ignition.labels" .context | nindent 4 }}
+type: Opaque
+data:
+  metro.keystore.password: {{ .password | b64enc }}
+{{- end }}
+
+{{/*
+GAN Certificate
+Params:
+  name: The component name suffix (e.g. "frontend" or "")
+  commonName: The common name for the certificate
+  dnsNames: List of DNS names
+  context: The global context (Dot)
+*/}}
+{{- define "ignition-common.ganCertificate" -}}
+{{- $fullname := include "ignition.name" .context }}
+{{- if .name }}
+{{- $fullname = printf "%s-%s-gan" $fullname .name }}
+{{- else }}
+{{- $fullname = printf "%s-gan" $fullname }}
+{{- end }}
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ $fullname }}
+  labels:
+    {{- include "ignition.labels" .context | nindent 4 }}
+spec:
+  secretName: {{ $fullname }}-tls
+  issuerRef:
+    name: {{ include "ignition.name" .context }}-gan-issuer
+    kind: Issuer
+  commonName: {{ .commonName | quote }}
+  dnsNames:
+  {{- range .dnsNames }}
+  - {{ . | quote }}
+  {{- end }}
+  duration: 8760h0m0s  # 1 year
+  keystores:
+    pkcs12:
+      create: true
+      passwordSecretRef:
+        name: {{ include "ignition.name" .context }}-gan-metro-keystore
+        key: metro.keystore.password
+{{- end }}
