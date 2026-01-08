@@ -1,9 +1,1 @@
-{{- if .Values.ignition.config }}
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: {{ include "ignition.name" . }}-config
-  labels:
-    {{- include "ignition.labels" . | nindent 4 }}
-data: {{ .Values.ignition.config | toYaml | nindent 2 }}
-{{- end }}
+{{- include "ignition-common.configMap" (dict "config" .Values.ignition.config "context" .) }}
