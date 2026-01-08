@@ -301,7 +301,7 @@ Params:
 {{- define "ignition-common.volumeMounts" -}}
 - mountPath: /usr/local/bin/ignition/data
   name: data
-- mountPath: /config/scripts
+- mountPath: {{ include "ignition-common.scriptMountPath" . }}
   name: {{ .name }}-config-scripts
   readOnly: true
 - mountPath: /run/secrets/gan-tls
@@ -394,25 +394,42 @@ Params:
   {{- end }}
   {{- end }}
   command:
-  - /config/scripts/invoke-args.sh
+  - {{ include "ignition-common.scriptMountPath" . }}/invoke-args.sh
   args:
-  - /config/scripts/seed-data-volume.sh
+  - {{ include "ignition-common.scriptMountPath" . }}/seed-data-volume.sh
   {{- if gt (int .replicas) 1 }}
-  - /config/scripts/seed-redundancy.sh
+  - {{ include "ignition-common.scriptMountPath" . }}/seed-redundancy.sh
   {{- end }}
-  - /config/scripts/prepare-gan-certificates.sh
+  - {{ include "ignition-common.scriptMountPath" . }}/prepare-gan-certificates.sh
   - cp /config/files/logback.xml /data/logback.xml
-  - /config/scripts/configure-ignition.sh
+  - {{ include "ignition-common.scriptMountPath" . }}/configure-ignition.sh
   volumeMounts:
   - mountPath: /data
     name: data
   - mountPath: /config/files
     name: {{ .name }}-config-files
-  - mountPath: /config/scripts
+  - mountPath: {{ include "ignition-common.scriptMountPath" . }}
     name: {{ .name }}-config-scripts
   - mountPath: /run/secrets/gan-tls
     name: {{ .name }}-gan-tls
   - mountPath: /run/secrets/ignition-gan-ca
     name: {{ .name }}-gan-ca
     readOnly: true
+{{- end }}
+
+{{/*
+Script Mount Path
+*/}}
+{{- define "ignition-common.scriptMountPath" -}}
+/config/scripts
+{{- end }}
+
+{{/*
+Pod FQDN Helper
+Params:
+  name: The name of the StatefulSet/Service (e.g. "ignition-failover" or "ignition-scaleout-backend")
+  ordinal: The pod ordinal index
+*/}}
+{{- define "ignition-common.podFQDN" -}}
+{{- printf "%s-%d.%s" .name (int .ordinal) .name -}}
 {{- end }}

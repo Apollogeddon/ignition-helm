@@ -6,9 +6,9 @@ metadata:
     {{- include "ignition.labels" . | nindent 4 }}
 data:
   redundancy-primary.xml: |-
-{{ include "ignition-common.redundancyXml" (dict "role" "Master" "host" (printf "%s-backend-0.%s-backend" (include "ignition.name" .) (include "ignition.name" .)) "port" .Values.backend.service.ports.gan "redundancy" .Values.backend.redundancy) | indent 4 }}
+{{ include "ignition-common.redundancyXml" (dict "role" "Master" "host" (include "ignition-common.podFQDN" (dict "name" (printf "%s-backend" (include "ignition.name" .)) "ordinal" 1)) "port" .Values.backend.service.ports.gan "redundancy" .Values.backend.redundancy) | indent 4 }}
   redundancy-backup.xml: |-
-{{ include "ignition-common.redundancyXml" (dict "role" "Backup" "host" (printf "%s-backend-0.%s-backend" (include "ignition.name" .) (include "ignition.name" .)) "port" .Values.backend.service.ports.gan "redundancy" .Values.backend.redundancy) | indent 4 }}
+{{ include "ignition-common.redundancyXml" (dict "role" "Backup" "host" (include "ignition-common.podFQDN" (dict "name" (printf "%s-backend" (include "ignition.name" .)) "ordinal" 0)) "port" .Values.backend.service.ports.gan "redundancy" .Values.backend.redundancy) | indent 4 }}
 
   {{- if .Values.frontend.spoofMachineId }}
   frontend-machine-id: |-

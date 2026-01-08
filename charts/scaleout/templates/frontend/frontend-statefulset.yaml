@@ -58,7 +58,7 @@ spec:
         {{- $backendReplicas := (ternary 2 1 .Values.backend.redundancy.enabled) }}
         {{- range $i, $e := until (int $backendReplicas) }}
         - name: GATEWAY_NETWORK_{{ $i }}_HOST
-          value: "{{ include "ignition.name" $ }}-backend-{{ $i }}.{{ include "ignition.name" $ }}-backend"
+          value: {{ include "ignition-common.podFQDN" (dict "name" (printf "%s-backend" (include "ignition.name" $)) "ordinal" $i) | quote }}
         {{- end }}
         - name: EAM_SETUP_INSTALLSELECTION
           value: {{ .Values.frontend.eam.role | quote }}
