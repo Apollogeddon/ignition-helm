@@ -91,7 +91,7 @@ helm install my-ignition ignition-charts/ignition-failover \
   --set ignition.adminPassword=mysecretpassword
 ```
 
-#### Scale-out (Frontend/Backend)
+#### Scaleout (Frontend/Backend)
 
 This deploys separate Frontend and Backend clusters.
 
