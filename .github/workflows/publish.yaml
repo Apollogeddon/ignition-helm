@@ -1,4 +1,4 @@
-name: Deploy Documentation
+name: Publish to Pages
 
 on:
   push:
@@ -6,7 +6,12 @@ on:
     paths:
       - 'docs/**'
       - 'charts/**'
+      - 'index.yaml'
   workflow_dispatch:
+  workflow_run:
+    workflows: ["Version and Release"]
+    types:
+      - completed
 
 permissions:
   contents: read
@@ -19,6 +24,7 @@ concurrency:
 
 jobs:
   build:
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -33,6 +39,11 @@ jobs:
 
       - name: Install dependencies
         run: cd docs && npm ci
+
+      - name: Copy Helm Index
+        run: |
+          mkdir -p docs/public
+          cp index.yaml docs/public/index.yaml
 
       - name: Build site
         run: cd docs && npm run build
