@@ -294,7 +294,7 @@ backend:
   # -- Readiness Probe configuration
   readinessProbe:
     enabled: true
-    initialDelaySeconds: 60
+    initialDelaySeconds: 120
     periodSeconds: 5
     failureThreshold: 10
     timeoutSeconds: 3
