@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.2.0](https://github.com/Apollogeddon/ignition-helm/compare/ignition-scaleout-v1.1.3...ignition-scaleout-v1.2.0) (2026-01-08)
+
+
+### Features
+
+* **helm:** Introduce common GAN certificate templates ([17a261f](https://github.com/Apollogeddon/ignition-helm/commit/17a261fb9203f74d8c837182f0f8e0b46b51cb75))
+
+
+### Bug Fixes
+
+* **helm:** Introduce common resource templates ([c34286c](https://github.com/Apollogeddon/ignition-helm/commit/c34286c106ce75f7d2ea98dadfc71b48ddc0e0e1))
+
 ## [1.1.3](https://github.com/Apollogeddon/ignition-helm/compare/ignition-scaleout-v1.1.2...ignition-scaleout-v1.1.3) (2026-01-08)
 
 
