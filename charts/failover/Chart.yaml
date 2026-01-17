@@ -3,7 +3,7 @@ name: ignition-failover
 description: A Helm chart for failover Ignition Gateway with combined
   frontend/backend functionality
 type: application
-version: 1.3.0
+version: 1.4.0
 dependencies:
   - name: ignition-common
     version: "*"
