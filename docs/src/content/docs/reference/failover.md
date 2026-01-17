@@ -179,7 +179,7 @@ timeoutSeconds: 5
 command: ["health-check.sh", "-t", "3"]
 enabled: true
 failureThreshold: 10
-initialDelaySeconds: 60
+initialDelaySeconds: 120
 periodSeconds: 5
 timeoutSeconds: 3
 ```
