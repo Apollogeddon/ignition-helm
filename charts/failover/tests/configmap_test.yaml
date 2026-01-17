@@ -24,11 +24,11 @@ tests:
           path: data.CUSTOM_VAR
           value: "custom_value"
 
-  - it: should create scripts configmap
+  - it: should create scripts secret
     template: configmap-scripts.yaml
     asserts:
       - isKind:
-          of: ConfigMap
+          of: Secret
       - matchRegex:
           path: metadata.name
           pattern: -scripts$
