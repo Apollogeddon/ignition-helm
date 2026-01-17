@@ -1,5 +1,18 @@
 # Changelog
 
+## [2.0.0](https://github.com/Apollogeddon/ignition-helm/compare/ignition-failover-1.4.0...ignition-failover-v2.0.0) (2026-01-17)
+
+
+### ⚠ BREAKING CHANGES
+
+* **helm:** The METRO_KEYSTORE_PASSPHRASE environment variable must now be explicitly set. The previous implicit 'metro' default is no longer applied.
+
+### Features
+
+* **helm:** Add security context config for containers ([9e36a2f](https://github.com/Apollogeddon/ignition-helm/commit/9e36a2f28d457265352f2878dab87d27fef2f9d1))
+* **helm:** Configure runtime default seccomp profiles ([1a87cfe](https://github.com/Apollogeddon/ignition-helm/commit/1a87cfe828a1f5b725277e762369799a68b44f75))
+* **helm:** Establish robust runtime controls for Ignition containers ([e9450f5](https://github.com/Apollogeddon/ignition-helm/commit/e9450f547625100f03482a955ab1c9ed924fc28d))
+
 ## [1.4.0](https://github.com/Apollogeddon/ignition-helm/compare/ignition-failover-1.3.0...ignition-failover-v1.4.0) (2026-01-17)
 
 
