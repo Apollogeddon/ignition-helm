@@ -10,6 +10,7 @@ export default defineConfig({
 	integrations: [
 		starlight({
 			title: 'Ignition Helm Charts',
+			customCss: ['./src/styles/custom.css'],
 			social: [
 				{ icon: 'github', label: 'GitHub', href: 'https://github.com/apollogeddon/ignition-helm' },
 			],

@@ -42,7 +42,7 @@ The following sections list the configurable parameters of the ignition-failover
 Basic metadata and image configuration.
 
 | Parameter | Type | Default |
-| --------- | ---- | ------- |
+| --- | --- | --- |
 | `applicationName` | string | `"ignition-failover"` |
 | `image.repository` | string | `"inductiveautomation/ignition"` |
 | `image.tag` | string | `"8.3"` |
@@ -54,7 +54,7 @@ Basic metadata and image configuration.
 Core Ignition Gateway settings, including EULA acceptance and module selection.
 
 | Parameter | Type | Default |
-|-----------|------|---------|
+| --- | --- | --- |
 | `ignition.config` | object | *(See below)* |
 | `ignition.args` | list | *(See below)* |
 | `ignition.logging.level` | string | `"INFO"` |
@@ -90,7 +90,7 @@ IGNITION_EDITION: "standard"
 Settings to control the Gateway's redundancy behavior.
 
 | Parameter | Type | Default |
-|-----------|------|---------|
+| --- | --- | --- |
 | `ignition.redundancy.enabled` | bool | `false` |
 | `ignition.redundancy` | object | *(See below)* |
 
@@ -117,7 +117,7 @@ websocketTimeout: 10000
 Configuration for persistent data storage.
 
 | Parameter | Type | Default |
-|-----------|------|---------|
+| --- | --- | --- |
 | `ignition.persistence.size` | string | `"3Gi"` |
 | `ignition.persistence.accessModes` | list | `["ReadWriteOnce"]` |
 | `ignition.persistence.storageClassName` | string | `""` |
@@ -130,7 +130,7 @@ Configuration for persistent data storage.
 Service exposure and Ingress settings.
 
 | Parameter | Type | Default |
-|-----------|------|---------|
+| --- | --- | --- |
 | `ignition.service.type` | string | `"NodePort"` |
 | `ignition.service.ports` | object | `{"gan":8060,"http":8088,"https":8043}` |
 | `ignition.service.nodePorts` | object | `{}` |
@@ -145,7 +145,7 @@ Service exposure and Ingress settings.
 CPU/Memory requests/limits and pod affinity.
 
 | Parameter | Type | Default |
-|-----------|------|---------|
+| --- | --- | --- |
 | `ignition.resources.requests` | object | `{"cpu":"500m","memory":"1Gi"}` |
 | `ignition.resources.limits.cpu` | string | `"1000m"` |
 | `ignition.resources.limits.memory` | string | `"2Gi"` |
@@ -158,7 +158,7 @@ CPU/Memory requests/limits and pod affinity.
 Health checks for the pod.
 
 | Parameter | Type | Default |
-|-----------|------|---------|
+| --- | --- | --- |
 | `ignition.livenessProbe` | object | *(See below)* |
 | `ignition.readinessProbe` | object | *(See below)* |
 
@@ -189,7 +189,7 @@ timeoutSeconds: 3
 Security context and Service Account settings.
 
 | Parameter | Type | Default |
-|-----------|------|---------|
+| --- | --- | --- |
 | `ignition.securityContext` | object | `{"fsGroup":2003,"runAsGroup":2003,"runAsNonRoot":true,"runAsUser":2003}` |
 | `ignition.secrets` | object | `{"GATEWAY_ADMIN_PASSWORD":"admin"}` |
 | `ignition.sealedSecrets` | bool | `false` |

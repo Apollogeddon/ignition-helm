@@ -5,6 +5,34 @@ description: A Helm chart for failover Ignition Gateway with scalable frontend c
 
 A Helm chart for failover Ignition Gateway with scalable frontend client functionality. This chart deploys separate backend (controller) and frontend (agent) sets of Ignition Gateways to support high-scale architectures.
 
+## Initialization Process
+
+The following diagram illustrates how the chart initializes the distributed architecture, establishing trust and connectivity between the Frontend and Backend layers.
+
+```mermaid
+sequenceDiagram
+    participant K8s as Kubernetes
+    participant Certs as Cert Manager
+    participant Backend as Backend (Controller)
+    participant Frontend as Frontend (Agent)
+    
+    par Backend Initialization
+        K8s->>Backend: Start Pod
+        Backend->>Certs: Request GAN Certs
+        Certs-->>Backend: Mount Secrets (TLS/CA)
+        Backend->>Backend: Initialize as Controller
+    and Frontend Initialization
+        K8s->>Frontend: Start Pod
+        Frontend->>Certs: Request GAN Certs
+        Certs-->>Frontend: Mount Secrets (TLS/CA)
+        Frontend->>Frontend: Initialize as Agent
+    end
+    
+    Frontend->>Backend: Open GAN Connection (Mutual TLS)
+    Backend-->>Frontend: Accept Connection
+    Frontend->>Frontend: Mount Proxy Tags & Projects
+```
+
 ## Configuration
 
 The following sections list the configurable parameters of the ignition-scaleout chart.
@@ -14,7 +42,7 @@ The following sections list the configurable parameters of the ignition-scaleout
 Global settings applicable to the entire chart.
 
 | Parameter | Type | Default |
-|-----------|------|---------|
+| --- | --- | --- |
 | `applicationName` | string | `"ignition-scaleout"` |
 | `image.repository` | string | `"inductiveautomation/ignition"` |
 | `image.tag` | string | `"8.3"` |
@@ -34,7 +62,7 @@ The Backend acts as the controller and primary data processor.
 #### Ignition Settings (Backend)
 
 | Parameter | Type | Default |
-|-----------|------|---------|
+| --- | --- | --- |
 | `backend.config` | object | *(See below)* |
 | `backend.args` | list | *(See below)* |
 | `backend.logging.level` | string | `"INFO"` |
@@ -69,7 +97,7 @@ IGNITION_EDITION: "standard"
 #### Redundancy (Backend)
 
 | Parameter | Type | Default |
-|-----------|------|---------|
+| --- | --- | --- |
 | `backend.redundancy.enabled` | bool | `false` |
 | `backend.redundancy` | object | *(See below)* |
 
@@ -94,7 +122,7 @@ websocketTimeout: 10000
 #### Persistence (Backend)
 
 | Parameter | Type | Default |
-|-----------|------|---------|
+| --- | --- | --- |
 | `backend.persistence.size` | string | `"3Gi"` |
 | `backend.persistence.accessModes` | list | `["ReadWriteOnce"]` |
 | `backend.persistence.storageClassName` | string | `""` |
@@ -105,7 +133,7 @@ websocketTimeout: 10000
 #### Networking (Backend)
 
 | Parameter | Type | Default |
-|-----------|------|---------|
+| --- | --- | --- |
 | `backend.service.type` | string | `"NodePort"` |
 | `backend.service.ports` | object | `{"gan":8060,"http":8088,"https":8043}` |
 | `backend.service.nodePorts` | object | `{}` |
@@ -116,7 +144,7 @@ websocketTimeout: 10000
 #### Resources & Security (Backend)
 
 | Parameter | Type | Default |
-|-----------|------|---------|
+| --- | --- | --- |
 | `backend.resources.requests` | object | `{"cpu":"500m","memory":"1Gi"}` |
 | `backend.resources.limits.cpu` | string | `"1000m"` |
 | `backend.resources.limits.memory` | string | `"2Gi"` |
@@ -127,7 +155,7 @@ websocketTimeout: 10000
 #### Probes (Backend)
 
 | Parameter | Type | Default |
-|-----------|------|---------|
+| --- | --- | --- |
 | `backend.livenessProbe` | object | *(See below)* |
 | `backend.readinessProbe` | object | *(See below)* |
 
@@ -160,7 +188,7 @@ The Frontend acts as the agent, serving client sessions (Perspective, Vision).
 #### Ignition Settings (Frontend)
 
 | Parameter | Type | Default |
-|-----------|------|---------|
+| --- | --- | --- |
 | `frontend.config` | object | *(See below)* |
 | `frontend.args` | list | *(See below)* |
 | `frontend.logging.level` | string | `"INFO"` |
@@ -195,14 +223,14 @@ IGNITION_EDITION: "standard"
 #### Scaling & Redundancy (Frontend)
 
 | Parameter | Type | Default |
-|-----------|------|---------|
+| --- | --- | --- |
 | `frontend.redundancy.replicas` | int | `1` |
 | `frontend.redundancy` | object | `{"replicas":1}` |
 
 #### Networking (Frontend)
 
 | Parameter | Type | Default |
-|-----------|------|---------|
+| --- | --- | --- |
 | `frontend.service.type` | string | `"NodePort"` |
 | `frontend.service.ports` | object | `{"gan":8060,"http":8088,"https":8043}` |
 | `frontend.service.nodePorts` | object | `{}` |
@@ -213,7 +241,7 @@ IGNITION_EDITION: "standard"
 #### Resources & Security (Frontend)
 
 | Parameter | Type | Default |
-|-----------|------|---------|
+| --- | --- | --- |
 | `frontend.resources.requests` | object | `{"cpu":"500m","memory":"1Gi"}` |
 | `frontend.resources.limits.cpu` | string | `"1000m"` |
 | `frontend.resources.limits.memory` | string | `"2Gi"` |
@@ -225,7 +253,7 @@ IGNITION_EDITION: "standard"
 #### Probes (Frontend)
 
 | Parameter | Type | Default |
-|-----------|------|---------|
+| --- | --- | --- |
 | `frontend.livenessProbe` | object | *(See below)* |
 | `frontend.readinessProbe` | object | *(See below)* |
 

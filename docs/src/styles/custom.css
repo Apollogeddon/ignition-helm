@@ -1,0 +1,128 @@
+/* Import Inter font */
+@import '@fontsource/inter/400.css';
+@import '@fontsource/inter/600.css';
+@import '@fontsource/inter/800.css';
+
+/* 
+  Biome-inspired Design System 
+  Clean, high-contrast, "glass" aesthetic.
+*/
+
+:root {
+  /* Font Stack */
+  --sl-font-system: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  
+  /* Ignition Orange Palette */
+  --sl-color-accent-low: #1a0d05;   /* Very deep brownish-black for subtle tints */
+  --sl-color-accent: #f36c21;       /* Core Ignition Orange */
+  --sl-color-accent-high: #ffefe6;  /* Pale orange for high contrast text */
+  
+  /* Neutral Grays - Cool & Stark */
+  --sl-color-white: #ffffff;
+  --sl-color-gray-1: #f3f4f6;
+  --sl-color-gray-2: #e5e7eb;
+  --sl-color-gray-3: #d1d5db;
+  --sl-color-gray-4: #9ca3af;
+  --sl-color-gray-5: #4b5563;
+  --sl-color-gray-6: #1f2937;
+  --sl-color-black: #09090b; /* Almost pure black */
+  
+  /* Layout */
+  --sl-nav-height: 4rem;
+  --sl-sidebar-width: 18rem;
+  
+  /* Borders */
+  --sl-border-radius: 8px;
+}
+
+/* Dark Mode (Default) */
+:root[data-theme='dark'] {
+  --sl-color-bg: #09090b; /* Deep rich black/zinc */
+  --sl-color-bg-nav: rgba(9, 9, 11, 0.85); /* Glassy nav */
+  --sl-color-bg-sidebar: #09090b;
+  --sl-color-hairline: #27272a; /* Subtle borders */
+}
+
+/* Light Mode */
+:root[data-theme='light'] {
+  --sl-color-accent-low: #fff7ed;
+  --sl-color-accent: #ea580c; /* Slightly darker orange for better contrast on white */
+  --sl-color-accent-high: #7c2d12;
+  
+  --sl-color-bg: #ffffff;
+  --sl-color-bg-nav: rgba(255, 255, 255, 0.85);
+  --sl-color-hairline: #e5e7eb;
+}
+
+/* Typography Polish */
+body {
+  font-family: var(--sl-font-system);
+  letter-spacing: -0.015em;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+/* Navbar Polish */
+.site-title {
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+/* Card Styling - The "Biome" Card */
+.card {
+  border: 1px solid var(--sl-color-gray-6);
+  background: linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0) 100%);
+  border-radius: 12px;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+:root[data-theme='light'] .card {
+  background: linear-gradient(180deg, #ffffff 0%, #f9fafb 100%);
+  border-color: var(--sl-color-gray-2);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+
+.card:hover {
+  transform: translateY(-4px);
+  border-color: var(--sl-color-accent);
+  box-shadow: 0 12px 24px -8px rgba(243, 108, 33, 0.15);
+}
+
+/* Hero Section */
+.hero {
+  padding-block: 6rem 4rem;
+}
+
+.hero .tagline {
+  font-size: 1.25rem;
+  color: var(--sl-color-gray-3);
+  text-wrap: balance;
+}
+
+:root[data-theme='light'] .hero .tagline {
+  color: var(--sl-color-gray-5);
+}
+
+.hero img {
+  filter: drop-shadow(0 0 60px rgba(243, 108, 33, 0.25));
+  mask-image: linear-gradient(black 80%, transparent 100%);
+}
+
+/* Code Blocks */
+.expressive-code {
+  border-radius: 10px;
+  border: 1px solid var(--sl-color-hairline);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+/* Sidebar Active State */
+[aria-current='page'] {
+  background-color: var(--sl-color-accent-low);
+  border-left: 3px solid var(--sl-color-accent);
+  color: var(--sl-color-accent);
+  font-weight: 600;
+}

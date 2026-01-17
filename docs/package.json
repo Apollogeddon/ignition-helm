@@ -1,5 +1,5 @@
 {
-  "name": "docs",
+  "name": "ignition-helm-docs",
   "type": "module",
   "scripts": {
     "dev": "astro dev",
@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@astrojs/starlight": "^0.37.2",
+    "@fontsource/inter": "^5.2.8",
     "astro": "^5.6.1",
     "astro-mermaid": "^1.2.0",
     "sharp": "^0.34.2"
