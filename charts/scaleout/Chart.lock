@@ -1,6 +1,6 @@
 dependencies:
 - name: ignition-common
   repository: file://../common
-  version: 0.4.0
-digest: sha256:fea8667406055eadeffc088d111cfec360bf0acf9ef2ca836fdb72af573cc13c
-generated: "2026-01-17T18:52:12.8456369+10:30"
+  version: 1.0.0
+digest: sha256:af23e9545cbbf3bac50c4753741f7b91043367963a20099ed24cb82519c0b44e
+generated: "2026-01-17T21:36:08.5837489+10:30"
