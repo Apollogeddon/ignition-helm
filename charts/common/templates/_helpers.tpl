@@ -355,8 +355,8 @@ Params:
 */}}
 {{- define "ignition-common.volumes" -}}
 - name: {{ .name }}-config-scripts
-  configMap:
-    name: {{ .commonScriptsConfigMapName }}
+  secret:
+    secretName: {{ .commonScriptsConfigMapName }}
     defaultMode: 0755
 - name: ignition-logs
   emptyDir: {}

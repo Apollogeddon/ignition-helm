@@ -1,11 +1,11 @@
 {{- define "ignition-common.scripts" -}}
 apiVersion: v1
-kind: ConfigMap
+kind: Secret
 metadata:
   name: {{ include "ignition-common.scriptsName" . }}
   labels:
     {{- include "ignition-common.labels" . | nindent 4 }}
-data:
+stringData:
   seed-data-volume.sh: |-
     #!/usr/bin/env bash
     set -eo pipefail
@@ -49,7 +49,6 @@ data:
     GAN_CA_SECRETS_DIR="/run/secrets/ignition-gan-ca"
     GAN_SECRETS_DIR="/run/secrets/gan-tls"
     METRO_KEYSTORE_ALIAS="metro-key"
-    METRO_KEYSTORE_PASSPHRASE="${METRO_KEYSTORE_PASSPHRASE}"
     GWBK_LOCATION=""
 
     ###############################################################################
