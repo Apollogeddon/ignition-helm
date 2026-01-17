@@ -50,3 +50,52 @@ tests:
       - equal:
           path: spec.type
           value: LoadBalancer
+
+  - it: should configure backend static NodePorts
+    template: templates/backend/backend-service.yaml
+    documentIndex: 0
+    set:
+      backend:
+        service:
+          type: NodePort
+          nodePorts:
+            http: 30088
+            https: 30043
+            gan: 30060
+    asserts:
+      - equal:
+          path: spec.type
+          value: NodePort
+      - equal:
+          path: spec.ports[0].nodePort
+          value: 30088
+      - equal:
+          path: spec.ports[1].nodePort
+          value: 30043
+      - equal:
+          path: spec.ports[2].nodePort
+          value: 30060
+
+  - it: should configure frontend static NodePorts
+    template: templates/frontend/frontend-service.yaml
+    set:
+      frontend:
+        service:
+          type: NodePort
+          nodePorts:
+            http: 31088
+            https: 31043
+            gan: 31060
+    asserts:
+      - equal:
+          path: spec.type
+          value: NodePort
+      - equal:
+          path: spec.ports[0].nodePort
+          value: 31088
+      - equal:
+          path: spec.ports[1].nodePort
+          value: 31043
+      - equal:
+          path: spec.ports[2].nodePort
+          value: 31060
