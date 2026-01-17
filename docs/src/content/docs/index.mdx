@@ -3,7 +3,7 @@ title: Ignition Helm Charts
 description: Enterprise-grade Helm charts for deploying Inductive Automation Ignition on Kubernetes.
 template: splash
 hero:
-  tagline: Deploy scalable, resilient Ignition architectures on Kubernetes with ease.
+  tagline: The definitive way to deploy scalable, resilient Ignition architectures on Kubernetes.
   image:
     file: ../../assets/favicon.png
   actions:
@@ -14,23 +14,34 @@ hero:
     - text: View Reference
       link: /ignition-helm/reference/failover/
       icon: external
+      variant: minimal
 ---
 
-import { Card, CardGrid } from '@astrojs/starlight/components';
+import { Card, CardGrid, LinkButton } from '@astrojs/starlight/components';
 
-## Features
+## Quick Start
 
-<CardGrid stagger>
-	<Card title="Failover Architecture" icon="pencil">
-		Deploy standard Master/Backup redundancy with automatic failover handling.
+Get a failover cluster running in minutes.
+
+```bash
+helm repo add ignition-charts https://apollogeddon.github.io/ignition-helm
+helm install my-ignition ignition-charts/ignition-failover \
+  --set ignition.adminPassword=mysecretpassword
+```
+
+## Why use these charts?
+
+<CardGrid>
+	<Card title="Production Ready" icon="rocket">
+		Deploy standard **Master/Backup** redundancy or complex **Frontend/Backend** scaleout architectures out of the box. Designed for stability and uptime.
 	</Card>
-	<Card title="Scaleout Architecture" icon="add-document">
-		Separate Frontend and Backend workloads for high-scale environments.
+	<Card title="Automated Security" icon="lock">
+		Zero-touch certificate generation for the **Gateway Network** via `cert-manager`. No manual keystore hacking required—secure by default.
 	</Card>
-	<Card title="Security First" icon="setting">
-		Non-root containers, SealedSecrets support, and automatic TLS generation.
+	<Card title="DevOps Native" icon="setting">
+		Fully configured for **GitOps** workflows. Declaratively manage module selection, redundancy settings, and licencing via `values.yaml`.
 	</Card>
-	<Card title="Automated Ops" icon="open-book">
-		Built-in "preconfigure" containers handle redundancy seeding and certificate exchange.
+	<Card title="Observability" icon="magnifier">
+		Built-in support for **Prometheus** metrics and structured logging, making it easy to integrate with your existing monitoring stack.
 	</Card>
 </CardGrid>

@@ -53,3 +53,30 @@ graph TD
         Device((PLC/Device)) --> BE
     end
 ```
+
+## Selection Guide
+
+Choosing the right architecture depends on your specific requirements for scale, latency, and management complexity.
+
+### Decision Matrix
+
+| Feature | Failover (Master/Backup) | Scaleout (Frontend/Backend) |
+| :--- | :--- | :--- |
+| **Primary Goal** | High Availability (HA) | High Concurrency (User Load) |
+| **Max User Load** | ~500 Concurrent Sessions | 1,000+ Concurrent Sessions |
+| **Complexity** | Low | High |
+| **Device Load** | High | High (Isolated to Backend) |
+| **Maintenance** | Simple (2 nodes) | Complex (N+2 nodes) |
+| **Licencing** | 1 Redundant Pair | 1 Backend Pair + N Frontend Licences |
+
+### When to choose Failover
+
+* You are deploying a standard factory-floor SCADA system.
+* Your user count is moderate (under 500 concurrent).
+* Simplicity of maintenance and licencing is a priority.
+
+### When to choose Scaleout
+
+* You are building an enterprise-wide dashboarding solution.
+* You expect thousands of users to access Perspective sessions.
+* You need to protect critical device communications (Backend) from heavy user query loads (Frontend).
