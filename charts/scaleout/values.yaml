@@ -108,6 +108,8 @@ frontend:
   # -- Sensitive configuration values (will be mapped to Secret/SealedSecret)
   secrets:
     GATEWAY_ADMIN_PASSWORD: "admin"
+    IGNITION_GAN_KEYSTORE_PASSWORD: "metro"
+    IGNITION_WEB_KEYSTORE_PASSWORD: "ignition"
 
   service:
     # -- Service type (LoadBalancer, NodePort, ClusterIP)
@@ -142,11 +144,11 @@ frontend:
 
   tls:
     # -- Keystore password for the Web Server TLS certificate
-    keystorePassword: "ignition"
+    # keystorePassword: "ignition"
 
   gan:
     # -- Keystore password for the Gateway Network certificate
-    keystorePassword: "metro"
+    # keystorePassword: "metro"
 
   # -- Readiness Probe configuration
   readinessProbe:
@@ -264,6 +266,8 @@ backend:
   # -- Sensitive configuration values (will be mapped to Secret/SealedSecret)
   secrets:
     GATEWAY_ADMIN_PASSWORD: "admin"
+    IGNITION_GAN_KEYSTORE_PASSWORD: "metro"
+    IGNITION_WEB_KEYSTORE_PASSWORD: "ignition"
 
   service:
     # -- Service type (LoadBalancer, NodePort, ClusterIP)
@@ -298,11 +302,11 @@ backend:
 
   tls:
     # -- Keystore password for the Web Server TLS certificate
-    keystorePassword: "ignition"
+    # keystorePassword: "ignition"
 
   gan:
     # -- Keystore password for the Gateway Network certificate
-    keystorePassword: "metro"
+    # keystorePassword: "metro"
 
   # -- Gateway Restore Configuration
   # To configure Database connections, MQTT clients, and other Gateway settings,

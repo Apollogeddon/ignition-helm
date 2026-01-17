@@ -405,9 +405,15 @@ Params:
   - name: SPOOF_MACHINE_ID
     value: {{ .values.spoofMachineId | default "" | quote }}
   - name: TLS_KEYSTORE_PASSWORD
-    value: {{ .values.tls.keystorePassword | quote }}
+    valueFrom:
+      secretKeyRef:
+        name: {{ .name }}-secrets
+        key: IGNITION_WEB_KEYSTORE_PASSWORD
   - name: METRO_KEYSTORE_PASSPHRASE
-    value: {{ .values.gan.keystorePassword | quote }}
+    valueFrom:
+      secretKeyRef:
+        name: {{ .name }}-secrets
+        key: IGNITION_GAN_KEYSTORE_PASSWORD
   - name: IGNITION_REPLICAS
     value: {{ .replicas | quote }}
   {{- if .values.restore }}
