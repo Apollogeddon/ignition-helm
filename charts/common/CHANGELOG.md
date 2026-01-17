@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.0.0](https://github.com/Apollogeddon/ignition-helm/compare/ignition-common-v0.4.0...ignition-common-v1.0.0) (2026-01-17)
+
+
+### ⚠ BREAKING CHANGES
+
+* **common:** The common chart now provisions scripts as Kubernetes Secrets instead of ConfigMaps. This improves security posture, especially for sensitive data.
+* **helm:** The METRO_KEYSTORE_PASSPHRASE environment variable must now be explicitly set. The previous implicit 'metro' default is no longer applied.
+
+### Features
+
+* **helm:** Establish robust runtime controls for Ignition containers ([e9450f5](https://github.com/Apollogeddon/ignition-helm/commit/e9450f547625100f03482a955ab1c9ed924fc28d))
+
+
+### Bug Fixes
+
+* **common:** Migrate common scripts to Kubernetes Secrets ([a19a92a](https://github.com/Apollogeddon/ignition-helm/commit/a19a92a0165fefbf30797605eb933fada787a769))
+
 ## [0.4.0](https://github.com/Apollogeddon/ignition-helm/compare/ignition-common-v0.3.0...ignition-common-v0.4.0) (2026-01-17)
 
 
