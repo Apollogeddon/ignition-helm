@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.0](https://github.com/Apollogeddon/ignition-helm/compare/ignition-failover-1.3.0...ignition-failover-v1.4.0) (2026-01-17)
+
+
+### Features
+
+* **helm:** Introduce static NodePort configuration for services ([9edf3a4](https://github.com/Apollogeddon/ignition-helm/commit/9edf3a4356ce43ede2cb3f266ded6d6dda432d7b))
+
 ## [1.3.0](https://github.com/Apollogeddon/ignition-helm/compare/ignition-failover-1.2.1...ignition-failover-v1.3.0) (2026-01-08)
 
 
