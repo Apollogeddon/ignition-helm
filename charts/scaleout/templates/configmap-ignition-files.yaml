@@ -1,10 +1,10 @@
 apiVersion: v1
-kind: ConfigMap
+kind: Secret
 metadata:
   name: {{ include "ignition.name" . }}-config-files
   labels:
     {{- include "ignition.labels" . | nindent 4 }}
-data:
+stringData:
   redundancy-primary.xml: |-
 {{ include "ignition-common.redundancyXml" (dict "role" "Master" "host" (include "ignition-common.podFQDN" (dict "name" (printf "%s-backend" (include "ignition.name" .)) "ordinal" 1)) "port" .Values.backend.service.ports.gan "redundancy" .Values.backend.redundancy) | indent 4 }}
   redundancy-backup.xml: |-

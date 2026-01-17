@@ -17,7 +17,7 @@ metadata:
     {{- toYaml . | nindent 4 }}
   {{- end }}
 {{- end }}
-{{- end }}
+{{ end }}
 
 {{/*
 Standard ConfigMap
@@ -42,7 +42,7 @@ metadata:
     {{- include "ignition.labels" .context | nindent 4 }}
 data: {{ .config | toYaml | nindent 2 }}
 {{- end }}
-{{- end }}
+{{ end }}
 
 {{/*
 Standard Secret (supports SealedSecrets)
@@ -90,7 +90,7 @@ data:
   {{- end }}
 {{- end }}
 {{- end }}
-{{- end }}
+{{ end }}
 
 {{/*
 GAN CA and Issuer
@@ -126,7 +126,7 @@ metadata:
 spec:
   ca:
     secretName: {{ include "ignition.name" .context }}-gan-ca
-{{- end }}
+{{ end }}
 
 {{/*
 GAN Metro Keystore Secret
@@ -144,7 +144,7 @@ metadata:
 type: Opaque
 data:
   metro.keystore.password: {{ index .secrets "IGNITION_GAN_KEYSTORE_PASSWORD" | b64enc }}
-{{- end }}
+{{ end }}
 
 {{/*
 GAN Certificate
@@ -158,8 +158,6 @@ Params:
 {{- $fullname := include "ignition.name" .context }}
 {{- if .name }}
 {{- $fullname = printf "%s-%s-gan" $fullname .name }}
-{{- else }}
-{{- $fullname = printf "%s-gan" $fullname }}
 {{- end }}
 apiVersion: cert-manager.io/v1
 kind: Certificate
@@ -184,4 +182,4 @@ spec:
       passwordSecretRef:
         name: {{ include "ignition.name" .context }}-gan-metro-keystore
         key: metro.keystore.password
-{{- end }}
+{{ end }}

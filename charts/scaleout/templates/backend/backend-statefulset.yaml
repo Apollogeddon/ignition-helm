@@ -7,7 +7,6 @@ metadata:
 spec:
   selector:
     matchLabels:
-      name: {{ include "ignition.name" . }}-backend
       {{- include "ignition.selectorLabels" . | nindent 6 }}
   serviceName: {{ include "ignition.name" . }}-backend
   replicas: {{ if .Values.backend.redundancy.enabled }}2{{ else }}1{{ end }}
@@ -21,21 +20,25 @@ spec:
     metadata:
       labels:
         {{- include "ignition.selectorLabels" . | nindent 8 }}
-        name: {{ include "ignition.name" . }}-backend
     spec:
       serviceAccountName: {{ include "ignition.serviceAccountName" . }}
       securityContext:
-        {{- toYaml .Values.backend.securityContext | nindent 8 }}
+        fsGroup: {{ .Values.backend.securityContext.fsGroup }}
+        runAsGroup: {{ .Values.backend.securityContext.runAsGroup }}
+        runAsNonRoot: {{ .Values.backend.securityContext.runAsNonRoot }}
+        runAsUser: {{ .Values.backend.securityContext.runAsUser }}
+        seccompProfile:
+          {{- toYaml .Values.backend.securityContext.seccompProfile | nindent 10 }}
       {{- if .Values.affinity.enabled }}
       affinity:
         podAntiAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
           - labelSelector:
               matchExpressions:
-              - key: name
+              - key: app.kubernetes.io/name
                 operator: In
                 values:
-                - {{ include "ignition.name" . }}-backend
+                - {{ include "ignition.name" . }}
             topologyKey: kubernetes.io/hostname
       {{- end }}
       {{- with .Values.image.imagePullSecrets }}
@@ -45,8 +48,12 @@ spec:
       containers:
       - name: gateway
         securityContext:
-          {{- toYaml .Values.backend.securityContext | nindent 10 }}
-        image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
+          readOnlyRootFilesystem: true
+        image: {{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}
         imagePullPolicy: {{ .Values.image.pullPolicy }}
         resources: {{ .Values.backend.resources | toYaml | nindent 10 }}
         args: {{ .Values.backend.args | toYaml | nindent 8 }}
@@ -77,7 +84,7 @@ spec:
 {{ include "ignition-common.probes" (dict "probe" .Values.backend.livenessProbe) | nindent 10 }}
         {{- end }}
       initContainers:
-{{ include "ignition-common.initContainer.preconfigure" (dict "name" (include "ignition.name" .) "image" .Values.image "values" .Values.backend "replicas" (ternary 2 1 .Values.backend.redundancy.enabled)) | nindent 6 }}
+{{ include "ignition-common.initContainer.preconfigure" (dict "name" (include "ignition.name" .) "image" .Values.image "values" .Values.backend "replicas" (ternary 2 1 .Values.backend.redundancy.enabled) "context" .) | nindent 6 }}
       volumes:
 {{ include "ignition-common.volumes" (dict "name" (include "ignition.name" .) "values" .Values.backend "ganTlsSecretName" (printf "%s-backend-gan-tls" (include "ignition.name" .)) "commonScriptsConfigMapName" (include "ignition-common.scriptsName" .)) | nindent 6 }}
 
