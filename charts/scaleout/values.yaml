@@ -49,6 +49,11 @@ frontend:
     runAsGroup: 2003
     fsGroup: 2003
     runAsNonRoot: true
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    capabilities:
+      drop:
+        - ALL
 
   logging:
     # -- Log level for the Frontend Gateway (INFO, DEBUG, WARN, ERROR)
@@ -189,6 +194,11 @@ backend:
     runAsGroup: 2003
     fsGroup: 2003
     runAsNonRoot: true
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    capabilities:
+      drop:
+        - ALL
 
   logging:
     # -- Log level for the Backend Gateway (INFO, DEBUG, WARN, ERROR)
