@@ -22,6 +22,30 @@ tests:
           path: spec.ports[0].port
           value: 30080
 
+  - it: should configure static NodePorts
+    documentIndex: 0
+    set:
+      ignition:
+        service:
+          type: NodePort
+          nodePorts:
+            http: 30088
+            https: 30043
+            gan: 30060
+    asserts:
+      - equal:
+          path: spec.type
+          value: NodePort
+      - equal:
+          path: spec.ports[0].nodePort
+          value: 30088
+      - equal:
+          path: spec.ports[1].nodePort
+          value: 30043
+      - equal:
+          path: spec.ports[2].nodePort
+          value: 30060
+
   - it: should configure LoadBalancer service
     documentIndex: 0
     set:

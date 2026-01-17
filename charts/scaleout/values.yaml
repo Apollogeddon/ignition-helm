@@ -112,6 +112,11 @@ frontend:
       http: 8088
       https: 8043
       gan: 8060
+    # -- NodePort configuration (only used if type is NodePort)
+    # nodePorts:
+    #   http: 30088
+    #   https: 30043
+    #   gan: 30060
     # -- Service annotations
     # annotations:
     #   kube-vip.io/loadbalancerIPs: "192.168.10.202"
@@ -256,6 +261,11 @@ backend:
       http: 8088
       https: 8043
       gan: 8060
+    # -- NodePort configuration (only used if type is NodePort)
+    # nodePorts:
+    #   http: 30088
+    #   https: 30043
+    #   gan: 30060
     # -- Service annotations
     # annotations:
     #   kube-vip.io/loadbalancerIPs: "192.168.10.202"

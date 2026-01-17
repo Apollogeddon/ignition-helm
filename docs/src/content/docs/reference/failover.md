@@ -5,6 +5,34 @@ description: A Helm chart for failover Ignition Gateway with combined frontend/b
 
 A Helm chart for failover Ignition Gateway with combined frontend/backend functionality. This chart deploys an Ignition Gateway configured for redundancy, capable of acting as both a frontend and backend in a simplified failover architecture.
 
+## Initialization Process
+
+The following diagram illustrates how the chart initializes redundancy and handles certificate exchange during startup.
+
+```mermaid
+sequenceDiagram
+    participant K8s as Kubernetes
+    participant Init as Init Container
+    participant Certs as Cert Manager
+    participant Ignition as Ignition Gateway
+    
+    K8s->>Init: Start Pod
+    Init->>Certs: Request GAN Certs
+    Certs-->>Init: Mount Secrets (TLS/CA)
+    Init->>Init: Generate Keystore (p12)
+    Init->>Init: Seed Redundancy XML
+    
+    alt is Master (0)
+        Init->>Init: Apply Master Config
+    else is Backup (1)
+        Init->>Init: Apply Backup Config
+    end
+    
+    Init->>Ignition: Start Main Container
+    Ignition->>Ignition: Load Keystores
+    Ignition->>Ignition: Establish Gateway Network
+```
+
 ## Configuration
 
 The following sections list the configurable parameters of the ignition-failover chart, broken down by category.
@@ -14,7 +42,7 @@ The following sections list the configurable parameters of the ignition-failover
 Basic metadata and image configuration.
 
 | Parameter | Type | Default |
-|-----------|------|---------|
+| --------- | ---- | ------- |
 | `applicationName` | string | `"ignition-failover"` |
 | `image.repository` | string | `"inductiveautomation/ignition"` |
 | `image.tag` | string | `"8.3"` |
@@ -105,6 +133,7 @@ Service exposure and Ingress settings.
 |-----------|------|---------|
 | `ignition.service.type` | string | `"NodePort"` |
 | `ignition.service.ports` | object | `{"gan":8060,"http":8088,"https":8043}` |
+| `ignition.service.nodePorts` | object | `{}` |
 | `ignition.service.sessionAffinity` | string | `"ClientIP"` |
 | `ignition.ingress.enabled` | bool | `false` |
 | `ignition.ingress.tls` | list | `[]` |

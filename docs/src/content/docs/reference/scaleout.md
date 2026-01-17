@@ -108,6 +108,7 @@ websocketTimeout: 10000
 |-----------|------|---------|
 | `backend.service.type` | string | `"NodePort"` |
 | `backend.service.ports` | object | `{"gan":8060,"http":8088,"https":8043}` |
+| `backend.service.nodePorts` | object | `{}` |
 | `backend.service.sessionAffinity` | string | `"ClientIP"` |
 | `backend.ingress.enabled` | bool | `false` |
 | `backend.ingress.tls` | list | `[]` |
@@ -204,6 +205,7 @@ IGNITION_EDITION: "standard"
 |-----------|------|---------|
 | `frontend.service.type` | string | `"NodePort"` |
 | `frontend.service.ports` | object | `{"gan":8060,"http":8088,"https":8043}` |
+| `frontend.service.nodePorts` | object | `{}` |
 | `frontend.service.sessionAffinity` | string | `"ClientIP"` |
 | `frontend.ingress.enabled` | bool | `false` |
 | `frontend.ingress.tls` | list | `[]` |

@@ -168,14 +168,29 @@ spec:
       targetPort: http
       protocol: TCP
       name: http
+      {{- if and (or (eq .values.service.type "NodePort") (eq .values.service.type "LoadBalancer")) .values.service.nodePorts }}
+      {{- if .values.service.nodePorts.http }}
+      nodePort: {{ .values.service.nodePorts.http }}
+      {{- end }}
+      {{- end }}
     - port: {{ .values.service.ports.https }}
       targetPort: https
       protocol: TCP
       name: https
+      {{- if and (or (eq .values.service.type "NodePort") (eq .values.service.type "LoadBalancer")) .values.service.nodePorts }}
+      {{- if .values.service.nodePorts.https }}
+      nodePort: {{ .values.service.nodePorts.https }}
+      {{- end }}
+      {{- end }}
     - port: {{ .values.service.ports.gan }}
       targetPort: gan
       protocol: TCP
       name: gan
+      {{- if and (or (eq .values.service.type "NodePort") (eq .values.service.type "LoadBalancer")) .values.service.nodePorts }}
+      {{- if .values.service.nodePorts.gan }}
+      nodePort: {{ .values.service.nodePorts.gan }}
+      {{- end }}
+      {{- end }}
   selector:
     {{- include "ignition.selectorLabels" . | nindent 4 }}
     {{- if .name }}
