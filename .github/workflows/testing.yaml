@@ -58,6 +58,14 @@ jobs:
             fi
           done
 
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@0.29.0
+        with:
+          scan-type: 'config'
+          scan-ref: 'charts'
+          exit-code: '1'
+          severity: 'CRITICAL,HIGH'
+
       - name: Run chart-testing (list-changed)
         id: list-changed
         run: |
