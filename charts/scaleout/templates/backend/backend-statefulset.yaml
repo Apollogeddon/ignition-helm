@@ -44,6 +44,8 @@ spec:
       {{- end }}
       containers:
       - name: gateway
+        securityContext:
+          {{- toYaml .Values.backend.securityContext | nindent 10 }}
         image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
         imagePullPolicy: {{ .Values.image.pullPolicy }}
         resources: {{ .Values.backend.resources | toYaml | nindent 10 }}
