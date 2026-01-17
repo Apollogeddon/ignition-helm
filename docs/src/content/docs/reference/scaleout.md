@@ -149,7 +149,7 @@ websocketTimeout: 10000
 | `backend.resources.limits.cpu` | string | `"1000m"` |
 | `backend.resources.limits.memory` | string | `"2Gi"` |
 | `backend.securityContext` | object | `{"fsGroup":2003,"runAsGroup":2003,"runAsNonRoot":true,"runAsUser":2003}` |
-| `backend.secrets` | object | `{"GATEWAY_ADMIN_PASSWORD":"admin"}` |
+| `backend.secrets` | object | `{"GATEWAY_ADMIN_PASSWORD":"admin","IGNITION_GAN_KEYSTORE_PASSWORD":"metro","IGNITION_WEB_KEYSTORE_PASSWORD":"ignition"}` |
 | `backend.sealedSecrets` | bool | `false` |
 
 #### Probes (Backend)

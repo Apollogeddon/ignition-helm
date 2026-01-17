@@ -131,7 +131,7 @@ spec:
 {{/*
 GAN Metro Keystore Secret
 Params:
-  password: The keystore password
+  secrets: The component-specific secrets map
   context: The global context (Dot)
 */}}
 {{- define "ignition-common.ganMetroKeystore" -}}
@@ -143,7 +143,7 @@ metadata:
     {{- include "ignition.labels" .context | nindent 4 }}
 type: Opaque
 data:
-  metro.keystore.password: {{ .password | b64enc }}
+  metro.keystore.password: {{ index .secrets "IGNITION_GAN_KEYSTORE_PASSWORD" | b64enc }}
 {{- end }}
 
 {{/*

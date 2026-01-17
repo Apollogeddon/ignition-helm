@@ -43,7 +43,11 @@ helm install my-scaleout ignition-charts/ignition-scaleout \
 | Parameter | Description | Default |
 | --------- | ----------- | ------- |
 | `backend.secrets.GATEWAY_ADMIN_PASSWORD` | **Required.** Admin password for Backend gateways. | `admin` |
+| `backend.secrets.IGNITION_GAN_KEYSTORE_PASSWORD` | Password for the Backend GAN keystore. | `metro` |
+| `backend.secrets.IGNITION_WEB_KEYSTORE_PASSWORD` | Password for the Backend Web TLS keystore. | `ignition` |
 | `frontend.secrets.GATEWAY_ADMIN_PASSWORD` | **Required.** Admin password for Frontend gateways. | `admin` |
+| `frontend.secrets.IGNITION_GAN_KEYSTORE_PASSWORD` | Password for the Frontend GAN keystore. | `metro` |
+| `frontend.secrets.IGNITION_WEB_KEYSTORE_PASSWORD` | Password for the Frontend Web TLS keystore. | `ignition` |
 | `frontend.replicas` | Number of Frontend nodes to deploy. | `1` |
 | `backend.redundancy.enabled` | Enable Master/Backup redundancy for the Backend. | `false` |
 | `backend.persistence.size` | Storage size for Backend nodes. | `3Gi` |

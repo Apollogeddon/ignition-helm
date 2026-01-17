@@ -1,6 +1,6 @@
 {{- include "ignition-common.ganCA" (dict "context" .) }}
 ---
-{{- include "ignition-common.ganMetroKeystore" (dict "password" .Values.frontend.gan.keystorePassword "context" .) }}
+{{- include "ignition-common.ganMetroKeystore" (dict "secrets" .Values.frontend.secrets "context" .) }}
 ---
 {{- include "ignition-common.ganCertificate" (dict "name" "frontend" "commonName" (printf "%s-frontend" (include "ignition.name" .)) "dnsNames" (list (printf "*.%s-frontend" (include "ignition.name" .))) "context" .) }}
 ---

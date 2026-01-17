@@ -191,7 +191,7 @@ Security context and Service Account settings.
 | Parameter | Type | Default |
 | --- | --- | --- |
 | `ignition.securityContext` | object | `{"fsGroup":2003,"runAsGroup":2003,"runAsNonRoot":true,"runAsUser":2003}` |
-| `ignition.secrets` | object | `{"GATEWAY_ADMIN_PASSWORD":"admin"}` |
+| `ignition.secrets` | object | `{"GATEWAY_ADMIN_PASSWORD":"admin","IGNITION_GAN_KEYSTORE_PASSWORD":"metro","IGNITION_WEB_KEYSTORE_PASSWORD":"ignition"}` |
 | `ignition.sealedSecrets` | bool | `false` |
 | `serviceAccount.create` | bool | `false` |
 | `serviceAccount.name` | string | `""` |
