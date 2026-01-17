@@ -35,13 +35,13 @@ helm install my-ignition ignition-charts/ignition-failover \
 	<Card title="Production Ready" icon="rocket">
 		Deploy standard **Master/Backup** redundancy or complex **Frontend/Backend** scaleout architectures out of the box. Designed for stability and uptime.
 	</Card>
-	<Card title="Automated Security" icon="lock">
-		Zero-touch certificate generation for the **Gateway Network** via `cert-manager`. No manual keystore hacking required—secure by default.
+	<Card title="Automated Security" icon="approve-check-circle">
+		Zero-touch certificate generation for the **Gateway Network** and **Web Server** via `cert-manager`. No manual keystore hacking required—secure by default.
 	</Card>
-	<Card title="DevOps Native" icon="setting">
-		Fully configured for **GitOps** workflows. Declaratively manage module selection, redundancy settings, and licencing via `values.yaml`.
+	<Card title="DevOps Native" icon="list-format">
+		Fully configured for **GitOps** workflows. Declaratively manage module selection, redundancy settings, and licensing via `values.yaml`. Supports **SealedSecrets**.
 	</Card>
-	<Card title="Observability" icon="magnifier">
-		Built-in support for **Prometheus** metrics and structured logging, making it easy to integrate with your existing monitoring stack.
+	<Card title="Disaster Recovery" icon="cloud-download">
+		Seed your Gateway with a full backup (`.gwbk`) on startup from a URL or local path. Perfect for immutable infrastructure pipelines and rapid recovery.
 	</Card>
 </CardGrid>
