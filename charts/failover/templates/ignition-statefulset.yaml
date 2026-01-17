@@ -7,7 +7,6 @@ metadata:
 spec:
   selector:
     matchLabels:
-      name: {{ include "ignition.name" . }}
       {{- include "ignition.selectorLabels" . | nindent 6 }}
   serviceName: {{ include "ignition.name" . }}
   replicas: {{ if .Values.ignition.redundancy.enabled }}2{{ else }}1{{ end }}
@@ -19,12 +18,16 @@ spec:
     metadata:
       labels:
         {{- include "ignition.selectorLabels" . | nindent 8 }}
-        name: {{ include "ignition.name" . }}
     spec:
       serviceAccountName: {{ include "ignition.serviceAccountName" . }}
       terminationGracePeriodSeconds: 60
       securityContext:
-        {{- toYaml .Values.ignition.securityContext | nindent 8 }}
+        fsGroup: {{ .Values.ignition.securityContext.fsGroup }}
+        runAsGroup: {{ .Values.ignition.securityContext.runAsGroup }}
+        runAsNonRoot: {{ .Values.ignition.securityContext.runAsNonRoot }}
+        runAsUser: {{ .Values.ignition.securityContext.runAsUser }}
+        seccompProfile:
+          {{- toYaml .Values.ignition.securityContext.seccompProfile | nindent 10 }}
       {{- if .Values.affinity.enabled }}
       affinity:
         podAntiAffinity:
@@ -34,7 +37,7 @@ spec:
             podAffinityTerm:
               labelSelector:
                 matchExpressions:
-                - key: name
+                - key: app.kubernetes.io/name
                   operator: In
                   values:
                   - {{ include "ignition.name" . }}
@@ -43,7 +46,7 @@ spec:
           requiredDuringSchedulingIgnoredDuringExecution:
           - labelSelector:
               matchExpressions:
-              - key: name
+              - key: app.kubernetes.io/name
                 operator: In
                 values:
                 - {{ include "ignition.name" . }}
@@ -57,8 +60,12 @@ spec:
       containers:
       - name: gateway
         securityContext:
-          {{- toYaml .Values.ignition.securityContext | nindent 10 }}
-        image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
+          readOnlyRootFilesystem: true
+        image: {{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}
         imagePullPolicy: {{ .Values.image.pullPolicy }}
         resources: {{ .Values.ignition.resources | toYaml | nindent 10 }}
         args: {{ .Values.ignition.args | toYaml | nindent 8 }}
@@ -93,7 +100,7 @@ spec:
 {{ include "ignition-common.probes" (dict "probe" .Values.ignition.livenessProbe) | nindent 10 }}
         {{- end }}
       initContainers:
-{{ include "ignition-common.initContainer.preconfigure" (dict "name" (include "ignition.name" .) "image" .Values.image "values" .Values.ignition "replicas" (ternary 2 1 .Values.ignition.redundancy.enabled)) | nindent 6 }}
+{{ include "ignition-common.initContainer.preconfigure" (dict "name" (include "ignition.name" .) "image" .Values.image "values" .Values.ignition "replicas" (ternary 2 1 .Values.ignition.redundancy.enabled) "context" .) | nindent 6 }}
       volumes:
 {{ include "ignition-common.volumes" (dict "name" (include "ignition.name" .) "values" .Values.ignition "ganTlsSecretName" (printf "%s-gan-tls" (include "ignition.name" .)) "commonScriptsConfigMapName" (include "ignition-common.scriptsName" .)) | nindent 6 }}
 

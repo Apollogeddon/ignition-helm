@@ -20,7 +20,7 @@ image:
   # -- The Docker image pull policy
   pullPolicy: IfNotPresent
   # -- The Docker image tag (Ignition version)
-  tag: "8.3"
+  tag: ""
   # -- Optional: Secrets for pulling images from private registries
   # imagePullSecrets: []
 
@@ -45,9 +45,9 @@ frontend:
 
   # -- Pod security context
   securityContext:
-    runAsUser: 2003
-    runAsGroup: 2003
-    fsGroup: 2003
+    runAsUser: 20003
+    runAsGroup: 20003
+    fsGroup: 20003
     runAsNonRoot: true
     allowPrivilegeEscalation: false
     readOnlyRootFilesystem: true
@@ -64,6 +64,15 @@ frontend:
   eam:
     # -- EAM Role (Agent for Frontend)
     role: "Agent"
+
+  # -- Resource requests and limits for the init container
+  initResources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "256Mi"
+      cpu: "200m"
 
   resources:
     # -- Resource requests and limits
@@ -91,7 +100,6 @@ frontend:
 
   # -- Environment variables for configuration (will be mapped to ConfigMap)
   config:
-    GATEWAY_ADMIN_USERNAME: "admin"
     IGNITION_EDITION: "standard"
     ACCEPT_IGNITION_EULA: "Y"
     DISABLE_QUICKSTART: "true"
@@ -107,6 +115,7 @@ frontend:
 
   # -- Sensitive configuration values (will be mapped to Secret/SealedSecret)
   secrets:
+    GATEWAY_ADMIN_USERNAME: "admin"
     GATEWAY_ADMIN_PASSWORD: "admin"
     IGNITION_GAN_KEYSTORE_PASSWORD: "metro"
     IGNITION_WEB_KEYSTORE_PASSWORD: "ignition"
@@ -194,9 +203,9 @@ backend:
 
   # -- Pod security context
   securityContext:
-    runAsUser: 2003
-    runAsGroup: 2003
-    fsGroup: 2003
+    runAsUser: 20003
+    runAsGroup: 20003
+    fsGroup: 20003
     runAsNonRoot: true
     allowPrivilegeEscalation: false
     readOnlyRootFilesystem: true
@@ -213,6 +222,15 @@ backend:
   eam:
     # -- EAM Role (Controller for Backend)
     role: "Controller"
+
+  # -- Resource requests and limits for the init container
+  initResources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "256Mi"
+      cpu: "200m"
 
   resources:
     # -- Resource requests and limits
@@ -249,7 +267,6 @@ backend:
 
   # -- Environment variables for configuration (will be mapped to ConfigMap)
   config:
-    GATEWAY_ADMIN_USERNAME: "admin"
     IGNITION_EDITION: "standard"
     ACCEPT_IGNITION_EULA: "Y"
     DISABLE_QUICKSTART: "true"
@@ -265,6 +282,7 @@ backend:
 
   # -- Sensitive configuration values (will be mapped to Secret/SealedSecret)
   secrets:
+    GATEWAY_ADMIN_USERNAME: "admin"
     GATEWAY_ADMIN_PASSWORD: "admin"
     IGNITION_GAN_KEYSTORE_PASSWORD: "metro"
     IGNITION_WEB_KEYSTORE_PASSWORD: "ignition"

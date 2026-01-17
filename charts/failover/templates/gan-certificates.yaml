@@ -1,5 +1,5 @@
 {{- include "ignition-common.ganCA" (dict "context" .) }}
 ---
-{{- include "ignition-common.ganMetroKeystore" (dict "secrets" .Values.ignition.secrets "context" .) }}
+{{ include "ignition-common.ganMetroKeystore" (dict "secrets" .Values.ignition.secrets "context" .) }}
 ---
-{{- include "ignition-common.ganCertificate" (dict "commonName" "ignition" "dnsNames" (list (printf "*.%s" (include "ignition.name" .))) "context" .) }}
+{{ include "ignition-common.ganCertificate" (dict "commonName" "ignition" "dnsNames" (list (printf "*.%s" (include "ignition.name" .))) "context" .) }}

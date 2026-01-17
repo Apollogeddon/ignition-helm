@@ -20,7 +20,7 @@ image:
   # -- The Docker image pull policy
   pullPolicy: IfNotPresent
   # -- The Docker image tag (Ignition version)
-  tag: "8.3"
+  tag: ""
   # -- Optional: Secrets for pulling images from private registries
   # imagePullSecrets: []
 
@@ -42,9 +42,9 @@ affinity:
 ignition:
   # -- Pod security context
   securityContext:
-    runAsUser: 2003
-    runAsGroup: 2003
-    fsGroup: 2003
+    runAsUser: 20003
+    runAsGroup: 20003
+    fsGroup: 20003
     runAsNonRoot: true
     allowPrivilegeEscalation: false
     readOnlyRootFilesystem: true
@@ -61,6 +61,15 @@ ignition:
   eam:
     # -- EAM Role (Controller, Agent, Standalone)
     role: "Controller"
+
+  # -- Resource requests and limits for the init container
+  initResources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "256Mi"
+      cpu: "200m"
 
   resources:
     # -- Resource requests and limits
@@ -97,7 +106,6 @@ ignition:
 
   # -- Environment variables for configuration (will be mapped to ConfigMap)
   config:
-    GATEWAY_ADMIN_USERNAME: "admin"
     IGNITION_EDITION: "standard"
     ACCEPT_IGNITION_EULA: "Y"
     DISABLE_QUICKSTART: "true"
@@ -113,6 +121,7 @@ ignition:
 
   # -- Sensitive configuration values (will be mapped to Secret/SealedSecret)
   secrets:
+    GATEWAY_ADMIN_USERNAME: "admin"
     GATEWAY_ADMIN_PASSWORD: "admin"
     IGNITION_GAN_KEYSTORE_PASSWORD: "metro"
     IGNITION_WEB_KEYSTORE_PASSWORD: "ignition"

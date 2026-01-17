@@ -37,7 +37,7 @@ tests:
     template: configmap-ignition-files.yaml
     asserts:
       - isKind:
-          of: ConfigMap
+          of: Secret
       - matchRegex:
           path: metadata.name
           pattern: -files$

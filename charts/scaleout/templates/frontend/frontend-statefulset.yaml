@@ -7,29 +7,32 @@ metadata:
 spec:
   selector:
     matchLabels:
-      name: {{ include "ignition.name" . }}-frontend
       {{- include "ignition.selectorLabels" . | nindent 6 }}
   serviceName: {{ include "ignition.name" . }}-frontend
   replicas: {{ .Values.frontend.redundancy.replicas }}
   template:
     metadata:
       labels:
-        name: {{ include "ignition.name" . }}-frontend
         {{- include "ignition.selectorLabels" . | nindent 8 }}
     spec:
       serviceAccountName: {{ include "ignition.serviceAccountName" . }}
       securityContext:
-        {{- toYaml .Values.frontend.securityContext | nindent 8 }}
+        fsGroup: {{ .Values.frontend.securityContext.fsGroup }}
+        runAsGroup: {{ .Values.frontend.securityContext.runAsGroup }}
+        runAsNonRoot: {{ .Values.frontend.securityContext.runAsNonRoot }}
+        runAsUser: {{ .Values.frontend.securityContext.runAsUser }}
+        seccompProfile:
+          {{- toYaml .Values.frontend.securityContext.seccompProfile | nindent 10 }}
       {{- if .Values.affinity.enabled }}
       affinity:
         podAntiAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
           - labelSelector:
               matchExpressions:
-              - key: name
+              - key: app.kubernetes.io/name
                 operator: In
                 values:
-                - {{ include "ignition.name" . }}-frontend
+                - {{ include "ignition.name" . }}
             topologyKey: kubernetes.io/hostname
       {{- end }}
       {{- with .Values.image.imagePullSecrets }}
@@ -39,8 +42,12 @@ spec:
       containers:
       - name: gateway
         securityContext:
-          {{- toYaml .Values.frontend.securityContext | nindent 10 }}
-        image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
+          readOnlyRootFilesystem: true
+        image: {{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}
         imagePullPolicy: {{ .Values.image.pullPolicy }}
         resources: {{ .Values.frontend.resources | toYaml | nindent 10 }}
         args: {{ .Values.frontend.args | toYaml | nindent 8 }}
@@ -81,7 +88,7 @@ spec:
 {{ include "ignition-common.probes" (dict "probe" .Values.frontend.livenessProbe) | nindent 10 }}
         {{- end }}
       initContainers:
-{{ include "ignition-common.initContainer.preconfigure" (dict "name" (include "ignition.name" .) "image" .Values.image "values" .Values.frontend "replicas" 1) | nindent 6 }}
+{{ include "ignition-common.initContainer.preconfigure" (dict "name" (include "ignition.name" .) "image" .Values.image "values" .Values.frontend "replicas" 1 "context" .) | nindent 6 }}
       volumes:
       - name: data
         emptyDir: {}

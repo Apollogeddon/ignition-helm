@@ -193,11 +193,6 @@ spec:
       {{- end }}
   selector:
     {{- include "ignition.selectorLabels" . | nindent 4 }}
-    {{- if .name }}
-    name: {{ $fullname }}
-    {{- else }}
-    name: {{ include "ignition.name" . }}
-    {{- end }}
 {{- end }}
 
 {{/*
@@ -365,8 +360,8 @@ Params:
 - name: ignition-dot-ignition
   emptyDir: {}
 - name: {{ .name }}-config-files
-  configMap:
-    name: {{ .name }}-config-files
+  secret:
+    secretName: {{ .name }}-config-files
     defaultMode: 0644
 - name: {{ .name }}-gan-ca
   secret:
@@ -397,10 +392,21 @@ Params:
 */}}
 {{- define "ignition-common.initContainer.preconfigure" -}}
 - name: preconfigure
-  image: {{ .image.repository }}:{{ .image.tag }}
+  image: {{ .image.repository }}:{{ .image.tag | default .context.Chart.AppVersion }}
   imagePullPolicy: {{ .image.pullPolicy }}
+  {{- if .values.initResources }}
+  resources:
+    {{- toYaml .values.initResources | nindent 4 }}
+  {{- end }}
   securityContext:
-    {{- toYaml .values.securityContext | nindent 4 }}
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
+    readOnlyRootFilesystem: true
+    runAsGroup: {{ .values.securityContext.runAsGroup }}
+    runAsNonRoot: {{ .values.securityContext.runAsNonRoot }}
+    runAsUser: {{ .values.securityContext.runAsUser }}
   env:
   - name: SPOOF_MACHINE_ID
     value: {{ .values.spoofMachineId | default "" | quote }}
