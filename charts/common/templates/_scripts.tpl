@@ -49,7 +49,7 @@ data:
     GAN_CA_SECRETS_DIR="/run/secrets/ignition-gan-ca"
     GAN_SECRETS_DIR="/run/secrets/gan-tls"
     METRO_KEYSTORE_ALIAS="metro-key"
-    METRO_KEYSTORE_PASSPHRASE="${METRO_KEYSTORE_PASSPHRASE:-metro}"
+    METRO_KEYSTORE_PASSPHRASE="${METRO_KEYSTORE_PASSPHRASE}"
     GWBK_LOCATION=""
 
     ###############################################################################

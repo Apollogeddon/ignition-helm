@@ -46,6 +46,11 @@ ignition:
     runAsGroup: 2003
     fsGroup: 2003
     runAsNonRoot: true
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    capabilities:
+      drop:
+        - ALL
 
   logging:
     # -- Log level for the Ignition Gateway (INFO, DEBUG, WARN, ERROR)

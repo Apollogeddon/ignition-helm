@@ -316,6 +316,12 @@ Params:
 {{- define "ignition-common.volumeMounts" -}}
 - mountPath: /usr/local/bin/ignition/data
   name: data
+- mountPath: /usr/local/bin/ignition/logs
+  name: ignition-logs
+- mountPath: /usr/local/bin/ignition/temp
+  name: ignition-temp
+- mountPath: /usr/local/bin/ignition/.ignition
+  name: ignition-dot-ignition
 - mountPath: {{ include "ignition-common.scriptMountPath" . }}
   name: {{ .name }}-config-scripts
   readOnly: true
@@ -352,6 +358,12 @@ Params:
   configMap:
     name: {{ .commonScriptsConfigMapName }}
     defaultMode: 0755
+- name: ignition-logs
+  emptyDir: {}
+- name: ignition-temp
+  emptyDir: {}
+- name: ignition-dot-ignition
+  emptyDir: {}
 - name: {{ .name }}-config-files
   configMap:
     name: {{ .name }}-config-files
@@ -387,6 +399,8 @@ Params:
 - name: preconfigure
   image: {{ .image.repository }}:{{ .image.tag }}
   imagePullPolicy: {{ .image.pullPolicy }}
+  securityContext:
+    {{- toYaml .values.securityContext | nindent 4 }}
   env:
   - name: SPOOF_MACHINE_ID
     value: {{ .values.spoofMachineId | default "" | quote }}
