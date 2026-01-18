@@ -152,6 +152,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: {{ $fullname }}
+  namespace: {{ .Release.Namespace }}
   labels:
     {{- include "ignition.labels" . | nindent 4 }}
   {{- if .values.service.annotations }}

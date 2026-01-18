@@ -10,6 +10,7 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: {{ include "ignition.serviceAccountName" .context }}
+  namespace: {{ .context.Release.Namespace }}
   labels:
     {{- include "ignition.labels" .context | nindent 4 }}
   {{- with .values.serviceAccount.annotations }}
@@ -38,6 +39,7 @@ metadata:
   {{- $fullname = printf "%s-config" $fullname }}
   {{- end }}
   name: {{ $fullname }}
+  namespace: {{ .context.Release.Namespace }}
   labels:
     {{- include "ignition.labels" .context | nindent 4 }}
 data: {{ .config | toYaml | nindent 2 }}
@@ -66,6 +68,7 @@ apiVersion: bitnami.com/v1alpha1
 kind: SealedSecret
 metadata:
   name: {{ $fullname }}
+  namespace: {{ .context.Release.Namespace }}
   labels:
     {{- include "ignition.labels" .context | nindent 4 }}
   annotations:
@@ -81,6 +84,7 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: {{ $fullname }}
+  namespace: {{ .context.Release.Namespace }}
   labels:
     {{- include "ignition.labels" .context | nindent 4 }}
 type: Opaque
@@ -102,6 +106,7 @@ apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
   name: {{ include "ignition.name" .context }}-gan-ca
+  namespace: {{ .context.Release.Namespace }}
   labels:
     {{- include "ignition.labels" .context | nindent 4 }}
 spec:
@@ -121,6 +126,7 @@ apiVersion: cert-manager.io/v1
 kind: Issuer
 metadata:
   name: {{ include "ignition.name" .context }}-gan-issuer
+  namespace: {{ .context.Release.Namespace }}
   labels:
     {{- include "ignition.labels" .context | nindent 4 }}
 spec:
@@ -139,6 +145,7 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: {{ include "ignition.name" .context }}-gan-metro-keystore
+  namespace: {{ .context.Release.Namespace }}
   labels:
     {{- include "ignition.labels" .context | nindent 4 }}
 type: Opaque
@@ -163,6 +170,7 @@ apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
   name: {{ $fullname }}
+  namespace: {{ .context.Release.Namespace }}
   labels:
     {{- include "ignition.labels" .context | nindent 4 }}
 spec:
