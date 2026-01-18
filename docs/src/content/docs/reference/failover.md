@@ -99,7 +99,7 @@ Settings to control the Gateway's redundancy behavior.
 ```yaml
 backupFailoverTimeout: 10000
 enableSsl: true
-enabled: false
+enabled: true
 httpConnectTimeout: 10000
 httpReadTimeout: 60000
 joinWaitTime: 30000
