@@ -1,5 +1,18 @@
 # Changelog
 
+## [3.1.0](https://github.com/Apollogeddon/ignition-helm/compare/ignition-scaleout-v3.0.0...ignition-scaleout-v3.1.0) (2026-01-18)
+
+
+### Features
+
+* **helm:** Improve chart configurability and security context defaults ([7960865](https://github.com/Apollogeddon/ignition-helm/commit/7960865e55efdd85526ea241f334c02129321eb5))
+
+
+### Bug Fixes
+
+* **helm:** Align trivy ignore comment ([2ed9bf6](https://github.com/Apollogeddon/ignition-helm/commit/2ed9bf6fbc199bc6025642072440f16ebf07c8e3))
+* **helm:** Streamline security contexts and chart values ([5189a72](https://github.com/Apollogeddon/ignition-helm/commit/5189a72f124b756508d9055ec132e6996fa885df))
+
 ## [3.0.0](https://github.com/Apollogeddon/ignition-helm/compare/ignition-scaleout-v2.0.0...ignition-scaleout-v3.0.0) (2026-01-18)
 
 
