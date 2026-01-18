@@ -391,6 +391,7 @@ Params:
   replicas: Number of replicas (for redundancy initialization)
 */}}
 {{- define "ignition-common.initContainer.preconfigure" -}}
+{{- $secretName := .secretName | default (printf "%s-secrets" .name) -}}
 - name: preconfigure
   image: {{ .image.repository }}:{{ .image.tag | default .context.Chart.AppVersion }}
   imagePullPolicy: {{ .image.pullPolicy }}
@@ -413,12 +414,12 @@ Params:
   - name: TLS_KEYSTORE_PASSWORD
     valueFrom:
       secretKeyRef:
-        name: {{ .name }}-secrets
+        name: {{ $secretName }}
         key: IGNITION_WEB_KEYSTORE_PASSWORD
   - name: METRO_KEYSTORE_PASSPHRASE
     valueFrom:
       secretKeyRef:
-        name: {{ .name }}-secrets
+        name: {{ $secretName }}
         key: IGNITION_GAN_KEYSTORE_PASSWORD
   - name: IGNITION_REPLICAS
     value: {{ .replicas | quote }}
