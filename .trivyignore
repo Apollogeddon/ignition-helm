@@ -1,0 +1,4 @@
+# Globally ignore 'Root file system is not read-only' check.
+# Ignition requires a writable filesystem for internal database and state management,
+# making a read-only root filesystem impractical for this application.
+AVD-KSV-0014
