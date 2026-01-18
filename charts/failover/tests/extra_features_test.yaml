@@ -1,0 +1,69 @@
+suite: Ignition Failover Extra Features
+templates:
+  - ignition-statefulset.yaml
+tests:
+  - it: should configure local mounts
+    set:
+      ignition:
+        localMounts:
+          - hostPath: "/host/projects"
+            mountPath: "data/projects"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].volumeMounts
+          content:
+            name: local-mount-0
+            mountPath: /usr/local/bin/ignition/data/projects
+      - contains:
+          path: spec.template.spec.volumes
+          content:
+            name: local-mount-0
+            hostPath:
+              path: /host/projects
+              type: Directory
+
+  - it: should configure restore from URL
+    set:
+      ignition:
+        restore:
+          enabled: true
+          url: "http://files/my.gwbk"
+    asserts:
+      - contains:
+          path: spec.template.spec.initContainers[0].env
+          content:
+            name: IGNITION_RESTORE_URL
+            value: "http://files/my.gwbk"
+
+  - it: should configure restore from Path
+    set:
+      ignition:
+        restore:
+          enabled: true
+          path: "/restore/backup.gwbk"
+    asserts:
+      - contains:
+          path: spec.template.spec.initContainers[0].env
+          content:
+            name: IGNITION_RESTORE_PATH
+            value: "/restore/backup.gwbk"
+
+  - it: should spoof machine id
+    set:
+      ignition:
+        spoofMachineId: "abc-123"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].volumeMounts
+          content:
+            name: ignition-failover-config-files
+            mountPath: /etc/machine-id
+            subPath: machine-id
+            readOnly: true
+      - contains:
+          path: spec.template.spec.volumes
+          content:
+            name: ignition-failover-config-files
+            secret:
+              secretName: ignition-failover-config-files
+              defaultMode: 420
