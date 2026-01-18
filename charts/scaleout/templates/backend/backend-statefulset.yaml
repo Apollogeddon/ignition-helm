@@ -53,6 +53,7 @@ spec:
           capabilities:
             drop:
               - ALL
+          # trivy:ignore:AVD-KSV-0014 - Required for Ignition entrypoint script
           readOnlyRootFilesystem: {{ .Values.backend.securityContext.readOnlyRootFilesystem }}
         image: {{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}
         imagePullPolicy: {{ .Values.image.pullPolicy }}
