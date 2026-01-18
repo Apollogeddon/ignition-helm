@@ -1,5 +1,18 @@
 # Changelog
 
+## [2.0.0](https://github.com/Apollogeddon/ignition-helm/compare/ignition-common-v1.0.0...ignition-common-v2.0.0) (2026-01-18)
+
+
+### ⚠ BREAKING CHANGES
+
+* **helm:** Hardened security contexts are now enforced, overriding previous configurations. 'configmap-ignition-files' is now a Secret. Kubernetes label selectors have been updated to 'app.kubernetes.io/name'.
+* **config:** Keystore passwords moved to a centralised 'secrets' map. Update your values files to use 'IGNITION_WEB_KEYSTORE_PASSWORD' and 'IGNITION_GAN_KEYSTORE_PASSWORD' within the 'secrets' section.
+
+### Features
+
+* **config:** Centralise keystore passwords into secrets map ([a84fe44](https://github.com/Apollogeddon/ignition-helm/commit/a84fe445168d6dd8679a224824ae46071b173aa8))
+* **helm:** Introduce security hardening and chart best practices ([000430a](https://github.com/Apollogeddon/ignition-helm/commit/000430a6cc992bb976e2bc3418ed7762a9c40c51))
+
 ## [1.0.0](https://github.com/Apollogeddon/ignition-helm/compare/ignition-common-v0.4.0...ignition-common-v1.0.0) (2026-01-17)
 
 
