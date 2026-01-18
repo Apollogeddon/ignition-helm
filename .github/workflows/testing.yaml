@@ -85,3 +85,20 @@ jobs:
       - name: Run chart-testing (install)
         if: steps.list-changed.outputs.changed == 'true'
         run: ct install --target-branch ${{ github.event.repository.default_branch || 'main' }}
+
+      - name: Test Failover Deployment
+        if: steps.list-changed.outputs.changed == 'true'
+        run: |
+          helm install failover charts/failover
+          kubectl rollout status statefulset/ignition-failover --timeout=10m
+          kubectl exec ignition-failover-0 -- curl -s -f http://localhost:8088/StatusPing
+          helm uninstall failover
+
+      - name: Test Scaleout Deployment
+        if: steps.list-changed.outputs.changed == 'true'
+        run: |
+          helm install scaleout charts/scaleout
+          kubectl rollout status statefulset/ignition-scaleout-backend --timeout=10m
+          kubectl rollout status statefulset/ignition-scaleout-frontend --timeout=10m
+          kubectl exec ignition-scaleout-frontend-0 -- curl -s -f http://localhost:8088/StatusPing
+          helm uninstall scaleout
