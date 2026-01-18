@@ -49,7 +49,7 @@ helm install my-scaleout ignition-charts/ignition-scaleout \
 | `frontend.secrets.IGNITION_GAN_KEYSTORE_PASSWORD` | Password for the Frontend GAN keystore. | `metro` |
 | `frontend.secrets.IGNITION_WEB_KEYSTORE_PASSWORD` | Password for the Frontend Web TLS keystore. | `ignition` |
 | `frontend.replicas` | Number of Frontend nodes to deploy. | `1` |
-| `backend.redundancy.enabled` | Enable Master/Backup redundancy for the Backend. | `false` |
+| `backend.redundancy.enabled` | Enable Master/Backup redundancy for the Backend. | `true` |
 | `backend.persistence.size` | Storage size for Backend nodes. | `3Gi` |
 | `frontend.service.nodePorts` | Optional static NodePorts for Frontend. | `{}` |
 | `backend.service.nodePorts` | Optional static NodePorts for Backend. | `{}` |
