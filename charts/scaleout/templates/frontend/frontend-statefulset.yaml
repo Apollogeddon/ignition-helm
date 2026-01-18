@@ -23,7 +23,7 @@ spec:
         runAsNonRoot: {{ .Values.frontend.securityContext.runAsNonRoot }}
         runAsUser: {{ .Values.frontend.securityContext.runAsUser }}
         seccompProfile:
-          {{- toYaml .Values.frontend.securityContext.seccompProfile | nindent 10 }}
+          type: RuntimeDefault
       {{- if .Values.affinity.enabled }}
       affinity:
         podAntiAffinity:

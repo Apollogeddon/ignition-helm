@@ -53,7 +53,7 @@ The following table lists the configurable parameters of the chart and their def
 | `ignition.secrets.GATEWAY_ADMIN_PASSWORD` | **Required.** Password for the `admin` user. | `admin` |
 | `ignition.secrets.IGNITION_GAN_KEYSTORE_PASSWORD` | Password for the Gateway Network keystore. | `metro` |
 | `ignition.secrets.IGNITION_WEB_KEYSTORE_PASSWORD` | Password for the Web Server TLS keystore. | `ignition` |
-| `ignition.redundancy.enabled` | Enable Master/Backup redundancy (2 replicas). | `true` |
+| `ignition.redundancy.enabled` | Enable Master/Backup redundancy (2 replicas). | `false` |
 | `ignition.image.tag` | Ignition version to deploy. | `8.3` |
 | `ignition.resources` | CPU/Memory requests and limits. | `Requests: 500m/1Gi` |
 | `ignition.persistence.size` | Size of the persistent volume claim. | `3Gi` |
