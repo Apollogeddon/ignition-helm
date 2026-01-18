@@ -1,8 +1,1 @@
 {{- include "ignition-common.configMap" (dict "config" .Values.ignition.config "context" .) }}
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: {{ include "ignition.name" . }}-files
-  namespace: {{ .Release.Namespace }}
-  labels:
