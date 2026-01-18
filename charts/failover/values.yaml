@@ -46,13 +46,6 @@ ignition:
     runAsGroup: 0
     fsGroup: 20003
     runAsNonRoot: false
-    allowPrivilegeEscalation: false
-    readOnlyRootFilesystem: false
-    seccompProfile:
-      type: RuntimeDefault
-    capabilities:
-      drop:
-        - ALL
 
   logging:
     # -- Log level for the Ignition Gateway (INFO, DEBUG, WARN, ERROR)
@@ -100,9 +93,10 @@ ignition:
 
   # -- Simplified project mounting.
   # Mounts local directories to /usr/local/bin/ignition/<mountPath>
-  localMounts: []
+  # Example:
   # - hostPath: "C:/MyProjects/SiteA"
   #   mountPath: "assets/projects/SiteA"
+  localMounts: []
 
   # -- Environment variables for configuration (will be mapped to ConfigMap)
   config:
@@ -142,8 +136,7 @@ ignition:
     #   https: 30043
     #   gan: 30060
     # -- Service annotations
-    # annotations:
-    #   kube-vip.io/loadbalancerIPs: "192.168.10.202"
+    # annotations: {}
 
   ingress:
     # -- Enable Ingress
@@ -157,23 +150,15 @@ ignition:
     #       - path: /
     #         pathType: Prefix
 
-  tls:
-    # -- Keystore password for the Web Server TLS certificate
-    # keystorePassword: "ignition"
-
-  gan:
-    # -- Keystore password for the Gateway Network certificate
-    # keystorePassword: "metro"
-
   # -- Gateway Restore Configuration
   # To configure Database connections, MQTT clients, and other Gateway settings,
   # provide a Gateway Backup (.gwbk) file via URL or local path (if mounted).
   restore:
     # -- Enable Gateway Restore
     enabled: false
-    # -- URL to download the .gwbk file from (e.g. "http://fileserver/initial.gwbk")
+    # -- URL to download the .gwbk file from
     url: ""
-    # -- OR, path to a mounted .gwbk file (e.g. "/restore/initial.gwbk")
+    # -- OR, path to a mounted .gwbk file
     # path: ""
 
   # -- Redundancy-specific settings

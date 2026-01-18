@@ -12,8 +12,6 @@ spec:
   serviceName: {{ include "ignition.name" . }}-backend
   replicas: {{ if .Values.backend.redundancy.enabled }}2{{ else }}1{{ end }}
   updateStrategy:
-    # type: OnDelete
-    # rollingUpdate: null
     type: RollingUpdate
     rollingUpdate:
       partition: 0
@@ -29,7 +27,7 @@ spec:
         runAsNonRoot: {{ .Values.backend.securityContext.runAsNonRoot }}
         runAsUser: {{ .Values.backend.securityContext.runAsUser }}
         seccompProfile:
-          {{- toYaml .Values.backend.securityContext.seccompProfile | nindent 10 }}
+          type: RuntimeDefault
       {{- if .Values.affinity.enabled }}
       affinity:
         podAntiAffinity:
@@ -54,7 +52,7 @@ spec:
             drop:
               - ALL
           # trivy:ignore:AVD-KSV-0014 - Required for Ignition entrypoint script
-          readOnlyRootFilesystem: {{ .Values.backend.securityContext.readOnlyRootFilesystem }}
+          readOnlyRootFilesystem: false
         image: {{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}
         imagePullPolicy: {{ .Values.image.pullPolicy }}
         resources: {{ .Values.backend.resources | toYaml | nindent 10 }}
