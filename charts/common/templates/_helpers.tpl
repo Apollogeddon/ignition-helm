@@ -312,11 +312,11 @@ Params:
 - mountPath: /usr/local/bin/ignition/data
   name: data
 - mountPath: /usr/local/bin/ignition/logs
-  name: ignition-logs
+  name: {{ .name }}-logs
 - mountPath: /usr/local/bin/ignition/temp
-  name: ignition-temp
+  name: {{ .name }}-temp
 - mountPath: /usr/local/bin/ignition/.ignition
-  name: ignition-dot-ignition
+  name: {{ .name }}-dot-ignition
 - mountPath: {{ include "ignition-common.scriptMountPath" . }}
   name: {{ .name }}-config-scripts
   readOnly: true
@@ -353,11 +353,11 @@ Params:
   secret:
     secretName: {{ .commonScriptsConfigMapName }}
     defaultMode: 0755
-- name: ignition-logs
+- name: {{ .name }}-logs
   emptyDir: {}
-- name: ignition-temp
+- name: {{ .name }}-temp
   emptyDir: {}
-- name: ignition-dot-ignition
+- name: {{ .name }}-dot-ignition
   emptyDir: {}
 - name: {{ .name }}-config-files
   secret:
