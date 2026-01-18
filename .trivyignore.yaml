@@ -1,8 +1,0 @@
-# Required for Ignition entrypoint script which needs to write to the filesystem
-misconfigurations:
-  - id: AVD-KSV-0014
-    paths:
-      - charts/failover/templates/ignition-statefulset.yaml
-      - charts/scaleout/templates/backend/backend-statefulset.yaml
-      - charts/scaleout/templates/frontend/frontend-statefulset.yaml
-    reason: "Ignition entrypoint script requires write access to the filesystem."
