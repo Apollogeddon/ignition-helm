@@ -166,7 +166,7 @@ metadata:
   labels:
     {{- include "ignition.labels" .context | nindent 4 }}
 spec:
-  secretName: {{ $fullname }}-tls
+  secretName: {{ $fullname }}-gan-tls
   issuerRef:
     name: {{ include "ignition.name" .context }}-gan-issuer
     kind: Issuer

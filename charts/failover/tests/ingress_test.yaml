@@ -32,13 +32,13 @@ tests:
         ingress:
           enabled: true
           tls:
-            - secretName: ignition-tls
+            - secretName: ignition-gan-tls
               hosts:
                 - ignition.local
     asserts:
       - equal:
           path: spec.tls[0].secretName
-          value: ignition-tls
+          value: ignition-gan-tls
       - equal:
           path: spec.tls[0].hosts[0]
           value: ignition.local
