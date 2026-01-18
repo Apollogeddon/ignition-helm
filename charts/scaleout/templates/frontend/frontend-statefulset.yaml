@@ -46,7 +46,7 @@ spec:
           capabilities:
             drop:
               - ALL
-          readOnlyRootFilesystem: true
+          readOnlyRootFilesystem: {{ .Values.frontend.securityContext.readOnlyRootFilesystem }}
         image: {{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}
         imagePullPolicy: {{ .Values.image.pullPolicy }}
         resources: {{ .Values.frontend.resources | toYaml | nindent 10 }}
@@ -88,7 +88,7 @@ spec:
 {{ include "ignition-common.probes" (dict "probe" .Values.frontend.livenessProbe) | nindent 10 }}
         {{- end }}
       initContainers:
-{{ include "ignition-common.initContainer.preconfigure" (dict "name" (include "ignition.name" .) "image" .Values.image "values" .Values.frontend "replicas" 1 "context" .) | nindent 6 }}
+{{ include "ignition-common.initContainer.preconfigure" (dict "name" (include "ignition.name" .) "secretName" (printf "%s-frontend-secrets" (include "ignition.name" .)) "image" .Values.image "values" .Values.frontend "replicas" 1 "context" .) | nindent 6 }}
       volumes:
       - name: data
         emptyDir: {}

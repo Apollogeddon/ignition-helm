@@ -64,11 +64,13 @@ spec:
           capabilities:
             drop:
               - ALL
-          readOnlyRootFilesystem: true
+          readOnlyRootFilesystem: {{ .Values.ignition.securityContext.readOnlyRootFilesystem }}
         image: {{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}
         imagePullPolicy: {{ .Values.image.pullPolicy }}
         resources: {{ .Values.ignition.resources | toYaml | nindent 10 }}
+        {{- if .Values.ignition.args }}
         args: {{ .Values.ignition.args | toYaml | nindent 8 }}
+        {{- end }}
         ports:
         - name: http
           containerPort: {{ .Values.ignition.service.ports.http }}
@@ -102,7 +104,7 @@ spec:
       initContainers:
 {{ include "ignition-common.initContainer.preconfigure" (dict "name" (include "ignition.name" .) "image" .Values.image "values" .Values.ignition "replicas" (ternary 2 1 .Values.ignition.redundancy.enabled) "context" .) | nindent 6 }}
       volumes:
-{{ include "ignition-common.volumes" (dict "name" (include "ignition.name" .) "values" .Values.ignition "ganTlsSecretName" (printf "%s-gan-tls" (include "ignition.name" .)) "commonScriptsConfigMapName" (include "ignition-common.scriptsName" .)) | nindent 6 }}
+{{ include "ignition-common.volumes" (dict "name" (include "ignition.name" .) "values" .Values.ignition "ganTlsSecretName" (printf "%s-tls" (include "ignition.name" .)) "commonScriptsConfigMapName" (include "ignition-common.scriptsName" .)) | nindent 6 }}
 
   volumeClaimTemplates:
   - metadata:

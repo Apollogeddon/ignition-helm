@@ -42,12 +42,12 @@ affinity:
 ignition:
   # -- Pod security context
   securityContext:
-    runAsUser: 20003
-    runAsGroup: 20003
+    runAsUser: 0
+    runAsGroup: 0
     fsGroup: 20003
-    runAsNonRoot: true
+    runAsNonRoot: false
     allowPrivilegeEscalation: false
-    readOnlyRootFilesystem: true
+    readOnlyRootFilesystem: false
     seccompProfile:
       type: RuntimeDefault
     capabilities:
