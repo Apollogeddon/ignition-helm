@@ -1,5 +1,20 @@
 # Changelog
 
+## [3.0.0](https://github.com/Apollogeddon/ignition-helm/compare/ignition-failover-2.0.0...ignition-failover-v3.0.0) (2026-01-18)
+
+
+### ⚠ BREAKING CHANGES
+
+* **config:** Redundancy is now enabled by default in Ignition charts. Existing deployments not explicitly setting `redundancy.enabled` to `false` will now attempt to run in redundant mode, which may require additional configuration (e.g., shared storage).
+* **helm:** Hardened security contexts are now enforced, overriding previous configurations. 'configmap-ignition-files' is now a Secret. Kubernetes label selectors have been updated to 'app.kubernetes.io/name'.
+* **config:** Keystore passwords moved to a centralised 'secrets' map. Update your values files to use 'IGNITION_WEB_KEYSTORE_PASSWORD' and 'IGNITION_GAN_KEYSTORE_PASSWORD' within the 'secrets' section.
+
+### Features
+
+* **config:** Centralise keystore passwords into secrets map ([a84fe44](https://github.com/Apollogeddon/ignition-helm/commit/a84fe445168d6dd8679a224824ae46071b173aa8))
+* **config:** Enable redundancy by default for Ignition charts ([61b4df7](https://github.com/Apollogeddon/ignition-helm/commit/61b4df704b5e3298438fa2dd2b0666d65cc28e3a))
+* **helm:** Introduce security hardening and chart best practices ([000430a](https://github.com/Apollogeddon/ignition-helm/commit/000430a6cc992bb976e2bc3418ed7762a9c40c51))
+
 ## [2.0.0](https://github.com/Apollogeddon/ignition-helm/compare/ignition-failover-1.4.0...ignition-failover-v2.0.0) (2026-01-17)
 
 
