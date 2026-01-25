@@ -1,0 +1,26 @@
+# 01-minimal.yaml
+# A basic scaleout deployment with 1 Frontend node and 1 Backend node.
+# Useful for testing the architecture without the resource overhead of HA.
+
+frontend:
+  redundancy:
+    replicas: 1
+  service:
+    type: NodePort
+
+  secrets:
+    GATEWAY_ADMIN_PASSWORD: "admin"
+    IGNITION_GAN_KEYSTORE_PASSWORD: "metro"
+    IGNITION_WEB_KEYSTORE_PASSWORD: "ignition"
+
+backend:
+  redundancy:
+    enabled: false
+  service:
+    type: ClusterIP
+
+  # Shared Secrets (Must be identical for Frontend and Backend to communicate via GAN)
+  secrets:
+    GATEWAY_ADMIN_PASSWORD: "admin"
+    IGNITION_GAN_KEYSTORE_PASSWORD: "metro"
+    IGNITION_WEB_KEYSTORE_PASSWORD: "ignition"

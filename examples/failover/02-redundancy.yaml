@@ -1,0 +1,22 @@
+# 02-redundancy.yaml
+# Configuration for Master/Backup redundancy.
+# Deploys 2 replicas (ignition-failover-0 and ignition-failover-1).
+
+ignition:
+  # Enable redundancy
+  redundancy:
+    enabled: true
+    # Optional: Tuning for faster failure detection
+    pingRate: 1000
+    pingTimeout: 300
+    pingMaxMissed: 10
+
+  secrets:
+    GATEWAY_ADMIN_PASSWORD: "strong-password"
+    IGNITION_GAN_KEYSTORE_PASSWORD: "metro-password"
+    IGNITION_WEB_KEYSTORE_PASSWORD: "web-password"
+
+  # Ensure the service points to the active master (via standard labels)
+  # Note: The chart also creates -primary and -backup headless services for direct access.
+  service:
+    type: LoadBalancer
