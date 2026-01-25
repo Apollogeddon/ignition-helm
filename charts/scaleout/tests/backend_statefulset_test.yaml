@@ -55,3 +55,36 @@ tests:
       - equal:
           path: spec.volumeClaimTemplates[0].spec.storageClassName
           value: "fast"
+
+  - it: should not have web-tls volume by default
+    template: templates/backend/backend-statefulset.yaml
+    asserts:
+      - notContains:
+          path: spec.template.spec.volumes
+          content:
+            name: ignition-scaleout-web-tls
+      - notContains:
+          path: spec.template.spec.containers[0].volumeMounts
+          content:
+            name: ignition-scaleout-web-tls
+            mountPath: /run/secrets/web-tls
+
+  - it: should enable web-tls when configured
+    template: templates/backend/backend-statefulset.yaml
+    set:
+      backend:
+        ssl:
+          enabled: true
+    asserts:
+      - contains:
+          path: spec.template.spec.volumes
+          content:
+            name: ignition-scaleout-web-tls
+            secret:
+              secretName: ignition-scaleout-web-tls
+      - contains:
+          path: spec.template.spec.containers[0].volumeMounts
+          content:
+            name: ignition-scaleout-web-tls
+            mountPath: /run/secrets/web-tls
+            readOnly: true

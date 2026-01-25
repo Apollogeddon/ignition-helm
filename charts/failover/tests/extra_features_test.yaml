@@ -67,3 +67,36 @@ tests:
             secret:
               secretName: ignition-failover-config-files
               defaultMode: 420
+
+  - it: should not have web-tls volume by default
+    template: ignition-statefulset.yaml
+    asserts:
+      - notContains:
+          path: spec.template.spec.volumes
+          content:
+            name: ignition-failover-web-tls
+      - notContains:
+          path: spec.template.spec.containers[0].volumeMounts
+          content:
+            name: ignition-failover-web-tls
+            mountPath: /run/secrets/web-tls
+
+  - it: should enable web-tls when configured
+    template: ignition-statefulset.yaml
+    set:
+      ignition:
+        ssl:
+          enabled: true
+    asserts:
+      - contains:
+          path: spec.template.spec.volumes
+          content:
+            name: ignition-failover-web-tls
+            secret:
+              secretName: ignition-failover-web-tls
+      - contains:
+          path: spec.template.spec.containers[0].volumeMounts
+          content:
+            name: ignition-failover-web-tls
+            mountPath: /run/secrets/web-tls
+            readOnly: true

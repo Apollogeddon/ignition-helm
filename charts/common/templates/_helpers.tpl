@@ -300,9 +300,11 @@ Params:
 - mountPath: /run/secrets/gan-tls
   name: {{ .name }}-gan-tls
   readOnly: true
+{{- if and .values.ssl .values.ssl.enabled }}
 - mountPath: /run/secrets/web-tls
   name: {{ .name }}-web-tls
   readOnly: true
+{{- end }}
 {{- if .values.spoofMachineId }}
 - mountPath: /etc/machine-id
   name: {{ .name }}-config-files
@@ -349,9 +351,11 @@ Params:
 - name: {{ .name }}-gan-tls
   secret:
     secretName: {{ .ganTlsSecretName }}
+{{- if and .values.ssl .values.ssl.enabled }}
 - name: {{ .name }}-web-tls
   secret:
-    secretName: {{ .name }}-web-tls
+    secretName: {{ .values.ssl.secretName | default (printf "%s-web-tls" .name) }}
+{{- end }}
 {{- if .values.localMounts }}
 {{- range $index, $localMounts := .values.localMounts }}
 - name: local-mount-{{ $index }}
@@ -426,7 +430,9 @@ Params:
   - {{ include "ignition-common.scriptMountPath" . }}/seed-redundancy.sh
   {{- end }}
   - {{ include "ignition-common.scriptMountPath" . }}/prepare-gan-certificates.sh
+  {{- if and .values.ssl .values.ssl.enabled }}
   - {{ include "ignition-common.scriptMountPath" . }}/prepare-tls-certificates.sh
+  {{- end }}
   - cp /config/files/logback.xml /data/logback.xml
   - {{ include "ignition-common.scriptMountPath" . }}/configure-ignition.sh
   volumeMounts:
@@ -438,9 +444,11 @@ Params:
     name: {{ .name }}-config-scripts
   - mountPath: /run/secrets/gan-tls
     name: {{ .name }}-gan-tls
+  {{- if and .values.ssl .values.ssl.enabled }}
   - mountPath: /run/secrets/web-tls
     name: {{ .name }}-web-tls
     readOnly: true
+  {{- end }}
   - mountPath: /run/secrets/ignition-gan-ca
     name: {{ .name }}-gan-ca
     readOnly: true

@@ -54,6 +54,14 @@ frontend:
     # -- Log level for the Frontend Gateway (INFO, DEBUG, WARN, ERROR)
     level: "INFO"
 
+  # -- Web Server SSL/TLS Configuration
+  ssl:
+    # -- Enable custom Web Server TLS certificate
+    enabled: false
+    # -- Name of the secret containing the keystore.p12
+    # Defaults to "<fullname>-web-tls" if not specified.
+    secretName: ""
+
   eam:
     # -- EAM Role (Agent for Frontend)
     role: "Agent"
@@ -196,6 +204,14 @@ backend:
   logging:
     # -- Log level for the Backend Gateway (INFO, DEBUG, WARN, ERROR)
     level: "INFO"
+
+  # -- Web Server SSL/TLS Configuration
+  ssl:
+    # -- Enable custom Web Server TLS certificate
+    enabled: false
+    # -- Name of the secret containing the keystore.p12
+    # Defaults to "<fullname>-web-tls" if not specified.
+    secretName: ""
 
   eam:
     # -- EAM Role (Controller for Backend)
