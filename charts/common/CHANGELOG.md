@@ -1,5 +1,39 @@
 # Changelog
 
+## [3.0.0](https://github.com/Apollogeddon/ignition-helm/compare/ignition-common-v2.2.0...ignition-common-v3.0.0) (2026-01-25)
+
+
+### ⚠ BREAKING CHANGES
+
+* **helm:** Hardened security contexts are now enforced, overriding previous configurations. 'configmap-ignition-files' is now a Secret. Kubernetes label selectors have been updated to 'app.kubernetes.io/name'.
+* **config:** Keystore passwords moved to a centralised 'secrets' map. Update your values files to use 'IGNITION_WEB_KEYSTORE_PASSWORD' and 'IGNITION_GAN_KEYSTORE_PASSWORD' within the 'secrets' section.
+* **common:** The common chart now provisions scripts as Kubernetes Secrets instead of ConfigMaps. This improves security posture, especially for sensitive data.
+* **helm:** The METRO_KEYSTORE_PASSPHRASE environment variable must now be explicitly set. The previous implicit 'metro' default is no longer applied.
+
+### Features
+
+* **charts:** Add web server ssl/tls configuration ([05893f1](https://github.com/Apollogeddon/ignition-helm/commit/05893f1176b773adb89e3c7f70ffc663363b189e))
+* **ci:** Add CI/CD for Helm charts ([702a54e](https://github.com/Apollogeddon/ignition-helm/commit/702a54e818e8f50528f34c70716af67d75424fca))
+* **config:** Centralise keystore passwords into secrets map ([a84fe44](https://github.com/Apollogeddon/ignition-helm/commit/a84fe445168d6dd8679a224824ae46071b173aa8))
+* **helm:** Add automated dependency update workflow ([7d366e6](https://github.com/Apollogeddon/ignition-helm/commit/7d366e6333ad5300fa01ab2861b529563d1d6c4d))
+* **helm:** Establish robust runtime controls for Ignition containers ([e9450f5](https://github.com/Apollogeddon/ignition-helm/commit/e9450f547625100f03482a955ab1c9ed924fc28d))
+* **helm:** Improve chart configurability and security context defaults ([7960865](https://github.com/Apollogeddon/ignition-helm/commit/7960865e55efdd85526ea241f334c02129321eb5))
+* **helm:** Introduce common GAN certificate templates ([17a261f](https://github.com/Apollogeddon/ignition-helm/commit/17a261fb9203f74d8c837182f0f8e0b46b51cb75))
+* **helm:** Introduce security hardening and chart best practices ([000430a](https://github.com/Apollogeddon/ignition-helm/commit/000430a6cc992bb976e2bc3418ed7762a9c40c51))
+* **helm:** Introduce static NodePort configuration for services ([9edf3a4](https://github.com/Apollogeddon/ignition-helm/commit/9edf3a4356ce43ede2cb3f266ded6d6dda432d7b))
+
+
+### Bug Fixes
+
+* **charts:** Consolidate common scripts into shared template ([9976c5d](https://github.com/Apollogeddon/ignition-helm/commit/9976c5d7971d3dc1c7ea84f6b48e9a4dba4f0d1d))
+* **common:** Migrate common scripts to Kubernetes Secrets ([a19a92a](https://github.com/Apollogeddon/ignition-helm/commit/a19a92a0165fefbf30797605eb933fada787a769))
+* **gan:** Correct certificate and secret naming ([d030190](https://github.com/Apollogeddon/ignition-helm/commit/d030190228fde44b0774a9dca6ee1ab682b33ccd))
+* **helm:** Consolidate common templates and security contexts ([b084196](https://github.com/Apollogeddon/ignition-helm/commit/b084196069da25c1b3f9373c59108daf737cf504))
+* **helm:** Introduce common resource templates ([c34286c](https://github.com/Apollogeddon/ignition-helm/commit/c34286c106ce75f7d2ea98dadfc71b48ddc0e0e1))
+* **helm:** Streamline security contexts and chart values ([5189a72](https://github.com/Apollogeddon/ignition-helm/commit/5189a72f124b756508d9055ec132e6996fa885df))
+* **helm:** Update common chart logic into helpers ([2aa221b](https://github.com/Apollogeddon/ignition-helm/commit/2aa221b40720033fa9a3e270a93c795200d688fe))
+* **scripts:** Ensure keystore directory exists for population ([d0ebbf7](https://github.com/Apollogeddon/ignition-helm/commit/d0ebbf7e988c2358228c2124b03800173419e425))
+
 ## [2.2.0](https://github.com/Apollogeddon/ignition-helm/compare/ignition-common-v2.1.0...ignition-common-v2.2.0) (2026-01-25)
 
 
