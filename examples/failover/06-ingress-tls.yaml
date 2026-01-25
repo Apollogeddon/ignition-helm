@@ -1,0 +1,37 @@
+# 06-ingress-tls.yaml
+# Exposes the Gateway via an Ingress Controller with automatic TLS.
+# Prerequisites: 
+# 1. An Ingress Controller installed (e.g., ingress-nginx).
+# 2. Cert-Manager installed and a ClusterIssuer configured.
+
+ignition:
+  # When using Ingress, the Service is usually ClusterIP (internal only)
+  service:
+    type: ClusterIP
+
+  ingress:
+    enabled: true
+    annotations:
+      # Standard Ingress class (adjust for your provider, e.g., 'alb' for AWS)
+      kubernetes.io/ingress.class: nginx
+      # Cert-Manager annotation to trigger certificate generation
+      cert-manager.io/cluster-issuer: "letsencrypt-prod"
+      # Optional: Sticky sessions for Perspective
+      nginx.ingress.kubernetes.io/affinity: "cookie"
+      nginx.ingress.kubernetes.io/session-cookie-name: "route"
+      
+    hosts:
+      - host: ignition.example.com
+        paths:
+          - path: /
+            pathType: Prefix
+            
+    tls:
+      - secretName: ignition-ingress-tls
+        hosts:
+          - ignition.example.com
+
+  secrets:
+    GATEWAY_ADMIN_PASSWORD: "strong-password"
+    IGNITION_GAN_KEYSTORE_PASSWORD: "metro-password"
+    IGNITION_WEB_KEYSTORE_PASSWORD: "web-password"

@@ -8,6 +8,8 @@ This directory contains example `values.yaml` files for deploying the `ignition-
 * **02-redundancy.yaml**: A standard Master/Backup redundant deployment.
 * **03-custom-web-ssl.yaml**: Configuration for providing your own Web Server TLS certificate (keystore).
 * **04-persistence.yaml**: Configuration with specific storage class and size requirements.
+* **05-restore-backup.yaml**: Configuration to auto-restore a Gateway Backup (`.gwbk`) from a URL on startup.
+* **06-ingress-tls.yaml**: Configuration for exposing the Gateway via Ingress with Cert-Manager TLS.
 
 ## Scaleout Examples (`examples/scaleout/`)
 
