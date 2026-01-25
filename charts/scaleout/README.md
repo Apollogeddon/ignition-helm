@@ -53,4 +53,3 @@ helm install my-scaleout ignition-charts/ignition-scaleout \
 | `backend.persistence.size` | Storage size for Backend nodes. | `3Gi` |
 | `frontend.service.nodePorts` | Optional static NodePorts for Frontend. | `{}` |
 | `backend.service.nodePorts` | Optional static NodePorts for Backend. | `{}` |
-| `frontend.autoscaling.enabled` | (Future) Enable HPA for frontend nodes. | `false` |

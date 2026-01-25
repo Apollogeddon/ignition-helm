@@ -9,6 +9,8 @@ A Helm chart for failover Ignition Gateway with scalable frontend client functio
 
 The following diagram illustrates how the chart initializes the distributed architecture, establishing trust and connectivity between the Frontend and Backend layers.
 
+> **Note:** The Backend StatefulSet includes two headless services (`-backend-primary` and `-backend-backup`) targeting specific nodes for direct diagnostics.
+
 ```mermaid
 sequenceDiagram
     participant K8s as Kubernetes
