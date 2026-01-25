@@ -51,6 +51,14 @@ ignition:
     # -- Log level for the Ignition Gateway (INFO, DEBUG, WARN, ERROR)
     level: "INFO"
 
+  # -- Web Server SSL/TLS Configuration
+  ssl:
+    # -- Enable custom Web Server TLS certificate
+    enabled: false
+    # -- Name of the secret containing the keystore.p12
+    # Defaults to "<fullname>-web-tls" if not specified.
+    secretName: ""
+
   eam:
     # -- EAM Role (Controller, Agent, Standalone)
     role: "Controller"
