@@ -25,3 +25,9 @@ updates:
     directory: "/charts/scaleout"
     schedule:
       interval: "weekly"
+
+  # Maintain dependencies for the Astro documentation site
+  - package-ecosystem: "npm"
+    directory: "/webpage"
+    schedule:
+      interval: "weekly"
