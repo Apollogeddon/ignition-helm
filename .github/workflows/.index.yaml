@@ -4,9 +4,6 @@ on:
   push:
     branches:
       - main
-  pull_request:
-    paths:
-      - 'charts/**/Chart.yaml'
   workflow_dispatch:
 
 permissions:
@@ -18,7 +15,6 @@ permissions:
 
 jobs:
   updates:
-    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -59,20 +55,18 @@ jobs:
           git push
 
   testing:
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    needs: updates
     uses: ./.github/workflows/testing.yaml
 
   quality:
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    needs: updates
     uses: ./.github/workflows/quality.yaml
 
   release:
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     needs: [testing, quality]
     uses: ./.github/workflows/release.yaml
     secrets: inherit
 
   publish:
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     needs: release
     uses: ./.github/workflows/publish.yaml
