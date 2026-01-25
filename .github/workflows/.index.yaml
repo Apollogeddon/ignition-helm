@@ -12,15 +12,10 @@ permissions:
   security-events: write
 
 jobs:
-  depends:
-    uses: ./.github/workflows/testing.yaml
-
   testing:
-    needs: depends
     uses: ./.github/workflows/testing.yaml
 
   quality:
-    needs: depends
     uses: ./.github/workflows/quality.yaml
 
   release:
