@@ -1,5 +1,17 @@
 # Changelog
 
+## [3.2.0](https://github.com/Apollogeddon/ignition-helm/compare/ignition-scaleout-v3.1.0...ignition-scaleout-v3.2.0) (2026-01-25)
+
+
+### Features
+
+* **charts:** Add web server ssl/tls configuration ([05893f1](https://github.com/Apollogeddon/ignition-helm/commit/05893f1176b773adb89e3c7f70ffc663363b189e))
+
+
+### Bug Fixes
+
+* **helm:** Consolidate common templates and security contexts ([b084196](https://github.com/Apollogeddon/ignition-helm/commit/b084196069da25c1b3f9373c59108daf737cf504))
+
 ## [3.1.0](https://github.com/Apollogeddon/ignition-helm/compare/ignition-scaleout-v3.0.0...ignition-scaleout-v3.1.0) (2026-01-18)
 
 
