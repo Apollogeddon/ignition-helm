@@ -118,6 +118,21 @@ affinity:
 * **Non-Root User**: Runs as UID `2003` by default.
 * **SealedSecrets**: Native support for Bitnami SealedSecrets for managing sensitive values like passwords.
 
+### Custom Web Server SSL
+
+You can provide your own PKCS#12 keystore for the Web Server (HTTPS) instead of the default self-signed one.
+
+1. Create a Kubernetes Secret containing your `keystore.p12` file.
+2. Ensure the keystore password matches the value set in `IGNITION_WEB_KEYSTORE_PASSWORD`.
+3. Enable SSL in your `values.yaml`:
+
+```yaml
+ignition:
+  ssl:
+    enabled: true
+    secretName: "my-custom-keystore"
+```
+
 ## 6. Backup & Restore
 
 ### Automated Restore
