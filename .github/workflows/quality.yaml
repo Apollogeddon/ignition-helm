@@ -27,11 +27,11 @@ jobs:
           mkdir rendered
           
           # Render Failover
-          helm dependency build charts/failover
+          helm dependency update charts/failover
           helm template failover charts/failover > rendered/failover.yaml
           
           # Render Scaleout
-          helm dependency build charts/scaleout
+          helm dependency update charts/scaleout
           helm template scaleout charts/scaleout > rendered/scaleout.yaml
 
       - name: Scan with kube-linter
