@@ -12,6 +12,7 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  issues: write
   id-token: write
   security-events: write
 
@@ -60,16 +61,25 @@ jobs:
   testing:
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     uses: ./.github/workflows/testing.yaml
+    permissions:
+      contents: read
 
   quality:
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     uses: ./.github/workflows/quality.yaml
+    permissions:
+      contents: read
+      security-events: write
 
   release:
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     needs: [testing, quality]
     uses: ./.github/workflows/release.yaml
     secrets: inherit
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
 
   publish:
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
