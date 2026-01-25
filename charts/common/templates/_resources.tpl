@@ -164,17 +164,17 @@ Params:
 {{- define "ignition-common.ganCertificate" -}}
 {{- $fullname := include "ignition.name" .context }}
 {{- if .name }}
-{{- $fullname = printf "%s-%s-gan" $fullname .name }}
+{{- $fullname = printf "%s-%s" $fullname .name }}
 {{- end }}
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
-  name: {{ $fullname }}
+  name: {{ $fullname }}-gan
   namespace: {{ .context.Release.Namespace }}
   labels:
     {{- include "ignition.labels" .context | nindent 4 }}
 spec:
-  secretName: {{ $fullname }}-tls
+  secretName: {{ $fullname }}-gan-tls
   issuerRef:
     name: {{ include "ignition.name" .context }}-gan-issuer
     kind: Issuer

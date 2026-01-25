@@ -37,4 +37,4 @@ tests:
       - documentIndex: 3
         equal:
           path: metadata.name
-          value: ignition-failover
+          value: ignition-failover-gan
