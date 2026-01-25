@@ -2,6 +2,15 @@ apiVersion: v1
 entries:
   ignition-common:
   - apiVersion: v2
+    created: "2026-01-25T02:00:32.486213476Z"
+    description: Shared library chart for Ignition Helm Charts
+    digest: 1e68074fe9744dc126525458ecffbefbc81e177ccf5e9ceebbd3ef9fba3a4253
+    name: ignition-common
+    type: library
+    urls:
+    - https://github.com/Apollogeddon/ignition-helm/releases/download/ignition-common-2.1.1/ignition-common-2.1.1.tgz
+    version: 2.1.1
+  - apiVersion: v2
     created: "2026-01-18T05:25:05.484232444Z"
     description: Shared library chart for Ignition Helm Charts
     digest: 9d6c3161ceddce8cbba3c5dda9e9a5f0d659b7341203adc19dcd4c7fa3f4752d
@@ -347,4 +356,4 @@ entries:
     urls:
     - https://github.com/Apollogeddon/ignition-helm/releases/download/ignition-scaleout-1.1.0/ignition-scaleout-1.1.0.tgz
     version: 1.1.0
-generated: "2026-01-18T05:29:27.454248476Z"
+generated: "2026-01-25T02:00:32.902281913Z"
