@@ -1,0 +1,40 @@
+suite: Ignition Failover GAN Certificates
+templates:
+  - gan-certificates.yaml
+tests:
+  - it: should create GAN CA and Issuer
+    asserts:
+      - documentIndex: 0
+        isKind:
+          of: Certificate
+      - documentIndex: 0
+        matchRegex:
+          path: metadata.name
+          pattern: -gan-ca$
+      - documentIndex: 1
+        isKind:
+          of: Issuer
+      - documentIndex: 1
+        matchRegex:
+          path: metadata.name
+          pattern: -gan-issuer$
+
+  - it: should create GAN Metro Keystore Secret
+    asserts:
+      - documentIndex: 2
+        isKind:
+          of: Secret
+      - documentIndex: 2
+        matchRegex:
+          path: metadata.name
+          pattern: -gan-metro-keystore$
+
+  - it: should create GAN Certificate
+    asserts:
+      - documentIndex: 3
+        isKind:
+          of: Certificate
+      - documentIndex: 3
+        equal:
+          path: metadata.name
+          value: ignition-failover
