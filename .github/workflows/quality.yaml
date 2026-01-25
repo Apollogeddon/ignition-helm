@@ -48,8 +48,25 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v4.0.4
+
+      - name: Render Helm Charts
+        run: |
+          mkdir rendered
+          
+          # Render Failover
+          helm dependency build charts/failover
+          helm template failover charts/failover > rendered/failover.yaml
+          
+          # Render Scaleout
+          helm dependency build charts/scaleout
+          helm template scaleout charts/scaleout > rendered/scaleout.yaml
+
       - name: Scan with kube-linter
         uses: stackrox/kube-linter-action@v1.0.4
         with:
-          directory: charts/
+          directory: rendered/
           format: plain
