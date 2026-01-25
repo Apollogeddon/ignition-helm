@@ -17,47 +17,6 @@ permissions:
   security-events: write
 
 jobs:
-  updates:
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-        with:
-          ref: ${{ github.head_ref }}
-          fetch-depth: 0
-
-      - name: Set up Helm
-        uses: azure/setup-helm@v4
-        with:
-          version: v4.0.4
-
-      - name: Update Chart Dependencies
-        run: |
-          for dir in charts/*; do
-            if [ -d "$dir" ]; then
-              echo "Updating dependencies for $dir..."
-              helm dependency update "$dir"
-            fi
-          done
-
-      - name: Check for changes
-        id: git_diff
-        run: |
-          if [[ -n $(git status -s) ]]; then
-            echo "changes_detected=true" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Commit and Push Changes
-        if: steps.git_diff.outputs.changes_detected == 'true'
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          
-          git add charts/*/Chart.lock
-          git commit -m "chore(helm): update Chart.lock files"
-          git push
-
   testing:
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     uses: ./.github/workflows/testing.yaml
