@@ -1,0 +1,55 @@
+name: Code Quality
+
+on:
+  workflow_run:
+    workflows: ["Linting and Testing"]
+    types:
+      - completed
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  trivy:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@0.29.0
+        with:
+          scan-type: 'config'
+          scan-ref: 'charts'
+          exit-code: '1'
+          severity: 'CRITICAL,HIGH'
+
+  checkov:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Run Checkov action
+        uses: bridgecrewio/checkov-action@master
+        with:
+          directory: charts/
+          framework: helm
+          soft_fail: true
+          output_format: cli
+
+  kube-linter:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Scan with kube-linter
+        uses: stackrox/kube-linter-action@v1.0.4
+        with:
+          directory: charts/
+          format: plain
