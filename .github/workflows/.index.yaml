@@ -11,8 +11,9 @@ on:
 
 permissions:
   contents: write
-  pull-requests: write
   id-token: write
+  pages: write
+  pull-requests: write
   security-events: write
 
 jobs:
