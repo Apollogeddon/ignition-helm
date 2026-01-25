@@ -1,7 +1,7 @@
 <br />
 <div align="center">
   <a href="https://apollogeddon.github.io/ignition-helm">
-    <img src="../docs/public/favicon.png" alt="Logo" width="100" height="100">
+    <img src="../webpage/public/favicon.png" alt="Logo" width="100" height="100">
   </a>
   <h3 align="center">Ignition Helm Charts</h3>
   <p align="center">
