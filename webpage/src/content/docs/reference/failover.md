@@ -9,6 +9,8 @@ A Helm chart for failover Ignition Gateway with combined frontend/backend functi
 
 The following diagram illustrates how the chart initializes redundancy and handles certificate exchange during startup.
 
+> **Note:** The chart automatically creates two headless services (`-primary` and `-backup`) which always target pod ordinal 0 and 1 respectively, allowing for direct diagnostics of a specific node.
+
 ```mermaid
 sequenceDiagram
     participant K8s as Kubernetes

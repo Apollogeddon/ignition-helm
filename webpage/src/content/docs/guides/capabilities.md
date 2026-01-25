@@ -113,10 +113,41 @@ affinity:
   topologyKey: "kubernetes.io/hostname"
 ```
 
+### Pod Disruption Budgets (PDB)
+
+To prevent downtime during cluster maintenance (like node upgrades), the charts automatically deploy a **Pod Disruption Budget**. This instructs Kubernetes to ensure at least one node in a redundant pair remains available at all times.
+
 ## 5. Security
 
 * **Non-Root User**: Runs as UID `2003` by default.
-* **SealedSecrets**: Native support for Bitnami SealedSecrets for managing sensitive values like passwords.
+* **SealedSecrets**: Support for Bitnami SealedSecrets for managing sensitive values without checking plain-text passwords into Git.
+
+#### Example: Using SealedSecrets
+
+If you have the `kubeseal` CLI and SealedSecrets controller installed:
+
+1. Set `sealedSecrets: true` in your values.
+2. Provide the *encrypted* strings in the `secrets` map.
+
+```yaml
+ignition:
+  sealedSecrets: true
+  secrets:
+    GATEWAY_ADMIN_PASSWORD: "AgBy38v4Sly6S..." # Encrypted via kubeseal
+```
+
+### Ingress & Sticky Sessions
+
+Ignition Perspective and Vision sessions are stateful. When using an Ingress (like Nginx), you **must** enable sticky sessions (session affinity) to ensure clients stay connected to the same pod.
+
+```yaml
+ignition:
+  ingress:
+    enabled: true
+    annotations:
+      nginx.ingress.kubernetes.io/affinity: "cookie"
+      nginx.ingress.kubernetes.io/session-cookie-name: "route"
+```
 
 ### Custom Web Server SSL
 
