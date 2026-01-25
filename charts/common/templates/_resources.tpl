@@ -241,6 +241,8 @@ metadata:
   namespace: {{ .context.Release.Namespace }}
   labels:
     {{- include "ignition.labels" .context | nindent 4 }}
+  annotations:
+    ignore-check.kube-linter.io/dangling-service: "targeting statefulset pod ordinal"
 spec:
   selector:
     statefulset.kubernetes.io/pod-name: {{ $fullname }}-0
@@ -268,6 +270,8 @@ metadata:
   namespace: {{ .context.Release.Namespace }}
   labels:
     {{- include "ignition.labels" .context | nindent 4 }}
+  annotations:
+    ignore-check.kube-linter.io/dangling-service: "targeting statefulset pod ordinal"
 spec:
   selector:
     statefulset.kubernetes.io/pod-name: {{ $fullname }}-1

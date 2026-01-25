@@ -5,6 +5,8 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "ignition.labels" $ | nindent 4 }}
+  annotations:
+    ignore-check.kube-linter.io/no-read-only-root-fs: "ignition requires write access"
 spec:
   selector:
     matchLabels:
