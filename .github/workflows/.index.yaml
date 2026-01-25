@@ -80,6 +80,7 @@ jobs:
       contents: write
       pull-requests: write
       issues: write
+      id-token: write
 
   publish:
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
