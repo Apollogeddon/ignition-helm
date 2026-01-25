@@ -69,6 +69,9 @@ jobs:
   release:
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     needs: [testing, quality]
+    permissions:
+      contents: write
+      pull-requests: write
     uses: ./.github/workflows/release.yaml
     secrets: inherit
 
