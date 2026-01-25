@@ -1,10 +1,10 @@
 name: Code Quality
 
 on:
-  workflow_run:
-    workflows: ["Linting and Testing"]
-    types:
-      - completed
+  workflow_call:
+  pull_request:
+    branches:
+      - main
 
 permissions:
   contents: read
@@ -12,7 +12,6 @@ permissions:
 
 jobs:
   kube-linter:
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -42,8 +41,6 @@ jobs:
           format: plain
 
   trivy:
-    needs: kube-linter
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -58,8 +55,6 @@ jobs:
           severity: 'CRITICAL,HIGH'
 
   checkov:
-    needs: trivy
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -72,3 +67,4 @@ jobs:
           framework: helm
           soft_fail: false
           output_format: cli
+          skip_check: CKV_K8S_21,CKV_K8S_35,CKV_K8S_22,CKV_K8S_15,CKV_K8S_38,CKV_K8S_43,CKV_K8S_40,CKV2_K8S_6

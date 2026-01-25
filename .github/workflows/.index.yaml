@@ -1,0 +1,32 @@
+name: Main Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  pull-requests: write
+  id-token: write
+  security-events: write
+
+jobs:
+  testing:
+    uses: ./.github/workflows/testing.yaml
+
+  quality:
+    uses: ./.github/workflows/quality.yaml
+
+  release:
+    needs: [testing, quality]
+    uses: ./.github/workflows/version.yaml
+    secrets: inherit
+
+  publish:
+    needs: release
+    uses: ./.github/workflows/publish.yaml
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
