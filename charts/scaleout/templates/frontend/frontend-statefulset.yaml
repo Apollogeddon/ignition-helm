@@ -24,18 +24,7 @@ spec:
         runAsUser: {{ .Values.frontend.securityContext.runAsUser }}
         seccompProfile:
           type: RuntimeDefault
-      {{- if .Values.affinity.enabled }}
-      affinity:
-        podAntiAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-          - labelSelector:
-              matchExpressions:
-              - key: app.kubernetes.io/name
-                operator: In
-                values:
-                - {{ include "ignition.name" . }}
-            topologyKey: kubernetes.io/hostname
-      {{- end }}
+      {{- include "ignition-common.affinity" (dict "affinity" .Values.affinity "context" .) | nindent 6 }}
       {{- with .Values.image.imagePullSecrets }}
       imagePullSecrets:
       {{- toYaml . | nindent 6 }}

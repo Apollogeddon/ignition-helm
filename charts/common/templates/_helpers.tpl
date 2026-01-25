@@ -300,6 +300,9 @@ Params:
 - mountPath: /run/secrets/gan-tls
   name: {{ .name }}-gan-tls
   readOnly: true
+- mountPath: /run/secrets/web-tls
+  name: {{ .name }}-web-tls
+  readOnly: true
 {{- if .values.spoofMachineId }}
 - mountPath: /etc/machine-id
   name: {{ .name }}-config-files
@@ -346,6 +349,9 @@ Params:
 - name: {{ .name }}-gan-tls
   secret:
     secretName: {{ .ganTlsSecretName }}
+- name: {{ .name }}-web-tls
+  secret:
+    secretName: {{ .name }}-web-tls
 {{- if .values.localMounts }}
 {{- range $index, $localMounts := .values.localMounts }}
 - name: local-mount-{{ $index }}
@@ -420,6 +426,7 @@ Params:
   - {{ include "ignition-common.scriptMountPath" . }}/seed-redundancy.sh
   {{- end }}
   - {{ include "ignition-common.scriptMountPath" . }}/prepare-gan-certificates.sh
+  - {{ include "ignition-common.scriptMountPath" . }}/prepare-tls-certificates.sh
   - cp /config/files/logback.xml /data/logback.xml
   - {{ include "ignition-common.scriptMountPath" . }}/configure-ignition.sh
   volumeMounts:
@@ -431,6 +438,9 @@ Params:
     name: {{ .name }}-config-scripts
   - mountPath: /run/secrets/gan-tls
     name: {{ .name }}-gan-tls
+  - mountPath: /run/secrets/web-tls
+    name: {{ .name }}-web-tls
+    readOnly: true
   - mountPath: /run/secrets/ignition-gan-ca
     name: {{ .name }}-gan-ca
     readOnly: true
@@ -451,4 +461,38 @@ Params:
 */}}
 {{- define "ignition-common.podFQDN" -}}
 {{- printf "%s-%d.%s" .name (int .ordinal) .name -}}
+{{- end }}
+
+{{/*
+Standard Affinity
+Params:
+  affinity: The affinity values object
+  context: The global context (Dot)
+*/}}
+{{- define "ignition-common.affinity" -}}
+{{- if .affinity.enabled }}
+affinity:
+  podAntiAffinity:
+    {{- if eq .affinity.type "soft" }}
+    preferredDuringSchedulingIgnoredDuringExecution:
+    - weight: 100
+      podAffinityTerm:
+        labelSelector:
+          matchExpressions:
+          - key: app.kubernetes.io/name
+            operator: In
+            values:
+            - {{ include "ignition.name" .context }}
+        topologyKey: {{ .affinity.topologyKey }}
+    {{- else }}
+    requiredDuringSchedulingIgnoredDuringExecution:
+    - labelSelector:
+        matchExpressions:
+        - key: app.kubernetes.io/name
+          operator: In
+          values:
+          - {{ include "ignition.name" .context }}
+      topologyKey: {{ .affinity.topologyKey }}
+    {{- end }}
+{{- end }}
 {{- end }}
