@@ -2,6 +2,19 @@ apiVersion: v1
 entries:
   ignition-common:
   - apiVersion: v2
+    created: "2026-01-25T12:01:34.606929198Z"
+    description: Shared library chart for Ignition Helm Charts
+    digest: 946328c9737522c279dfa4709aff05b05235a799ebad4cd417e9d4c286790b3b
+    keywords:
+    - ignition
+    - scada
+    - library
+    name: ignition-common
+    type: library
+    urls:
+    - https://github.com/Apollogeddon/ignition-helm/releases/download/ignition-common-2.2.0/ignition-common-2.2.0.tgz
+    version: 2.2.0
+  - apiVersion: v2
     created: "2026-01-25T02:00:32.486213476Z"
     description: Shared library chart for Ignition Helm Charts
     digest: 1e68074fe9744dc126525458ecffbefbc81e177ccf5e9ceebbd3ef9fba3a4253
@@ -85,6 +98,25 @@ entries:
     - https://github.com/Apollogeddon/ignition-helm/releases/download/ignition-common-0.2.0/ignition-common-0.2.0.tgz
     version: 0.2.0
   ignition-failover:
+  - apiVersion: v2
+    appVersion: 8.3.1
+    created: "2026-01-25T12:01:34.760896848Z"
+    dependencies:
+    - name: ignition-common
+      repository: file://../common
+      version: '*'
+    description: A Helm chart for failover Ignition Gateway with combined frontend/backend
+      functionality
+    digest: d99fe188ca8bb86b798339bc3a19bc5b0cb9cf7f2ee37bcb0171e90e5e210966
+    keywords:
+    - ignition
+    - scada
+    - failover
+    name: ignition-failover
+    type: application
+    urls:
+    - https://github.com/Apollogeddon/ignition-helm/releases/download/ignition-failover-3.2.0/ignition-failover-3.2.0.tgz
+    version: 3.2.0
   - apiVersion: v2
     appVersion: 8.3.1
     created: "2026-01-18T05:29:27.349618965Z"
@@ -230,6 +262,25 @@ entries:
   ignition-scaleout:
   - apiVersion: v2
     appVersion: 8.3.1
+    created: "2026-01-25T12:01:34.879523267Z"
+    dependencies:
+    - name: ignition-common
+      repository: file://../common
+      version: '*'
+    description: A Helm chart for failover Ignition Gateway with scalable frontend
+      client functionality
+    digest: da7e31c64a7dbc1bf08cd61656374a7b77e78b3a2a9945820ab6089d1b8d4ec4
+    keywords:
+    - ignition
+    - scada
+    - scaleout
+    name: ignition-scaleout
+    type: application
+    urls:
+    - https://github.com/Apollogeddon/ignition-helm/releases/download/ignition-scaleout-3.2.0/ignition-scaleout-3.2.0.tgz
+    version: 3.2.0
+  - apiVersion: v2
+    appVersion: 8.3.1
     created: "2026-01-18T05:29:27.454161918Z"
     dependencies:
     - name: ignition-common
@@ -356,4 +407,4 @@ entries:
     urls:
     - https://github.com/Apollogeddon/ignition-helm/releases/download/ignition-scaleout-1.1.0/ignition-scaleout-1.1.0.tgz
     version: 1.1.0
-generated: "2026-01-25T02:00:32.902281913Z"
+generated: "2026-01-25T12:01:34.879658529Z"
