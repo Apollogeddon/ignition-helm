@@ -191,3 +191,100 @@ spec:
         name: {{ include "ignition.name" .context }}-gan-metro-keystore
         key: metro.keystore.password
 {{ end }}
+
+{{/*
+Standard Pod Disruption Budget
+Params:
+  name: The component name suffix (e.g. "backend")
+  context: The global context (Dot)
+*/}}
+{{- define "ignition-common.pdb" -}}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  {{- $fullname := include "ignition.name" .context }}
+  {{- if .name }}
+  {{- $fullname = printf "%s-%s" $fullname .name }}
+  {{- else }}
+  {{- $fullname = printf "%s" $fullname }}
+  {{- end }}
+  name: {{ $fullname }}
+  namespace: {{ .context.Release.Namespace }}
+  labels:
+    {{- include "ignition.labels" .context | nindent 4 }}
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      {{- include "ignition.selectorLabels" .context | nindent 6 }}
+{{- end }}
+
+{{/*
+Redundancy Headless Services (Primary/Backup)
+Params:
+  name: The component name suffix (e.g. "backend")
+  values: The component-specific values object (containing service ports)
+  context: The global context (Dot)
+*/}}
+{{- define "ignition-common.redundancyServices" -}}
+{{- $fullname := include "ignition.name" .context }}
+{{- if .name }}
+{{- $fullname = printf "%s-%s" $fullname .name }}
+{{- else }}
+{{- $fullname = printf "%s" $fullname }}
+{{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $fullname }}-primary
+  namespace: {{ .context.Release.Namespace }}
+  labels:
+    {{- include "ignition.labels" .context | nindent 4 }}
+spec:
+  selector:
+    statefulset.kubernetes.io/pod-name: {{ $fullname }}-0
+    {{- include "ignition.selectorLabels" .context | nindent 4 }}
+  ports:
+  - name: http
+    port: {{ .values.service.ports.http }}
+    protocol: TCP
+    targetPort: http
+  - name: https
+    port: {{ .values.service.ports.https }}
+    protocol: TCP
+    targetPort: https
+  - name: gan
+    port: {{ .values.service.ports.gan }}
+    protocol: TCP
+    targetPort: gan
+  type: ClusterIP
+  clusterIP: None
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $fullname }}-backup
+  namespace: {{ .context.Release.Namespace }}
+  labels:
+    {{- include "ignition.labels" .context | nindent 4 }}
+spec:
+  selector:
+    statefulset.kubernetes.io/pod-name: {{ $fullname }}-1
+    {{- include "ignition.selectorLabels" .context | nindent 4 }}
+  ports:
+  - name: http
+    port: {{ .values.service.ports.http }}
+    protocol: TCP
+    targetPort: http
+  - name: https
+    port: {{ .values.service.ports.https }}
+    protocol: TCP
+    targetPort: https
+  - name: gan
+    port: {{ .values.service.ports.gan }}
+    protocol: TCP
+    targetPort: gan
+  type: ClusterIP
+  clusterIP: None
+{{- end }}

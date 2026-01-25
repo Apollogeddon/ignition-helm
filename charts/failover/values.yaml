@@ -42,9 +42,9 @@ affinity:
 ignition:
   # -- Pod security context
   securityContext:
-    runAsUser: 0
-    runAsGroup: 0
-    fsGroup: 20003
+    runAsUser: 2003
+    runAsGroup: 2003
+    fsGroup: 2003
     runAsNonRoot: false
 
   logging:

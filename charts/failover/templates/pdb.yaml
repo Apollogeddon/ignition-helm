@@ -1,14 +1,3 @@
 {{- if .Values.ignition.redundancy.enabled }}
-apiVersion: policy/v1
-kind: PodDisruptionBudget
-metadata:
-  name: {{ include "ignition.name" . }}
-  labels:
-    {{- include "ignition.labels" . | nindent 4 }}
-spec:
-  minAvailable: 1
-  selector:
-    matchLabels:
-      name: {{ include "ignition.name" . }}
-      {{- include "ignition.selectorLabels" . | nindent 6 }}
+{{- include "ignition-common.pdb" (dict "context" .) }}
 {{- end }}

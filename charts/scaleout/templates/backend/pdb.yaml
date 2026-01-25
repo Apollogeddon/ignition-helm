@@ -1,0 +1,3 @@
+{{- if .Values.backend.redundancy.enabled }}
+{{- include "ignition-common.pdb" (dict "name" "backend" "context" .) }}
+{{- end }}

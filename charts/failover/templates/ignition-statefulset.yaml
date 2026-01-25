@@ -29,31 +29,7 @@ spec:
         runAsUser: {{ .Values.ignition.securityContext.runAsUser }}
         seccompProfile:
           type: RuntimeDefault
-      {{- if .Values.affinity.enabled }}
-      affinity:
-        podAntiAffinity:
-          {{- if eq .Values.affinity.type "soft" }}
-          preferredDuringSchedulingIgnoredDuringExecution:
-          - weight: 100
-            podAffinityTerm:
-              labelSelector:
-                matchExpressions:
-                - key: app.kubernetes.io/name
-                  operator: In
-                  values:
-                  - {{ include "ignition.name" . }}
-              topologyKey: {{ .Values.affinity.topologyKey }}
-          {{- else }}
-          requiredDuringSchedulingIgnoredDuringExecution:
-          - labelSelector:
-              matchExpressions:
-              - key: app.kubernetes.io/name
-                operator: In
-                values:
-                - {{ include "ignition.name" . }}
-            topologyKey: {{ .Values.affinity.topologyKey }}
-          {{- end }}
-      {{- end }}
+      {{- include "ignition-common.affinity" (dict "affinity" .Values.affinity "context" .) | nindent 6 }}
       {{- with .Values.image.imagePullSecrets }}
       imagePullSecrets:
       {{- toYaml . | nindent 6 }}
