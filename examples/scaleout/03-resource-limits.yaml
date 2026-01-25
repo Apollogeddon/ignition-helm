@@ -1,0 +1,43 @@
+# 03-resource-limits.yaml
+# Configuration illustrating how to size the pods for production workloads.
+# Adjust 'memory' limits to match the '-m' argument passed to Ignition.
+
+frontend:
+  # Frontends are CPU intensive (Perspective rendering) but lighter on memory
+  resources:
+    requests:
+      memory: "2Gi"
+      cpu: "1000m"
+    limits:
+      memory: "4Gi"
+      cpu: "2000m"
+  
+  # JVM Heap Size (should fit within memory limit)
+  args:
+    - -m
+    - "2048"
+
+  secrets:
+    GATEWAY_ADMIN_PASSWORD: "strong-password"
+    IGNITION_GAN_KEYSTORE_PASSWORD: "metro-password"
+    IGNITION_WEB_KEYSTORE_PASSWORD: "web-password"
+
+backend:
+  # Backends are Memory intensive (Tag history, alarming, huge tag databases)
+  resources:
+    requests:
+      memory: "4Gi"
+      cpu: "1000m"
+    limits:
+      memory: "8Gi"
+      cpu: "2000m"
+
+  # JVM Heap Size
+  args:
+    - -m
+    - "4096"
+
+  secrets:
+    GATEWAY_ADMIN_PASSWORD: "strong-password"
+    IGNITION_GAN_KEYSTORE_PASSWORD: "metro-password"
+    IGNITION_WEB_KEYSTORE_PASSWORD: "web-password"

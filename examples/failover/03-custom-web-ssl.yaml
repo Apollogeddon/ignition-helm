@@ -1,0 +1,21 @@
+# 03-custom-web-ssl.yaml
+# Configuration for providing your own Web Server TLS certificate.
+#
+# Prerequisite:
+# You must create a Kubernetes Secret containing your 'keystore.p12'.
+# The keystore MUST have the password defined in IGNITION_WEB_KEYSTORE_PASSWORD.
+#
+# Command to create secret:
+# kubectl create secret generic my-custom-keystore --from-file=keystore.p12=./my-keystore.p12
+
+ignition:
+  # Enable custom SSL configuration
+  ssl:
+    enabled: true
+    secretName: "my-custom-keystore"
+
+  secrets:
+    GATEWAY_ADMIN_PASSWORD: "strong-password"
+    IGNITION_GAN_KEYSTORE_PASSWORD: "metro-password"
+    # IMPORTANT: This must match the password of the keystore.p12 inside 'my-custom-keystore'
+    IGNITION_WEB_KEYSTORE_PASSWORD: "my-keystore-password"

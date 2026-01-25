@@ -1,0 +1,20 @@
+# 04-persistence.yaml
+# Configuration for specific storage requirements.
+
+ignition:
+  persistence:
+    # Size of the disk per node
+    size: 10Gi
+    
+    # Storage Class (must exist in your cluster)
+    # Examples: "managed-premium" (Azure), "gp2" (AWS), "longhorn" (K3s/RKE)
+    storageClassName: "standard"
+    
+    # Access mode
+    accessModes:
+      - ReadWriteOnce
+
+  secrets:
+    GATEWAY_ADMIN_PASSWORD: "strong-password"
+    IGNITION_GAN_KEYSTORE_PASSWORD: "metro-password"
+    IGNITION_WEB_KEYSTORE_PASSWORD: "web-password"

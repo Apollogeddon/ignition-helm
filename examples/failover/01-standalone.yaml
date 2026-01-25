@@ -1,0 +1,18 @@
+# 01-standalone.yaml
+# Minimal configuration for a single Ignition Gateway.
+# This setup is suitable for development or simple testing.
+
+ignition:
+  # Define sensitive passwords (required)
+  secrets:
+    GATEWAY_ADMIN_PASSWORD: "strong-password"
+    IGNITION_GAN_KEYSTORE_PASSWORD: "metro-password"
+    IGNITION_WEB_KEYSTORE_PASSWORD: "web-password"
+
+  # Expose via LoadBalancer (cloud) or NodePort (on-prem)
+  service:
+    type: LoadBalancer
+    ports:
+      http: 8088
+      https: 8043
+      gan: 8060

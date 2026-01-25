@@ -1,0 +1,34 @@
+# 02-high-availability.yaml
+# A robust deployment for production.
+# - 2 Backend nodes (Master/Backup redundancy)
+# - 3 Frontend nodes (Load balanced)
+
+frontend:
+  redundancy:
+    replicas: 3
+  
+  # Frontends are typically exposed via LoadBalancer for user access
+  service:
+    type: LoadBalancer
+  
+  # Sticky sessions are recommended for Perspective
+  sessionAffinity: ClientIP
+
+  secrets:
+    GATEWAY_ADMIN_PASSWORD: "strong-password"
+    IGNITION_GAN_KEYSTORE_PASSWORD: "metro-password"
+    IGNITION_WEB_KEYSTORE_PASSWORD: "web-password"
+
+backend:
+  # Enable Backend redundancy for tag/device stability
+  redundancy:
+    enabled: true
+  
+  # Backends typically don't need external exposure, just internal GAN access
+  service:
+    type: ClusterIP
+
+  secrets:
+    GATEWAY_ADMIN_PASSWORD: "strong-password"
+    IGNITION_GAN_KEYSTORE_PASSWORD: "metro-password"
+    IGNITION_WEB_KEYSTORE_PASSWORD: "web-password"
