@@ -74,5 +74,5 @@ jobs:
 
   publish:
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
-    needs: release
+    needs: version
     uses: ./.github/workflows/publish.yaml
