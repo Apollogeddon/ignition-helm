@@ -1,0 +1,56 @@
+name: Linting
+
+on:
+  workflow_call:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  testing:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: "20"
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v4.0.4
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.x'
+          check-latest: true
+
+      - name: Set up chart-testing
+        uses: helm/chart-testing-action@v2.8.0
+
+      - name: Update dependencies
+        run: |
+          for dir in charts/*; do
+            if [ -d "$dir" ]; then
+              helm dependency update "$dir"
+            fi
+          done
+
+      - name: Install helm-unittest
+        run: |
+          helm plugin install https://github.com/helm-unittest/helm-unittest.git --verify=false
+
+      - name: Run unit tests
+        run: |
+          for dir in charts/*; do
+            if [ -d "$dir/tests" ]; then
+              echo "Running unit tests for $dir"
+              helm unittest "$dir"
+            fi
+          done
