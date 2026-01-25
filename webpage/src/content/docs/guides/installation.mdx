@@ -164,7 +164,7 @@ This deploys a standard Master/Backup pair.
 
 ```bash
 helm install my-ignition ignition-charts/ignition-failover \
-  --set ignition.adminPassword=mysecretpassword
+  --set ignition.secrets.GATEWAY_ADMIN_PASSWORD=mysecretpassword
 ```
 
 #### Scaleout (Frontend/Backend)

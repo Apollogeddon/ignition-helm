@@ -26,7 +26,7 @@ Get a failover cluster running in minutes.
 ```bash
 helm repo add ignition-charts https://apollogeddon.github.io/ignition-helm
 helm install my-ignition ignition-charts/ignition-failover \
-  --set ignition.adminPassword=mysecretpassword
+  --set ignition.secrets.GATEWAY_ADMIN_PASSWORD=mysecretpassword
 ```
 
 ## Why use these charts?

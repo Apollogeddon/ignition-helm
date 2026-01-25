@@ -18,7 +18,11 @@ sequenceDiagram
     
     K8s->>Init: Start Pod
     Init->>Certs: Request GAN Certs
-    Certs-->>Init: Mount Secrets (TLS/CA)
+    Certs-->>Init: Mount Secrets (GAN TLS/CA)
+    opt SSL Enabled
+        K8s-->>Init: Mount Secret (Web TLS)
+        Init->>Init: Prepare Web Keystore
+    end
     Init->>Init: Generate Keystore (p12)
     Init->>Init: Seed Redundancy XML
     
@@ -48,6 +52,15 @@ Basic metadata and image configuration.
 | `image.tag` | string | `"8.3"` |
 | `image.pullPolicy` | string | `"IfNotPresent"` |
 | `ignition.spoofMachineId` | string | `""` |
+
+### Web Server SSL/TLS
+
+Configuration for providing a custom keystore for the Web Server (HTTPS).
+
+| Parameter | Type | Default |
+| --- | --- | --- |
+| `ignition.ssl.enabled` | bool | `false` |
+| `ignition.ssl.secretName` | string | `""` |
 
 ### Ignition Configuration
 

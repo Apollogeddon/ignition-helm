@@ -94,6 +94,13 @@ IGNITION_EDITION: "standard"
 - "gateway.useProxyForwardedHeader=true"
 ```
 
+#### Web Server SSL/TLS (Backend)
+
+| Parameter | Type | Default |
+| --- | --- | --- |
+| `backend.ssl.enabled` | bool | `false` |
+| `backend.ssl.secretName` | string | `""` |
+
 #### Redundancy (Backend)
 
 | Parameter | Type | Default |
@@ -219,6 +226,13 @@ IGNITION_EDITION: "standard"
 - "--"
 - "gateway.useProxyForwardedHeader=true"
 ```
+
+#### Web Server SSL/TLS (Frontend)
+
+| Parameter | Type | Default |
+| --- | --- | --- |
+| `frontend.ssl.enabled` | bool | `false` |
+| `frontend.ssl.secretName` | string | `""` |
 
 #### Scaling & Redundancy (Frontend)
 
