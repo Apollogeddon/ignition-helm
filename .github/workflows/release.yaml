@@ -2,11 +2,7 @@ name: Release
 
 on:
   workflow_call:
-  push:
-    branches:
-      - main
-    paths:
-      - 'charts/**'
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -15,6 +11,7 @@ permissions:
 jobs:
   version:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Checkout
         uses: actions/checkout@v6
