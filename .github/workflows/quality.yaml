@@ -2,19 +2,16 @@ name: Quality
 
 on:
   workflow_call:
-  pull_request:
-    branches:
-      - main
-    paths:
-      - 'charts/**'
+  workflow_dispatch:
 
 permissions:
   contents: read
   security-events: write
 
 jobs:
-  kube-linter:
+  lint:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -44,6 +41,7 @@ jobs:
 
   trivy:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -58,12 +56,13 @@ jobs:
 
   checkov:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Checkout
         uses: actions/checkout@v6
 
       - name: Run Checkov action
-        uses: bridgecrewio/checkov-action@master
+        uses: bridgecrewio/checkov-action@v12
         with:
           directory: charts/
           framework: helm
