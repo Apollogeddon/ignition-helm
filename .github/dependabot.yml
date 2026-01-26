@@ -26,7 +26,7 @@ updates:
     schedule:
       interval: "weekly"
 
-  # Maintain dependencies for the Astro documentation site
+  # Maintain dependencies for the Astro site
   - package-ecosystem: "npm"
     directory: "/webpage"
     schedule:
