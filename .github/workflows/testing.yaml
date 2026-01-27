@@ -38,7 +38,7 @@ jobs:
 
       - name: Install helm-unittest
         run: |
-          helm plugin install https://github.com/helm-unittest/helm-unittest.git --version 0.7.2 --verify=false
+          helm plugin install https://github.com/helm-unittest/helm-unittest.git --version 0.7.2
 
       - name: Run unit tests
         run: |
