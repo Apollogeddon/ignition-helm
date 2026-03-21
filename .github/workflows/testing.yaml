@@ -29,25 +29,14 @@ jobs:
         uses: helm/chart-testing-action@v2.8.0
 
       - name: Update dependencies
-        run: |
-          for dir in charts/*; do
-            if [ -d "$dir" ]; then
-              helm dependency update "$dir"
-            fi
-          done
+        run: chmod +x ./.github/scripts/ci/update-dependencies.sh && ./.github/scripts/ci/update-dependencies.sh
 
       - name: Install helm-unittest
         run: |
           helm plugin install https://github.com/helm-unittest/helm-unittest.git --version 0.7.2
 
       - name: Run unit tests
-        run: |
-          for dir in charts/*; do
-            if [ -d "$dir/tests" ]; then
-              echo "Running unit tests for $dir"
-              helm unittest "$dir"
-            fi
-          done
+        run: chmod +x ./.github/scripts/ci/run-unit-tests.sh && ./.github/scripts/ci/run-unit-tests.sh
 
       - name: Run chart-testing (list-changed)
         id: list-changed
@@ -67,21 +56,12 @@ jobs:
 
       - name: Run chart-testing (install)
         if: steps.list-changed.outputs.changed == 'true'
-        run: ct install --target-branch ${{ github.event.repository.default_branch || 'main' }}
+        run: ct install --target-branch ${{ github.event.repository.default_branch || 'main' }} --upgrade
 
       - name: Test Failover Deployment
         if: steps.list-changed.outputs.changed == 'true'
-        run: |
-          helm install failover charts/failover
-          kubectl rollout status statefulset/ignition-failover --timeout=10m
-          kubectl exec ignition-failover-0 -- curl -s -f http://localhost:8088/StatusPing
-          helm uninstall failover
+        run: chmod +x ./.github/scripts/tests/test-failover.sh && ./.github/scripts/tests/test-failover.sh
 
       - name: Test Scaleout Deployment
         if: steps.list-changed.outputs.changed == 'true'
-        run: |
-          helm install scaleout charts/scaleout
-          kubectl rollout status statefulset/ignition-scaleout-backend --timeout=10m
-          kubectl rollout status statefulset/ignition-scaleout-frontend --timeout=10m
-          kubectl exec ignition-scaleout-frontend-0 -- curl -s -f http://localhost:8088/StatusPing
-          helm uninstall scaleout
+        run: chmod +x ./.github/scripts/tests/test-scaleout.sh && ./.github/scripts/tests/test-scaleout.sh

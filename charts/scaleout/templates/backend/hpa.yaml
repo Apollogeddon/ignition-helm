@@ -1,0 +1,1 @@
+{{- include "ignition-common.hpa" (dict "name" "backend" "values" .Values.backend "context" .) }}

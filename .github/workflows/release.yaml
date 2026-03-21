@@ -40,12 +40,7 @@ jobs:
 
       - name: Update dependencies
         if: ${{ steps.release.outputs.releases_created }}
-        run: |
-          for dir in charts/*; do
-            if [ -d "$dir" ]; then
-              helm dependency update "$dir"
-            fi
-          done
+        run: chmod +x ./.github/scripts/ci/update-dependencies.sh && ./.github/scripts/ci/update-dependencies.sh
 
       - name: Run chart-releaser
         if: ${{ steps.release.outputs.releases_created }}

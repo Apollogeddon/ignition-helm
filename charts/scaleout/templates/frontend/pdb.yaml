@@ -1,0 +1,3 @@
+{{- if or .Values.frontend.hpa.enabled (gt (int .Values.frontend.redundancy.replicas) 1) }}
+{{- include "ignition-common.pdb" (dict "name" "frontend" "context" .) }}
+{{- end }}

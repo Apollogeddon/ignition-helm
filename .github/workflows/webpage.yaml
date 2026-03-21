@@ -34,13 +34,8 @@ jobs:
       - name: Install dependencies
         run: cd webpage && npm ci
 
-      - name: Copy Helm Index
-        run: |
-          mkdir -p webpage/public
-          cp index.yaml webpage/public/index.yaml
-
       - name: Build site
-        run: cd webpage && npm run build
+        run: chmod +x ./.github/scripts/ci/deploy-webpage.sh && ./.github/scripts/ci/deploy-webpage.sh
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v4
