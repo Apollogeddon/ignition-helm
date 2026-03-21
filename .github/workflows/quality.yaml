@@ -21,12 +21,7 @@ jobs:
           version: v3.14.4
 
       - name: Update dependencies
-        run: |
-          for dir in charts/*; do
-            if [ -d "$dir" ]; then
-              helm dependency update "$dir"
-            fi
-          done
+        run: chmod +x ./.github/scripts/ci/update-dependencies.sh && ./.github/scripts/ci/update-dependencies.sh
 
       - name: Render Helm Charts
         run: |

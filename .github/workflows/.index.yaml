@@ -30,13 +30,7 @@ jobs:
           version: v3.14.4
 
       - name: Update Chart Dependencies
-        run: |
-          for dir in charts/*; do
-            if [ -d "$dir" ]; then
-              echo "Updating dependencies for $dir..."
-              helm dependency update "$dir"
-            fi
-          done
+        run: chmod +x ./.github/scripts/ci/update-dependencies.sh && ./.github/scripts/ci/update-dependencies.sh
 
       - name: Check for changes
         id: git_diff
