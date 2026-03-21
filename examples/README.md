@@ -10,6 +10,8 @@ This directory contains example `values.yaml` files for deploying the `ignition-
 * **04-persistence.yaml**: Configuration with specific storage class and size requirements.
 * **05-restore-backup.yaml**: Configuration to auto-restore a Gateway Backup (`.gwbk`) from a URL on startup.
 * **06-ingress-tls.yaml**: Configuration for exposing the Gateway via Ingress with Cert-Manager TLS.
+* **database-integration.yaml**: Demonstrates secure database connection configuration via environment variables.
+* **monitoring-stack.yaml**: A production-ready setup with Prometheus ServiceMonitor and proper resource sizing.
 
 ## Scaleout Examples (`examples/scaleout/`)
 
