@@ -1,0 +1,29 @@
+# database-integration.yaml
+# Demonstrates how to pass database connection details to Ignition via environment variables.
+# Note: You still need to configure the Database Connection in the Ignition Gateway UI
+# or via a .gwbk restore, but this ensures the credentials are managed by Kubernetes.
+
+ignition:
+  # 1. Provide database credentials via Secret
+  secrets:
+    GATEWAY_ADMIN_PASSWORD: "strong-password"
+    IGNITION_GAN_KEYSTORE_PASSWORD: "metro-password"
+    IGNITION_WEB_KEYSTORE_PASSWORD: "web-password"
+    # Custom keys for your database
+    DB_PASSWORD: "my-db-password"
+
+  # 2. Map credentials and host info to environment variables
+  config:
+    DB_HOST: "postgres-service.database.svc.cluster.local"
+    DB_USER: "ignition_user"
+    DB_NAME: "ignition_data"
+    # These will be available in Ignition as System Environment Variables
+    # and can be referenced in the DB Connection settings as ${DB_HOST}, etc.
+
+  # 3. Secure the GAN connection (Standard HA)
+  redundancy:
+    enabled: true
+
+  # 4. Restrict network access
+  networkPolicy:
+    enabled: true

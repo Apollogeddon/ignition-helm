@@ -1,0 +1,39 @@
+# monitoring-stack.yaml
+# A production-ready configuration with Prometheus monitoring and resource sizing.
+# Prerequisite: Prometheus Operator must be installed in your cluster.
+
+ignition:
+  # 1. Enable Prometheus scraping
+  serviceMonitor:
+    enabled: true
+    interval: "15s"
+    # Ensure your gateway exposes a /metrics endpoint!
+    # Recommendation: Use the OpenTelemetry Java Agent or a custom WebDev script.
+    path: "/data/metrics"
+
+  # 2. Production Sizing (Adjust based on project complexity)
+  resources:
+    requests:
+      cpu: "1000m"
+      memory: "4Gi"
+    limits:
+      cpu: "2000m"
+      memory: "8Gi"
+
+  # 3. Align JVM Heap with Memory Limits
+  args:
+    - -m
+    - "4096" # Max heap (MB) - should be roughly 50-75% of memory limit
+    - -n
+    - "$(GATEWAY_SYSTEM_NAME)"
+    - --
+    - gateway.useProxyForwardedHeader=true
+
+  # 4. Standard HA Configuration
+  redundancy:
+    enabled: true
+
+  secrets:
+    GATEWAY_ADMIN_PASSWORD: "strong-password"
+    IGNITION_GAN_KEYSTORE_PASSWORD: "metro-password"
+    IGNITION_WEB_KEYSTORE_PASSWORD: "web-password"
