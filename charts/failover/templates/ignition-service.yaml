@@ -1,2 +1,4 @@
 {{ include "ignition-common.service" (dict "values" .Values.ignition "Release" .Release "Chart" .Chart "Values" .Values) }}
+---
+{{ include "ignition-common.headlessService" (dict "values" .Values.ignition "Release" .Release "Chart" .Chart "Values" .Values) }}
 {{- include "ignition-common.redundancyServices" (dict "values" .Values.ignition "context" .) }}

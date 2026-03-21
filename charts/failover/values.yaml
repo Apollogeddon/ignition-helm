@@ -47,6 +47,20 @@ ignition:
     fsGroup: 2003
     runAsNonRoot: false
 
+  # -- NetworkPolicy configuration
+  networkPolicy:
+    enabled: false
+
+  # -- Prometheus ServiceMonitor configuration
+  serviceMonitor:
+    enabled: false
+    # -- Scrape interval
+    interval: 30s
+    # -- Metrics path
+    path: /data/metrics
+    # -- Additional labels for the ServiceMonitor
+    additionalLabels: {}
+
   logging:
     # -- Log level for the Ignition Gateway (INFO, DEBUG, WARN, ERROR)
     level: "INFO"
@@ -132,7 +146,7 @@ ignition:
     # -- Service type (LoadBalancer, NodePort, ClusterIP)
     type: NodePort
     # -- Session affinity (ClientIP or None)
-    sessionAffinity: ClientIP
+    sessionAffinity: None
     # -- Port configuration
     ports:
       http: 8088

@@ -1,0 +1,1 @@
+{{- include "ignition-common.serviceMonitor" (dict "name" "frontend" "values" .Values.frontend "context" .) }}

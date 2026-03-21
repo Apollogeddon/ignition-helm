@@ -108,6 +108,12 @@ stringData:
     function updateGwbk() {
       info "Updating GWBK with GAN CA Certificate trust"
 
+      if ! command -v zip &> /dev/null || ! command -v zipnote &> /dev/null; then
+        >&2 echo "WARNING: 'zip' or 'zipnote' command not found. Skipping GAN CA trust injection into GWBK."
+        >&2 echo "Ensure your Ignition image includes zip utilities for this feature."
+        return 0
+      fi
+
       # Target destination paths for the GAN CA certificate
       local dest_locations=(
         "gateway-network/server/security/pki/trusted/certs/ignition-gan-ca.crt"
@@ -120,7 +126,6 @@ stringData:
       # Add the GAN CA Certificate to the GWBK in client/server folders
       for dest in "${dest_locations[@]}"; do
         zip -j "${GWBK_LOCATION}" "${GAN_CA_SECRETS_DIR}/ca.crt" "${dest}"
-        # NOTE: this seems to fail on macOS zipnote
         printf "@ ca.crt\n@=%s\n" "${dest}" | zipnote -w "${GWBK_LOCATION}"
       done
 
@@ -299,4 +304,31 @@ stringData:
     fi
 
     echo "configure-ignition.sh finished."
+  health-check.sh: |-
+    #!/usr/bin/env bash
+    # Robust health check for Ignition Gateway
+    
+    HTTP_PORT=${IGNITION_HTTP_PORT:-8088}
+    GAN_PORT=${IGNITION_GAN_PORT:-8060}
+    TIMEOUT=5
+
+    # 1. Check if the Web Server is responding
+    if ! curl -s -f --max-time "${TIMEOUT}" "http://localhost:${HTTP_PORT}/main/system/StatusPing" > /dev/null; then
+      echo "Web Server not responding"
+      exit 1
+    fi
+
+    # 2. Check if the GAN port is listening (basic check)
+    if ! timeout "${TIMEOUT}" bash -c "cat < /dev/null > /dev/tcp/localhost/${GAN_PORT}" 2>/dev/null; then
+      echo "GAN Port ${GAN_PORT} not listening"
+      # We don't exit 1 here yet as GAN might take longer to bind
+    fi
+
+    exit 0
+  shutdown.sh: |-
+    #!/usr/bin/env bash
+    # Graceful shutdown script
+    echo "Initiating graceful shutdown of Ignition Gateway..."
+    /usr/local/bin/ignition/gwcmd.sh -p
+    echo "Shutdown signal sent."
 {{- end -}}

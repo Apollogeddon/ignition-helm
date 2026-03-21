@@ -1,0 +1,1 @@
+{{- include "ignition-common.networkPolicy" (dict "name" "frontend" "values" .Values.frontend "context" .) }}

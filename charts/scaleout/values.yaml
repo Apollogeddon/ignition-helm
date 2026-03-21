@@ -50,6 +50,28 @@ frontend:
     fsGroup: 2003
     runAsNonRoot: false
 
+  # -- NetworkPolicy configuration
+  networkPolicy:
+    enabled: false
+
+  # -- Prometheus ServiceMonitor configuration
+  serviceMonitor:
+    enabled: false
+    # -- Scrape interval
+    interval: 30s
+    # -- Metrics path
+    path: /data/metrics
+    # -- Additional labels for the ServiceMonitor
+    additionalLabels: {}
+
+  # -- Horizontal Pod Autoscaler configuration
+  hpa:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 80
+    # targetMemoryUtilizationPercentage: 80
+
   logging:
     # -- Log level for the Frontend Gateway (INFO, DEBUG, WARN, ERROR)
     level: "INFO"
@@ -126,7 +148,7 @@ frontend:
     # -- Service type (LoadBalancer, NodePort, ClusterIP)
     type: NodePort
     # -- Session affinity (ClientIP or None)
-    sessionAffinity: ClientIP
+    sessionAffinity: None
     # -- Port configuration
     ports:
       http: 8088
@@ -200,6 +222,28 @@ backend:
     runAsGroup: 2003
     fsGroup: 2003
     runAsNonRoot: false
+
+  # -- NetworkPolicy configuration
+  networkPolicy:
+    enabled: false
+
+  # -- Prometheus ServiceMonitor configuration
+  serviceMonitor:
+    enabled: false
+    # -- Scrape interval
+    interval: 30s
+    # -- Metrics path
+    path: /data/metrics
+    # -- Additional labels for the ServiceMonitor
+    additionalLabels: {}
+
+  # -- Horizontal Pod Autoscaler configuration
+  hpa:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 80
+    # targetMemoryUtilizationPercentage: 80
 
   logging:
     # -- Log level for the Backend Gateway (INFO, DEBUG, WARN, ERROR)
@@ -286,7 +330,7 @@ backend:
     # -- Service type (LoadBalancer, NodePort, ClusterIP)
     type: NodePort
     # -- Session affinity (ClientIP or None)
-    sessionAffinity: ClientIP
+    sessionAffinity: None
     # -- Port configuration
     ports:
       http: 8088

@@ -292,3 +292,133 @@ spec:
   type: ClusterIP
   clusterIP: None
 {{- end }}
+
+{{/*
+Standard NetworkPolicy
+Params:
+  name: The component name suffix (e.g. "backend")
+  values: The component-specific values object
+  context: The global context (Dot)
+*/}}
+{{- define "ignition-common.networkPolicy" -}}
+{{- if .values.networkPolicy.enabled -}}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  {{- $fullname := include "ignition.name" .context }}
+  {{- if .name }}
+  {{- $fullname = printf "%s-%s" $fullname .name }}
+  {{- end }}
+  name: {{ $fullname }}
+  namespace: {{ .context.Release.Namespace }}
+  labels:
+    {{- include "ignition.labels" .context | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "ignition.selectorLabels" .context | nindent 6 }}
+  policyTypes:
+    - Ingress
+  ingress:
+    # Allow HTTP/HTTPS traffic
+    - from:
+        - podSelector: {}
+      ports:
+        - protocol: TCP
+          port: {{ .values.service.ports.http }}
+        - protocol: TCP
+          port: {{ .values.service.ports.https }}
+    # Allow GAN traffic only from other Ignition pods
+    - from:
+        - podSelector:
+            matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: In
+                values:
+                  - {{ include "ignition.name" .context }}
+      ports:
+        - protocol: TCP
+          port: {{ .values.service.ports.gan }}
+{{- end }}
+{{- end }}
+
+{{/*
+Standard Prometheus ServiceMonitor
+Params:
+  name: The component name suffix (e.g. "backend")
+  values: The component-specific values object
+  context: The global context (Dot)
+*/}}
+{{- define "ignition-common.serviceMonitor" -}}
+{{- if .values.serviceMonitor.enabled -}}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  {{- $fullname := include "ignition.name" .context }}
+  {{- if .name }}
+  {{- $fullname = printf "%s-%s" $fullname .name }}
+  {{- end }}
+  name: {{ $fullname }}
+  namespace: {{ .context.Release.Namespace }}
+  labels:
+    {{- include "ignition.labels" .context | nindent 4 }}
+    {{- with .values.serviceMonitor.additionalLabels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "ignition.selectorLabels" .context | nindent 6 }}
+  endpoints:
+    - port: http
+      path: {{ .values.serviceMonitor.path | default "/data/metrics" }}
+      interval: {{ .values.serviceMonitor.interval | default "30s" }}
+{{- end }}
+{{- end }}
+
+{{/*
+Standard HorizontalPodAutoscaler
+Params:
+  name: The component name suffix (e.g. "frontend")
+  values: The component-specific values object
+  context: The global context (Dot)
+*/}}
+{{- define "ignition-common.hpa" -}}
+{{- if .values.hpa.enabled -}}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  {{- $fullname := include "ignition.name" .context }}
+  {{- if .name }}
+  {{- $fullname = printf "%s-%s" $fullname .name }}
+  {{- end }}
+  name: {{ $fullname }}
+  namespace: {{ .context.Release.Namespace }}
+  labels:
+    {{- include "ignition.labels" .context | nindent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: StatefulSet
+    name: {{ $fullname }}
+  minReplicas: {{ .values.hpa.minReplicas | default 1 }}
+  maxReplicas: {{ .values.hpa.maxReplicas | default 5 }}
+  metrics:
+    {{- if .values.hpa.targetCPUUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ .values.hpa.targetCPUUtilizationPercentage }}
+    {{- end }}
+    {{- if .values.hpa.targetMemoryUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: {{ .values.hpa.targetMemoryUtilizationPercentage }}
+    {{- end }}
+{{- end }}
+{{- end }}

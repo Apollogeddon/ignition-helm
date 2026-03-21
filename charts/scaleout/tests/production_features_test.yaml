@@ -1,0 +1,35 @@
+suite: Ignition Scaleout Production Features
+templates:
+  - templates/frontend/hpa.yaml
+  - templates/frontend/networkpolicy.yaml
+  - templates/frontend/frontend-statefulset.yaml
+  - templates/backend/networkpolicy.yaml
+tests:
+  - it: should create HPA for frontend when enabled
+    template: templates/frontend/hpa.yaml
+    set:
+      frontend:
+        hpa:
+          enabled: true
+    asserts:
+      - isKind:
+          of: HorizontalPodAutoscaler
+      - equal:
+          path: spec.scaleTargetRef.name
+          value: ignition-scaleout-frontend
+
+  - it: should create NetworkPolicy for frontend
+    template: templates/frontend/networkpolicy.yaml
+    set:
+      frontend:
+        networkPolicy:
+          enabled: true
+    asserts:
+      - isKind:
+          of: NetworkPolicy
+
+  - it: should include lifecycle hook in frontend
+    template: templates/frontend/frontend-statefulset.yaml
+    asserts:
+      - exists:
+          path: spec.template.spec.containers[0].lifecycle.preStop

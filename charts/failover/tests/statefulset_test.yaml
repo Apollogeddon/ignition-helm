@@ -15,7 +15,7 @@ tests:
           value: ignition-failover
       - equal:
           path: spec.serviceName
-          value: ignition-failover
+          value: ignition-failover-headless
       - equal:
           path: spec.replicas
           value: 1
