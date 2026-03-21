@@ -64,6 +64,17 @@ Configuration for providing a custom keystore for the Web Server (HTTPS).
 | `ignition.ssl.enabled` | bool | `false` |
 | `ignition.ssl.secretName` | string | `""` |
 
+### Security & Monitoring
+
+Advanced security and observability settings.
+
+| Parameter | Type | Default |
+| --- | --- | --- |
+| `ignition.networkPolicy.enabled` | bool | `false` |
+| `ignition.serviceMonitor.enabled` | bool | `false` |
+| `ignition.serviceMonitor.interval` | string | `"30s"` |
+| `ignition.serviceMonitor.path` | string | `"/data/metrics"` |
+
 ### Ignition Configuration
 
 Core Ignition Gateway settings, including EULA acceptance and module selection.
@@ -149,7 +160,7 @@ Service exposure and Ingress settings.
 | `ignition.service.type` | string | `"NodePort"` |
 | `ignition.service.ports` | object | `{"gan":8060,"http":8088,"https":8043}` |
 | `ignition.service.nodePorts` | object | `{}` |
-| `ignition.service.sessionAffinity` | string | `"ClientIP"` |
+| `ignition.service.sessionAffinity` | string | `"None"` |
 | `ignition.ingress.enabled` | bool | `false` |
 | `ignition.ingress.tls` | list | `[]` |
 | `certManager.issuer.name` | string | `"cluster-issuer"` |
@@ -180,7 +191,7 @@ Health checks for the pod.
 **Default `ignition.livenessProbe`:**
 
 ```yaml
-command: ["health-check.sh", "-t", "5"]
+command: ["/config/scripts/health-check.sh"]
 enabled: true
 failureThreshold: 3
 initialDelaySeconds: 120
@@ -191,7 +202,7 @@ timeoutSeconds: 5
 **Default `ignition.readinessProbe`:**
 
 ```yaml
-command: ["health-check.sh", "-t", "3"]
+command: ["/config/scripts/health-check.sh"]
 enabled: true
 failureThreshold: 10
 initialDelaySeconds: 120

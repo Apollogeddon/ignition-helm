@@ -97,10 +97,10 @@ ignition:
 
 Kubernetes checks if the Gateway is alive and ready to receive traffic.
 
-* **Readiness**: Checks if the web server is responding (HTTP 200).
-* **Liveness**: Checks if the process is running.
+* **Readiness**: Verifies the web server status via `/StatusPing` and checks GAN port availability.
+* **Liveness**: Checks if the process is running and responding.
 
-**Tip:** Increase `initialDelaySeconds` if your gateway loads a large project backup on startup.
+**Tip:** The charts use a dedicated `/config/scripts/health-check.sh` script for more robust verification than standard port checks.
 
 ### Pod Scheduling (Affinity)
 
@@ -121,8 +121,15 @@ To prevent downtime during cluster maintenance (like node upgrades), the charts 
 
 * **Non-Root User**: Runs as UID `2003` by default.
 * **SealedSecrets**: Support for Bitnami SealedSecrets for managing sensitive values without checking plain-text passwords into Git.
+* **Network Isolation (NetworkPolicy)**: Optionally restrict traffic to the Gateway Network (GAN) so only authenticated Ignition pods can communicate on port `8060`.
 
-#### Example: Using SealedSecrets
+```yaml
+ignition:
+  networkPolicy:
+    enabled: true
+```
+
+### Example: Using SealedSecrets
 
 If you have the `kubeseal` CLI and SealedSecrets controller installed:
 
@@ -164,7 +171,43 @@ ignition:
     secretName: "my-custom-keystore"
 ```
 
-## 6. Backup & Restore
+## 6. Observability & Scaling
+
+### Prometheus Monitoring
+
+The charts support the **Prometheus Operator** via a `ServiceMonitor` resource. This allows automatic discovery of your gateways by Prometheus.
+
+**Prerequisite**: You must expose a Prometheus-compatible endpoint on your gateway. Common methods include:
+
+* **OpenTelemetry Java Agent**: The modern approach for Ignition 8.1+. Automatically instruments the JVM and Ignition metrics.
+* **WebDev Script**: A simple Python script within the WebDev module to format system tags for Prometheus.
+
+```yaml
+ignition:
+  serviceMonitor:
+    enabled: true
+    interval: "30s"
+    path: "/data/metrics" # Update this to match your endpoint (e.g., /metrics)
+```
+
+### Horizontal Pod Autoscaling (HPA)
+
+In the **Scaleout** architecture, you can dynamically scale your **Frontend** nodes based on CPU or Memory utilization. This is ideal for handling variable user loads in Perspective sessions.
+
+```yaml
+frontend:
+  hpa:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 80
+```
+
+### Graceful Shutdown
+
+To ensure configuration integrity, the charts include a `preStop` lifecycle hook. This hook triggers a graceful shutdown command (`gwcmd.sh -p`) before the container is terminated, allowing Ignition to flush its internal database to disk.
+
+## 7. Backup & Restore
 
 ### Automated Restore
 

@@ -101,7 +101,15 @@ IGNITION_EDITION: "standard"
 | Parameter | Type | Default |
 | --- | --- | --- |
 | `backend.ssl.enabled` | bool | `false` |
-| `backend.ssl.secretName` | string | `""` |
+| `backend.ssl.secretName" | string | `""` |
+
+#### Security & Monitoring (Backend)
+
+| Parameter | Type | Default |
+| --- | --- | --- |
+| `backend.networkPolicy.enabled` | bool | `false` |
+| `backend.serviceMonitor.enabled` | bool | `false` |
+| `backend.serviceMonitor.interval` | string | `"30s"` |
 
 #### Redundancy (Backend)
 
@@ -143,10 +151,10 @@ websocketTimeout: 10000
 
 | Parameter | Type | Default |
 | --- | --- | --- |
-| `backend.service.type` | string | `"NodePort"` |
+| `backend.service.type" | string | `"NodePort"` |
 | `backend.service.ports` | object | `{"gan":8060,"http":8088,"https":8043}` |
 | `backend.service.nodePorts` | object | `{}` |
-| `backend.service.sessionAffinity` | string | `"ClientIP"` |
+| `backend.service.sessionAffinity` | string | `"None"` |
 | `backend.ingress.enabled` | bool | `false` |
 | `backend.ingress.tls` | list | `[]` |
 
@@ -171,7 +179,7 @@ websocketTimeout: 10000
 **Default `backend.livenessProbe`:**
 
 ```yaml
-command: ["health-check.sh", "-t", "5"]
+command: ["/config/scripts/health-check.sh"]
 enabled: true
 failureThreshold: 3
 initialDelaySeconds: 120
@@ -182,7 +190,7 @@ timeoutSeconds: 5
 **Default `backend.readinessProbe`:**
 
 ```yaml
-command: ["health-check.sh", "-t", "3"]
+command: ["/config/scripts/health-check.sh"]
 enabled: true
 failureThreshold: 10
 initialDelaySeconds: 120
@@ -236,12 +244,23 @@ IGNITION_EDITION: "standard"
 | `frontend.ssl.enabled` | bool | `false` |
 | `frontend.ssl.secretName` | string | `""` |
 
-#### Scaling & Redundancy (Frontend)
+#### Security & Monitoring (Frontend)
+
+| Parameter | Type | Default |
+| --- | --- | --- |
+| `frontend.networkPolicy.enabled` | bool | `false` |
+| `frontend.serviceMonitor.enabled` | bool | `false` |
+| `frontend.serviceMonitor.interval` | string | `"30s"` |
+
+#### Scaling & HPA (Frontend)
 
 | Parameter | Type | Default |
 | --- | --- | --- |
 | `frontend.redundancy.replicas` | int | `1` |
-| `frontend.redundancy` | object | `{"replicas":1}` |
+| `frontend.hpa.enabled` | bool | `false` |
+| `frontend.hpa.minReplicas` | int | `1` |
+| `frontend.hpa.maxReplicas` | int | `10` |
+| `frontend.hpa.targetCPUUtilizationPercentage` | int | `80` |
 
 #### Networking (Frontend)
 
@@ -250,7 +269,7 @@ IGNITION_EDITION: "standard"
 | `frontend.service.type` | string | `"NodePort"` |
 | `frontend.service.ports` | object | `{"gan":8060,"http":8088,"https":8043}` |
 | `frontend.service.nodePorts` | object | `{}` |
-| `frontend.service.sessionAffinity` | string | `"ClientIP"` |
+| `frontend.service.sessionAffinity` | string | `"None"` |
 | `frontend.ingress.enabled` | bool | `false` |
 | `frontend.ingress.tls` | list | `[]` |
 
@@ -276,7 +295,7 @@ IGNITION_EDITION: "standard"
 **Default `frontend.livenessProbe`:**
 
 ```yaml
-command: ["health-check.sh", "-t", "5"]
+command: ["/config/scripts/health-check.sh"]
 enabled: true
 failureThreshold: 3
 initialDelaySeconds: 120
@@ -287,7 +306,7 @@ timeoutSeconds: 5
 **Default `frontend.readinessProbe`:**
 
 ```yaml
-command: ["health-check.sh", "-t", "3"]
+command: ["/config/scripts/health-check.sh"]
 enabled: true
 failureThreshold: 10
 initialDelaySeconds: 15

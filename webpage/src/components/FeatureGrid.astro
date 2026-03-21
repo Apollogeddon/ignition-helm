@@ -1,0 +1,127 @@
+---
+const features = [
+	{
+		title: "Production Ready",
+		description:
+			"Deploy standard Master/Backup redundancy or complex Frontend/Backend scaleout architectures out of the box.",
+		icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>`,
+	},
+	{
+		title: "Automated Security",
+		description:
+			"Zero-touch certificate generation for GAN and Web Server via cert-manager. Secure by default.",
+		icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></svg>`,
+	},
+	{
+		title: "DevOps Native",
+		description:
+			"Fully configured for GitOps workflows. Declaratively manage modules and licensing via values.yaml.",
+		icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>`,
+	},
+	{
+		title: "Disaster Recovery",
+		description:
+			"Seed your Gateway with a full backup (.gwbk) on startup from a URL or local path. Perfect for immutable pipelines.",
+		icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>`,
+	},
+	{
+		title: "Scalable Architecture",
+		description:
+			"Support for Horizontal Pod Autoscaling (HPA) and independent scaling of Frontend and Backend layers.",
+		icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21 21-6-6m6 6v-4.8m0 4.8h-4.8"/><path d="M3 16.2V21m0 0h4.8M3 21l6-6"/><path d="M21 7.8V3m0 0h-4.8M21 3l-6 6"/><path d="M3 7.8V3m0 0h4.8M3 3l6 6"/></svg>`,
+	},
+	{
+		title: "Operational Resilience",
+		description:
+			"Robust health probes, Prometheus monitoring support, and graceful shutdown hooks for data integrity.",
+		icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><circle cx="12" cy="12" r="3"/></svg>`,
+	},
+];
+---
+
+<section class="features-section">
+  <h2>Why use <span class="text-gradient">these charts?</span></h2>
+  
+  <div class="grid">
+    {features.map(feature => (
+      <div class="feature-card glass">
+        <div class="icon-wrapper" set:html={feature.icon}></div>
+        <h3>{feature.title}</h3>
+        <p>{feature.description}</p>
+      </div>
+    ))}
+  </div>
+</section>
+
+<style>
+  .features-section {
+    padding: 6rem 1rem;
+    max-width: 1200px;
+    margin: 0 auto;
+    text-align: center;
+  }
+
+  h2 {
+    font-size: clamp(2rem, 5vw, 3rem);
+    margin-bottom: 4rem;
+    font-weight: 800;
+  }
+
+  .text-gradient {
+    background: linear-gradient(to right, var(--sl-color-accent), #ff9e6a);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 2rem;
+  }
+
+  .feature-card {
+    padding: 2.5rem;
+    border-radius: 20px;
+    text-align: left;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .feature-card:hover {
+    transform: translateY(-8px);
+    border-color: var(--sl-color-accent);
+    background: rgba(243, 108, 33, 0.03);
+    box-shadow: 0 20px 40px -12px rgba(243, 108, 33, 0.15);
+  }
+
+  .icon-wrapper {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(243, 108, 33, 0.1);
+    color: var(--sl-color-accent);
+    border-radius: 12px;
+    margin-bottom: 0.5rem;
+  }
+
+  h3 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0;
+    color: var(--sl-color-text);
+  }
+
+  p {
+    color: var(--sl-color-text-muted);
+    line-height: 1.6;
+    margin: 0;
+  }
+
+  :root[data-theme='light'] p {
+    /* Handled by variables */
+  }
+</style>

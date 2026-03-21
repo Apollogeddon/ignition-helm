@@ -17,8 +17,8 @@ The `ignition-failover` chart deploys a standard redundant pair of Ignition gate
   * `0`: Master (Primary)
   * `1`: Backup (Redundant)
 * **Direct Access**: In addition to the main load-balanced Service, the chart creates two **Headless Services** for direct pod targeting:
-    * `{{release-name}}-primary`: Always points to ordinal `0`.
-    * `{{release-name}}-backup`: Always points to ordinal `1`.
+  * `{{release-name}}-primary`: Always points to ordinal `0`.
+  * `{{release-name}}-backup`: Always points to ordinal `1`.
 
 * **Use Case**: Standard SCADA deployments requiring high availability.
 

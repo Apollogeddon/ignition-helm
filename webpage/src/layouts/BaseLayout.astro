@@ -1,0 +1,49 @@
+---
+import Navbar from "../components/Navbar.astro";
+import "../styles/custom.css";
+
+interface Props {
+	title: string;
+	description?: string;
+}
+
+const { title, description = "Ignition Helm Charts documentation" } =
+	Astro.props;
+const base = import.meta.env.BASE_URL;
+---
+
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width" />
+		<link rel="icon" type="image/png" href={`${base}/favicon.png`} />
+		<meta name="generator" content={Astro.generator} />
+		<title>{title}</title>
+		<meta name="description" content={description} />
+		<script is:inline>
+			const theme = (() => {
+				if (typeof localStorage !== 'undefined' && localStorage.getItem('theme')) {
+					return localStorage.getItem('theme');
+				}
+				if (window.matchMedia('(prefers-color-scheme: light)').matches) {
+					return 'light';
+				}
+				return 'dark';
+			})();
+			document.documentElement.setAttribute('data-theme', theme);
+		</script>
+	</head>
+	<body>
+		<Navbar />
+		<main>
+			<slot />
+		</main>
+	</body>
+</html>
+
+<style>
+	main {
+		min-height: calc(100vh - var(--sl-nav-height));
+	}
+</style>
