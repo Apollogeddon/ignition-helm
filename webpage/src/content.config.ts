@@ -1,7 +1,33 @@
-import { defineCollection } from 'astro:content';
-import { docsLoader } from '@astrojs/starlight/loaders';
-import { docsSchema } from '@astrojs/starlight/schema';
+import { defineCollection, z } from "astro:content";
+import { glob } from "astro/loaders";
 
-export const collections = {
-	docs: defineCollection({ loader: docsLoader(), schema: docsSchema() }),
-};
+const docs = defineCollection({
+	loader: glob({ pattern: "**/*.{md,mdx}", base: "./src/content/docs" }),
+	schema: z.object({
+		title: z.string(),
+		description: z.string().optional(),
+		template: z.string().optional(),
+		hero: z
+			.object({
+				tagline: z.string().optional(),
+				image: z
+					.object({
+						file: z.string().optional(),
+					})
+					.optional(),
+				actions: z
+					.array(
+						z.object({
+							text: z.string(),
+							link: z.string(),
+							icon: z.string().optional(),
+							variant: z.string().optional(),
+						}),
+					)
+					.optional(),
+			})
+			.optional(),
+	}),
+});
+
+export const collections = { docs };

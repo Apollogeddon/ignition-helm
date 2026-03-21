@@ -3,75 +3,59 @@ title: Installation
 description: How to install the Ignition Helm Charts.
 ---
 
-import { Steps, Aside, Tabs, TabItem } from '@astrojs/starlight/components';
-
 ## Tools & Dependencies
 
 Before installing the charts, you will need a few tools installed on your machine.
 
-<Tabs>
-  <TabItem label="Windows (PowerShell)">
-    <Aside type="tip">
-      `winget` is the easiest way to get these tools on Windows 10/11.
-    </Aside>
+### Windows (PowerShell)
 
-    <Steps>
-    1. **Install Kubernetes CLI (kubectl)**
+> **Tip**: `winget` is the easiest way to get these tools on Windows 10/11.
 
-        ```powershell
-        winget install Kubernetes.kubectl
-        ```
+1. **Install Kubernetes CLI (kubectl)**
 
-    2. **Install Helm (Package Manager)**
+    ```powershell
+    winget install Kubernetes.kubectl
+    ```
 
-        ```powershell
-        winget install Helm.Helm
-        ```
-    </Steps>
-  </TabItem>
+2. **Install Helm (Package Manager)**
 
-  <TabItem label="macOS">
-    <Aside type="tip">
-      We recommend using [Homebrew](https://brew.sh/) to manage dependencies.
-    </Aside>
+    ```powershell
+    winget install Helm.Helm
+    ```
 
-    <Steps>
-    1. **Install Kubernetes CLI (kubectl)**
+### macOS
 
-        ```bash
-        brew install kubectl
-        ```
+> **Tip**: We recommend using [Homebrew](https://brew.sh/) to manage dependencies.
 
-    2. **Install Helm (Package Manager)**
+1. **Install Kubernetes CLI (kubectl)**
 
-        ```bash
-        brew install helm
-        ```
-    </Steps>
-  </TabItem>
+    ```bash
+    brew install kubectl
+    ```
 
-  <TabItem label="Linux">
-    <Aside type="note">
-      These commands assume a Debian/Ubuntu-based distribution. For others, please refer to the official [Kubernetes](https://kubernetes.io/docs/tasks/tools/) and [Helm](https://helm.sh/docs/intro/install/) documentation.
-    </Aside>
+2. **Install Helm (Package Manager)**
 
-    <Steps>
-    1. **Install Kubernetes CLI (kubectl)**
+    ```bash
+    brew install helm
+    ```
 
-        ```bash
-        # Install kubectl
-        curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-        sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
-        ```
+### Linux
 
-    2. **Install Helm (Package Manager)**
+> **Note**: These commands assume a Debian/Ubuntu-based distribution. For others, please refer to the official [Kubernetes](https://kubernetes.io/docs/tasks/tools/) and [Helm](https://helm.sh/docs/intro/install/) documentation.
 
-        ```bash
-        curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
-        ```
-    </Steps>
-  </TabItem>
-</Tabs>
+1. **Install Kubernetes CLI (kubectl)**
+
+    ```bash
+    # Install kubectl
+    curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+    sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+    ```
+
+2. **Install Helm (Package Manager)**
+
+    ```bash
+    curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+    ```
 
 ### Verify Installation
 
@@ -92,8 +76,6 @@ You will need a running Kubernetes cluster (Version 1.23+). If you don't have on
 
 These charts rely on `cert-manager` for automatic SSL certificate generation (specifically for the Gateway Network).
 
-<Steps>
-
 1. **Install Cert-Manager**
 
     Install it directly from the official manifest:
@@ -110,19 +92,13 @@ These charts rely on `cert-manager` for automatic SSL certificate generation (sp
     kubectl get pods -n cert-manager
     ```
 
-</Steps>
-
 ### 3. Cluster Issuer
 
 The charts default to looking for a `ClusterIssuer` named `cluster-issuer`.
 
-<Aside type="caution">
-  Without a valid ClusterIssuer, the Gateway Network certificates will not be generated, and redundancy/scaleout will fail to connect.
-</Aside>
+> **Caution**: Without a valid ClusterIssuer, the Gateway Network certificates will not be generated, and redundancy/scaleout will fail to connect.
 
 For local development or internal networks, a **Self-Signed** issuer is the easiest way to get started.
-
-<Steps>
 
 1. **Create Issuer Manifest**
 
@@ -142,8 +118,6 @@ For local development or internal networks, a **Self-Signed** issuer is the easi
     ```bash
     kubectl apply -f issuer.yaml
     ```
-
-</Steps>
 
 ## Installing the Charts
 

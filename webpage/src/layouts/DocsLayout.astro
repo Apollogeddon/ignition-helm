@@ -1,0 +1,148 @@
+---
+import Sidebar from "../components/Sidebar.astro";
+import BaseLayout from "./BaseLayout.astro";
+
+interface Props {
+	title: string;
+	description?: string;
+}
+
+const { title, description } = Astro.props;
+---
+
+<BaseLayout title={title} description={description}>
+	<div class="docs-container">
+		<aside class="sidebar-wrapper">
+			<Sidebar />
+		</aside>
+		<article class="content-wrapper">
+			<div class="prose">
+				<h1>{title}</h1>
+				<slot />
+			</div>
+		</article>
+	</div>
+</BaseLayout>
+
+<style>
+	.docs-container {
+		display: flex;
+		max-width: 1440px;
+		margin: 0 auto;
+		padding: 0 1.5rem;
+	}
+
+	.sidebar-wrapper {
+		width: var(--sl-sidebar-width);
+		position: sticky;
+		top: var(--sl-nav-height);
+		height: calc(100vh - var(--sl-nav-height));
+		border-right: 1px solid var(--sl-color-hairline);
+		overflow-y: auto;
+		padding: 2rem 0;
+	}
+
+	.content-wrapper {
+		flex: 1;
+		min-width: 0;
+		padding: 2rem 4rem;
+	}
+
+	.prose {
+		max-width: 80ch;
+		margin: 0 auto;
+	}
+
+	.prose h1 {
+		font-size: 2.5rem;
+		margin-bottom: 2rem;
+		border-bottom: 1px solid var(--sl-color-hairline);
+		padding-bottom: 1rem;
+		color: var(--sl-color-text);
+	}
+
+	/* Responsive */
+	@media (max-width: 768px) {
+		.sidebar-wrapper {
+			display: none;
+		}
+		.content-wrapper {
+			padding: 2rem 1rem;
+		}
+	}
+</style>
+
+<style is:global>
+	/* Markdown Content Styles */
+	.prose h2, .prose h3, .prose h4 {
+		color: var(--sl-color-text);
+		font-weight: 700;
+	}
+
+	.prose h2 {
+		font-size: 1.75rem;
+		margin-top: 3.5rem;
+		margin-bottom: 1.5rem;
+		border-bottom: 1px solid var(--sl-color-hairline);
+		padding-bottom: 0.5rem;
+	}
+
+	.prose h3 {
+		font-size: 1.25rem;
+		margin-top: 2.5rem;
+		margin-bottom: 1rem;
+	}
+
+	.prose p {
+		margin-bottom: 1.5rem;
+		line-height: 1.7;
+		color: var(--sl-color-text);
+	}
+
+	.prose ul, .prose ol {
+		margin-bottom: 1.5rem;
+		padding-left: 1.5rem;
+		color: var(--sl-color-text);
+	}
+
+	.prose li {
+		margin-bottom: 0.5rem;
+	}
+
+	.prose code:not(pre code) {
+		background: var(--sl-color-accent-low);
+		color: var(--sl-color-accent);
+		padding: 0.2rem 0.4rem;
+		border-radius: 4px;
+		font-size: 0.9em;
+		border: 1px solid rgba(243, 108, 33, 0.2);
+	}
+
+	.prose table {
+		width: 100%;
+		border-collapse: collapse;
+		margin-bottom: 2rem;
+		font-size: 0.95rem;
+	}
+
+	.prose th, .prose td {
+		padding: 0.75rem;
+		border: 1px solid var(--sl-color-hairline);
+		text-align: left;
+		color: var(--sl-color-text);
+	}
+
+	.prose th {
+		background: var(--sl-color-gray-6);
+		font-weight: 700;
+	}
+
+	.prose blockquote {
+		margin: 2rem 0;
+		padding: 1rem 1.5rem;
+		border-left: 4px solid var(--sl-color-accent);
+		background: var(--sl-color-accent-low);
+		color: var(--sl-color-text);
+		font-style: italic;
+	}
+</style>
