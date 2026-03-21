@@ -18,15 +18,16 @@
 
 ## 🚀 Overview
 
-Enterprise-grade Helm charts for deploying Ignition Perspective on Kubernetes. Whether you need a simple redundant pair or a massive scaleout architecture, these charts provide a "batteries-included" experience with best practices built-in.
+Enterprise-grade Helm charts for deploying Inductive Automation Ignition on Kubernetes. Whether you need a simple redundant pair or a massive scaleout architecture, these charts provide a "batteries-included" experience with best practices built-in.
 
 ## ✨ Features
 
 - **Failover Architecture**: Standard Master/Backup redundancy with automatic peering.
-- **Scaleout Architecture**: Separate Frontend (Perspective/Vision) and Backend (Tags/History) workloads.
+- **Scaleout Architecture**: Separate Frontend (Perspective/Vision) and Backend (Tags/History) layers.
 - **Automated Ops**: Self-configuring clusters using init containers to handle redundancy seeding and certificate exchange.
-- **Security First**: Runs as non-root user, supports `SealedSecrets`, and manages certificates via `cert-manager`.
-- **Battery Included**: Pre-configured probes, service accounts, and sensible defaults.
+- **Security Hardened**: Runs as non-root user, supports `SealedSecrets`, manages certificates via `cert-manager`, and includes `NetworkPolicy` isolation for GAN traffic.
+- **Production Observability**: Integrated support for Prometheus `ServiceMonitor`, robust health probes, and graceful shutdown hooks.
+- **Scalable Design**: Support for Horizontal Pod Autoscaling (HPA) for Frontend workloads.
 
 ## 📦 Installation
 
@@ -45,7 +46,7 @@ Deploy a standard redundant pair:
 
 ```bash
 helm install my-ignition ignition-charts/ignition-failover \
-  --set ignition.adminPassword=mysecretpassword
+  --set ignition.secrets.GATEWAY_ADMIN_PASSWORD=mysecretpassword
 ```
 
 ### Scaleout (Frontend/Backend)
@@ -54,5 +55,6 @@ Deploy a split architecture for high-scale environments:
 
 ```bash
 helm install my-scaleout ignition-charts/ignition-scaleout \
-  --set backend.secrets.GATEWAY_ADMIN_PASSWORD=mysecretpassword
+  --set backend.secrets.GATEWAY_ADMIN_PASSWORD=mysecretpassword \
+  --set frontend.secrets.GATEWAY_ADMIN_PASSWORD=mysecretpassword
 ```
