@@ -1,2 +1,4 @@
 {{ include "ignition-common.service" (dict "name" "backend" "values" .Values.backend "Release" .Release "Chart" .Chart "Values" .Values) }}
+---
+{{ include "ignition-common.headlessService" (dict "name" "backend" "values" .Values.backend "Release" .Release "Chart" .Chart "Values" .Values) }}
 {{- include "ignition-common.redundancyServices" (dict "name" "backend" "values" .Values.backend "context" .) }}

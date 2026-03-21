@@ -197,6 +197,43 @@ spec:
 {{- end }}
 
 {{/*
+Standard Headless Service for StatefulSet identity
+Params:
+  name: The component name suffix (e.g. "frontend" or "")
+  values: The component-specific values object
+*/}}
+{{- define "ignition-common.headlessService" -}}
+{{- $fullname := include "ignition.name" . }}
+{{- if .name }}
+{{- $fullname = printf "%s-%s" $fullname .name }}
+{{- end }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $fullname }}-headless
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "ignition.labels" . | nindent 4 }}
+spec:
+  clusterIP: None
+  ports:
+    - port: {{ .values.service.ports.http }}
+      targetPort: http
+      protocol: TCP
+      name: http
+    - port: {{ .values.service.ports.https }}
+      targetPort: https
+      protocol: TCP
+      name: https
+    - port: {{ .values.service.ports.gan }}
+      targetPort: gan
+      protocol: TCP
+      name: gan
+  selector:
+    {{- include "ignition.selectorLabels" . | nindent 4 }}
+{{- end }}
+
+{{/*
 Logback XML Configuration
 Params:
   level: The logging level (INFO, DEBUG, WARN, ERROR)
@@ -468,7 +505,7 @@ Params:
   ordinal: The pod ordinal index
 */}}
 {{- define "ignition-common.podFQDN" -}}
-{{- printf "%s-%d.%s" .name (int .ordinal) .name -}}
+{{- printf "%s-%d.%s-headless" .name (int .ordinal) .name -}}
 {{- end }}
 
 {{/*

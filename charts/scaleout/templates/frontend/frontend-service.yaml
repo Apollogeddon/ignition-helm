@@ -1,1 +1,3 @@
 {{ include "ignition-common.service" (dict "name" "frontend" "values" .Values.frontend "Release" .Release "Chart" .Chart "Values" .Values) }}
+---
+{{ include "ignition-common.headlessService" (dict "name" "frontend" "values" .Values.frontend "Release" .Release "Chart" .Chart "Values" .Values) }}

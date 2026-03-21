@@ -11,7 +11,7 @@ spec:
   selector:
     matchLabels:
       {{- include "ignition.selectorLabels" . | nindent 6 }}
-  serviceName: {{ include "ignition.name" . }}-frontend
+  serviceName: {{ include "ignition.name" . }}-frontend-headless
   replicas: {{ .Values.frontend.redundancy.replicas }}
   template:
     metadata:
@@ -39,6 +39,10 @@ spec:
             drop:
               - ALL
           readOnlyRootFilesystem: false
+        lifecycle:
+          preStop:
+            exec:
+              command: ["/config/scripts/shutdown.sh"]
         image: {{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}
         imagePullPolicy: {{ .Values.image.pullPolicy }}
         resources: {{ .Values.frontend.resources | toYaml | nindent 10 }}
@@ -73,11 +77,11 @@ spec:
 {{ include "ignition-common.volumeMounts" (dict "name" (include "ignition.name" .) "values" .Values.frontend "machineIdSubPath" "frontend-machine-id") | nindent 8 }}
         {{- if .Values.frontend.readinessProbe.enabled }}
         readinessProbe:
-{{ include "ignition-common.probes" (dict "probe" .Values.frontend.readinessProbe) | nindent 10 }}
+{{ include "ignition-common.probes" (dict "probe" (merge (dict "command" (list "/config/scripts/health-check.sh")) .Values.frontend.readinessProbe)) | nindent 10 }}
         {{- end }}
         {{- if .Values.frontend.livenessProbe.enabled }}
         livenessProbe:
-{{ include "ignition-common.probes" (dict "probe" .Values.frontend.livenessProbe) | nindent 10 }}
+{{ include "ignition-common.probes" (dict "probe" (merge (dict "command" (list "/config/scripts/health-check.sh")) .Values.frontend.livenessProbe)) | nindent 10 }}
         {{- end }}
       initContainers:
 {{ include "ignition-common.initContainer.preconfigure" (dict "name" (include "ignition.name" .) "secretName" (printf "%s-frontend-secrets" (include "ignition.name" .)) "image" .Values.image "values" .Values.frontend "replicas" 1 "context" .) | nindent 6 }}

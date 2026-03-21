@@ -1,0 +1,40 @@
+suite: Ignition Failover Production Features
+templates:
+  - networkpolicy.yaml
+  - servicemonitor.yaml
+  - ignition-statefulset.yaml
+tests:
+  - it: should create NetworkPolicy when enabled
+    template: networkpolicy.yaml
+    set:
+      ignition:
+        networkPolicy:
+          enabled: true
+    asserts:
+      - isKind:
+          of: NetworkPolicy
+      - equal:
+          path: spec.policyTypes[0]
+          value: Ingress
+
+  - it: should create ServiceMonitor when enabled
+    template: servicemonitor.yaml
+    set:
+      ignition:
+        serviceMonitor:
+          enabled: true
+    asserts:
+      - isKind:
+          of: ServiceMonitor
+      - equal:
+          path: spec.endpoints[0].path
+          value: /data/metrics
+
+  - it: should include lifecycle preStop hook
+    template: ignition-statefulset.yaml
+    asserts:
+      - exists:
+          path: spec.template.spec.containers[0].lifecycle.preStop
+      - equal:
+          path: spec.template.spec.containers[0].lifecycle.preStop.exec.command[0]
+          value: /config/scripts/shutdown.sh

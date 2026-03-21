@@ -12,12 +12,12 @@ tests:
           path: spec.template.spec.containers[0].env
           content:
             name: GATEWAY_NETWORK_0_HOST
-            value: ignition-scaleout-backend-0.ignition-scaleout-backend
+            value: ignition-scaleout-backend-0.ignition-scaleout-backend-headless
       - contains:
           path: spec.template.spec.containers[0].env
           content:
             name: GATEWAY_NETWORK_1_HOST
-            value: ignition-scaleout-backend-1.ignition-scaleout-backend
+            value: ignition-scaleout-backend-1.ignition-scaleout-backend-headless
 
   - it: should inject only primary backend GAN host when backend redundancy is disabled
     set:
@@ -29,7 +29,7 @@ tests:
           path: spec.template.spec.containers[0].env
           content:
             name: GATEWAY_NETWORK_0_HOST
-            value: ignition-scaleout-backend-0.ignition-scaleout-backend
+            value: ignition-scaleout-backend-0.ignition-scaleout-backend-headless
       - notContains:
           path: spec.template.spec.containers[0].env
           content:
