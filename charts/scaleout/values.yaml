@@ -131,9 +131,6 @@ frontend:
     GATEWAY_NETWORK_REQUIRETWOWAYAUTH: "true"
     GATEWAY_MODULES_ENABLED: "perspective,symbol-factory"
 
-  # -- Static Machine ID for licensing.
-  spoofMachineId: ""
-
   # -- Use SealedSecrets instead of plain Kubernetes Secrets
   sealedSecrets: false
 
@@ -312,9 +309,6 @@ backend:
     GATEWAY_NETWORK_SECURITYPOLICY: "Unrestricted"
     GATEWAY_NETWORK_REQUIRETWOWAYAUTH: "true"
     GATEWAY_MODULES_ENABLED: "alarm-notification,modbus-driver-v2,opc-ua,reporting,siemens-drivers,sql-bridge,tag-historian,udp-tcp-drivers"
-
-  # -- Static Machine ID for licensing.
-  spoofMachineId: ""
 
   # -- Use SealedSecrets instead of plain Kubernetes Secrets
   sealedSecrets: false

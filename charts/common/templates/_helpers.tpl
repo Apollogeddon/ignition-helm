@@ -320,7 +320,6 @@ Standard Volume Mounts
 Params:
   name: The base name of the application/component
   values: The component-specific values object
-  machineIdSubPath: (Optional) The subPath for machine-id
 */}}
 {{- define "ignition-common.volumeMounts" -}}
 - mountPath: /usr/local/bin/ignition/data
@@ -340,12 +339,6 @@ Params:
 {{- if and .values.ssl .values.ssl.enabled }}
 - mountPath: /run/secrets/web-tls
   name: {{ .name }}-web-tls
-  readOnly: true
-{{- end }}
-{{- if .values.spoofMachineId }}
-- mountPath: /etc/machine-id
-  name: {{ .name }}-config-files
-  subPath: {{ .machineIdSubPath | default "machine-id" }}
   readOnly: true
 {{- end }}
 {{- if .values.localMounts }}
@@ -433,8 +426,6 @@ Params:
     runAsNonRoot: {{ .values.securityContext.runAsNonRoot }}
     runAsUser: {{ .values.securityContext.runAsUser }}
   env:
-  - name: SPOOF_MACHINE_ID
-    value: {{ .values.spoofMachineId | default "" | quote }}
   - name: TLS_KEYSTORE_PASSWORD
     valueFrom:
       secretKeyRef:

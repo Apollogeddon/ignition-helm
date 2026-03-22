@@ -74,7 +74,7 @@ spec:
             fieldRef:
               fieldPath: metadata.name
         volumeMounts:
-{{ include "ignition-common.volumeMounts" (dict "name" (include "ignition.name" .) "values" .Values.frontend "machineIdSubPath" "frontend-machine-id") | nindent 8 }}
+{{ include "ignition-common.volumeMounts" (dict "name" (include "ignition.name" .) "values" .Values.frontend) | nindent 8 }}
         {{- if .Values.frontend.readinessProbe.enabled }}
         readinessProbe:
 {{ include "ignition-common.probes" (dict "probe" (merge (dict "command" (list "/config/scripts/health-check.sh")) .Values.frontend.readinessProbe)) | nindent 10 }}

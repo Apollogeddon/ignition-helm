@@ -48,26 +48,6 @@ tests:
             name: IGNITION_RESTORE_PATH
             value: "/restore/backup.gwbk"
 
-  - it: should spoof machine id
-    set:
-      ignition:
-        spoofMachineId: "abc-123"
-    asserts:
-      - contains:
-          path: spec.template.spec.containers[0].volumeMounts
-          content:
-            name: ignition-failover-config-files
-            mountPath: /etc/machine-id
-            subPath: machine-id
-            readOnly: true
-      - contains:
-          path: spec.template.spec.volumes
-          content:
-            name: ignition-failover-config-files
-            secret:
-              secretName: ignition-failover-config-files
-              defaultMode: 420
-
   - it: should not have web-tls volume by default
     template: ignition-statefulset.yaml
     asserts:

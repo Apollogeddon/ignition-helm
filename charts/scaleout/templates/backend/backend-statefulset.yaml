@@ -68,7 +68,7 @@ spec:
           value: {{ .Values.backend.eam.role | quote }}
 
         volumeMounts:
-{{ include "ignition-common.volumeMounts" (dict "name" (include "ignition.name" .) "values" .Values.backend "machineIdSubPath" "backend-machine-id") | nindent 8 }}
+{{ include "ignition-common.volumeMounts" (dict "name" (include "ignition.name" .) "values" .Values.backend) | nindent 8 }}
         {{- if .Values.backend.readinessProbe.enabled }}
         readinessProbe:
 {{ include "ignition-common.probes" (dict "probe" (merge (dict "command" (list "/config/scripts/health-check.sh")) .Values.backend.readinessProbe)) | nindent 10 }}
