@@ -67,12 +67,6 @@ const features = [
     font-weight: 800;
   }
 
-  .text-gradient {
-    background: linear-gradient(to right, var(--sl-color-accent), #ff9e6a);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-  }
-
   .grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
@@ -92,8 +86,8 @@ const features = [
   .feature-card:hover {
     transform: translateY(-8px);
     border-color: var(--sl-color-accent);
-    background: rgba(243, 108, 33, 0.03);
-    box-shadow: 0 20px 40px -12px rgba(243, 108, 33, 0.15);
+    background: rgba(var(--sl-color-accent-rgb), 0.03);
+    box-shadow: 0 20px 40px -12px rgba(var(--sl-color-accent-rgb), 0.15);
   }
 
   .icon-wrapper {
@@ -102,7 +96,7 @@ const features = [
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(243, 108, 33, 0.1);
+    background: rgba(var(--sl-color-accent-rgb), 0.1);
     color: var(--sl-color-accent);
     border-radius: 12px;
     margin-bottom: 0.5rem;
@@ -119,9 +113,5 @@ const features = [
     color: var(--sl-color-text-muted);
     line-height: 1.6;
     margin: 0;
-  }
-
-  :root[data-theme='light'] p {
-    /* Handled by variables */
   }
 </style>

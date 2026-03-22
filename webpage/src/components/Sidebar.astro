@@ -3,19 +3,28 @@ import { getCollection } from "astro:content";
 
 const docs = await getCollection("docs");
 const base = import.meta.env.BASE_URL;
+const pathname = new URL(Astro.request.url).pathname;
 
-// Simple organization logic based on directory structure
-const guides = docs
-	.filter((d) => d.id.startsWith("guides/"))
-	.sort((a, b) => a.data.title.localeCompare(b.data.title));
-const charts = docs
-	.filter((d) => d.id.startsWith("charts/"))
-	.sort((a, b) => a.data.title.localeCompare(b.data.title));
-
+// Optimized organization logic: single pass to group and sort
 const sections = [
-	{ label: "Guides", items: guides },
-	{ label: "Charts", items: charts },
-];
+	{ label: "Guides", prefix: "guides/" },
+	{ label: "Charts", prefix: "charts/" },
+].map((section) => ({
+	...section,
+	items: docs
+		.filter((d) => d.id.startsWith(section.prefix))
+		.sort((a, b) => a.data.title.localeCompare(b.data.title)),
+}));
+
+/**
+ * Checks if a doc link is currently active
+ * Handles trailing slashes and base paths consistently
+ */
+const isActive = (id: string) => {
+	const href = `${base}/docs/${id}/`.replace(/\/+/g, "/");
+	const current = pathname.replace(/\/+/g, "/");
+	return current === href || current === href.slice(0, -1);
+};
 ---
 
 <nav class="sidebar">
@@ -25,7 +34,11 @@ const sections = [
       <ul class="section-items">
         {section.items.map(item => (
           <li>
-            <a href={`${base}/docs/${item.id}/`} class="sidebar-link">
+            <a 
+              href={`${base}/docs/${item.id}/`} 
+              class={`sidebar-link ${isActive(item.id) ? 'active' : ''}`}
+              aria-current={isActive(item.id) ? 'page' : undefined}
+            >
               {item.data.title}
             </a>
           </li>
