@@ -10,9 +10,5 @@ stringData:
   redundancy-backup.xml: |-
 {{ include "ignition-common.redundancyXml" (dict "role" "Backup" "host" (include "ignition-common.podFQDN" (dict "name" (include "ignition.name" .) "ordinal" 0)) "port" .Values.ignition.service.ports.gan "redundancy" .Values.ignition.redundancy) | indent 4 }}
 
-  {{- if .Values.ignition.spoofMachineId }}
-  machine-id: |-
-    {{ .Values.ignition.spoofMachineId }}
-  {{- end }}
   logback.xml: |-
 {{ include "ignition-common.logback" (dict "level" .Values.ignition.logging.level) | indent 4 }}

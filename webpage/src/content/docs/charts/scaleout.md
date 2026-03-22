@@ -69,7 +69,6 @@ The Backend acts as the controller and primary data processor.
 | `backend.args` | list | *(See below)* |
 | `backend.logging.level` | string | `"INFO"` |
 | `backend.eam.role` | string | `"Controller"` |
-| `backend.spoofMachineId` | string | `""` |
 | `backend.tls.keystorePassword` | string | `"ignition"` |
 | `backend.gan.keystorePassword` | string | `"metro"` |
 
@@ -210,7 +209,6 @@ The Frontend acts as the agent, serving client sessions (Perspective, Vision).
 | `frontend.args` | list | *(See below)* |
 | `frontend.logging.level` | string | `"INFO"` |
 | `frontend.eam.role` | string | `"Agent"` |
-| `frontend.spoofMachineId` | string | `""` |
 | `frontend.tls.keystorePassword` | string | `"ignition"` |
 | `frontend.gan.keystorePassword` | string | `"metro"` |
 

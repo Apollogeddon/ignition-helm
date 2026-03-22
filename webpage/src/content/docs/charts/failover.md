@@ -53,7 +53,6 @@ Basic metadata and image configuration.
 | `image.repository` | string | `"inductiveautomation/ignition"` |
 | `image.tag` | string | `"8.3"` |
 | `image.pullPolicy` | string | `"IfNotPresent"` |
-| `ignition.spoofMachineId` | string | `""` |
 
 ### Web Server SSL/TLS
 
