@@ -35,7 +35,7 @@ jobs:
         run: cd webpage && npm ci
 
       - name: Build site
-        run: chmod +x ./.github/scripts/ci/deploy-webpage.sh && ./.github/scripts/ci/deploy-webpage.sh
+        run: sh ./.github/scripts/ci/deploy-webpage.sh
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v4
