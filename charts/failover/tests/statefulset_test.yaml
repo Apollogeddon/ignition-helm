@@ -31,7 +31,7 @@ tests:
           value: 2
       # Verify init container has 2 replicas env var
       - equal:
-          path: spec.template.spec.initContainers[0].env[3].value
+          path: spec.template.spec.initContainers[0].env[2].value
           value: "2"
 
   - it: should configure affinity (soft)
