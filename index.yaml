@@ -2,6 +2,19 @@ apiVersion: v1
 entries:
   ignition-common:
   - apiVersion: v2
+    created: "2026-03-22T03:34:13.143983396Z"
+    description: Shared library chart for Ignition Helm Charts
+    digest: 4299ad68f5b229207df6e62dba22e2c4b72b03d1ac1fa07c83daf229a3703290
+    keywords:
+    - ignition
+    - scada
+    - library
+    name: ignition-common
+    type: library
+    urls:
+    - https://github.com/Apollogeddon/ignition-helm/releases/download/ignition-common-3.0.0/ignition-common-3.0.0.tgz
+    version: 3.0.0
+  - apiVersion: v2
     created: "2026-01-25T12:01:34.606929198Z"
     description: Shared library chart for Ignition Helm Charts
     digest: 946328c9737522c279dfa4709aff05b05235a799ebad4cd417e9d4c286790b3b
@@ -445,4 +458,4 @@ entries:
     urls:
     - https://github.com/Apollogeddon/ignition-helm/releases/download/ignition-scaleout-1.1.0/ignition-scaleout-1.1.0.tgz
     version: 1.1.0
-generated: "2026-01-25T12:21:06.195760281Z"
+generated: "2026-03-22T03:34:13.379006298Z"
