@@ -29,14 +29,14 @@ jobs:
         uses: helm/chart-testing-action@v2.8.0
 
       - name: Update dependencies
-        run: chmod +x ./.github/scripts/ci/update-dependencies.sh && ./.github/scripts/ci/update-dependencies.sh
+        run: sh ./.github/scripts/ci/update-dependencies.sh
 
       - name: Install helm-unittest
         run: |
           helm plugin install https://github.com/helm-unittest/helm-unittest.git --version 0.7.2
 
       - name: Run unit tests
-        run: chmod +x ./.github/scripts/ci/run-unit-tests.sh && ./.github/scripts/ci/run-unit-tests.sh
+        run: sh ./.github/scripts/ci/run-unit-tests.sh
 
       - name: Run chart-testing (list-changed)
         id: list-changed
@@ -60,8 +60,8 @@ jobs:
 
       - name: Test Failover Deployment
         if: steps.list-changed.outputs.changed == 'true'
-        run: chmod +x ./.github/scripts/tests/test-failover.sh && ./.github/scripts/tests/test-failover.sh
+        run: sh ./.github/scripts/tests/test-failover.sh
 
       - name: Test Scaleout Deployment
         if: steps.list-changed.outputs.changed == 'true'
-        run: chmod +x ./.github/scripts/tests/test-scaleout.sh && ./.github/scripts/tests/test-scaleout.sh
+        run: sh ./.github/scripts/tests/test-scaleout.sh

@@ -40,7 +40,7 @@ jobs:
 
       - name: Update dependencies
         if: ${{ steps.release.outputs.releases_created }}
-        run: chmod +x ./.github/scripts/ci/update-dependencies.sh && ./.github/scripts/ci/update-dependencies.sh
+        run: sh ./.github/scripts/ci/update-dependencies.sh
 
       - name: Run chart-releaser
         if: ${{ steps.release.outputs.releases_created }}

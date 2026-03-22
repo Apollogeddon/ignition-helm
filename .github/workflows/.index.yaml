@@ -30,7 +30,7 @@ jobs:
           version: v3.14.4
 
       - name: Update Chart Dependencies
-        run: chmod +x ./.github/scripts/ci/update-dependencies.sh && ./.github/scripts/ci/update-dependencies.sh
+        run: sh ./.github/scripts/ci/update-dependencies.sh
 
       - name: Check for changes
         id: git_diff
@@ -46,8 +46,12 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           
           git add charts/*/Chart.lock
-          git commit -m "chore(helm): update Chart.lock files"
-          git push
+          if ! git diff --cached --quiet; then
+            git commit -m "chore(helm): update Chart.lock files"
+            git push
+          else
+            echo "No changes staged for commit."
+          fi
 
   testing:
     needs: updates
