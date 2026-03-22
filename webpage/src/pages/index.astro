@@ -1,4 +1,5 @@
 ---
+import logoImage from "../assets/favicon.png";
 import ArchitectureComparison from "../components/ArchitectureComparison.astro";
 import FeatureGrid from "../components/FeatureGrid.astro";
 import Hero from "../components/Hero.astro";
@@ -10,7 +11,7 @@ const base = import.meta.env.BASE_URL;
 <BaseLayout title="Ignition Helm Charts" description="Enterprise-grade Helm charts for deploying Inductive Automation Ignition on Kubernetes.">
   <Hero 
     tagline="The definitive way to deploy scalable, resilient Ignition architectures on Kubernetes."
-    logo={`${base}/favicon.png`}
+    logo={logoImage}
   />
   
   <FeatureGrid />
@@ -24,24 +25,3 @@ const base = import.meta.env.BASE_URL;
     </div>
   </footer>
 </BaseLayout>
-
-<style is:global>
-  /* Custom Footer Styling */
-  .custom-footer {
-    padding: 4rem 1rem;
-    border-top: 1px solid var(--sl-color-hairline);
-    text-align: center;
-    background: rgba(0, 0, 0, 0.2);
-    margin-top: 4rem;
-  }
-
-  .footer-content p {
-    margin: 0.5rem 0;
-    font-size: 0.875rem;
-    color: var(--sl-color-gray-4);
-  }
-
-  :root[data-theme='light'] .custom-footer {
-    background: var(--sl-color-gray-1);
-  }
-</style>
