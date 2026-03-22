@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.1.0](https://github.com/Apollogeddon/ignition-helm/compare/ignition-scaleout-v4.0.0...ignition-scaleout-v4.1.0) (2026-03-22)
+
+
+### Features
+
+* **charts:** Add production features, monitoring, and health checks ([90aeb15](https://github.com/Apollogeddon/ignition-helm/commit/90aeb15bf0876d5f8aae1560cd63cdd91b6f9515))
+
 ## [4.0.0](https://github.com/Apollogeddon/ignition-helm/compare/ignition-scaleout-v3.2.0...ignition-scaleout-v4.0.0) (2026-01-25)
 
 
