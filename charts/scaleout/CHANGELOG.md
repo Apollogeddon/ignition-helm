@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.2.0](https://github.com/Apollogeddon/ignition-helm/compare/ignition-scaleout-4.1.0...ignition-scaleout-v4.2.0) (2026-04-09)
+
+
+### Features
+
+* **charts:** Add cert rotation, update strategies, and module sideloading ([dafd473](https://github.com/Apollogeddon/ignition-helm/commit/dafd4732eb3b087abf3400ac48b25493d76e11fd))
+
 ## [4.1.0](https://github.com/Apollogeddon/ignition-helm/compare/ignition-scaleout-v4.0.0...ignition-scaleout-v4.1.0) (2026-03-22)
 
 

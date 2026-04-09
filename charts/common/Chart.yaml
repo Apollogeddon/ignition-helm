@@ -2,7 +2,7 @@ apiVersion: v2
 name: ignition-common
 description: Shared library chart for Ignition Helm Charts
 type: library
-version: 3.1.0
+version: 3.2.0
 keywords:
   - ignition
   - scada
