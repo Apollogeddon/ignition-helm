@@ -350,6 +350,10 @@ Params:
 {{- if .values.extraVolumeMounts }}
 {{- toYaml .values.extraVolumeMounts | nindent 0 }}
 {{- end }}
+{{- if and .values.externalModules .values.externalModules.enabled }}
+- mountPath: /usr/local/bin/ignition/user-lib/modules
+  name: external-modules
+{{- end }}
 {{- end }}
 
 {{/*
@@ -396,6 +400,11 @@ Params:
 {{- end }}
 {{- if .values.extraVolumes }}
 {{- toYaml .values.extraVolumes | nindent 0 }}
+{{- end }}
+{{- if and .values.externalModules .values.externalModules.enabled }}
+- name: external-modules
+  persistentVolumeClaim:
+    claimName: {{ .values.externalModules.pvcName }}
 {{- end }}
 {{- end }}
 

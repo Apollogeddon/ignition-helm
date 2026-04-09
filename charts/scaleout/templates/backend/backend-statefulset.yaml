@@ -14,9 +14,11 @@ spec:
   serviceName: {{ include "ignition.name" . }}-backend-headless
   replicas: {{ if .Values.backend.redundancy.enabled }}2{{ else }}1{{ end }}
   updateStrategy:
-    type: RollingUpdate
+    type: {{ .Values.backend.updateStrategy.type }}
+    {{- if eq .Values.backend.updateStrategy.type "RollingUpdate" }}
     rollingUpdate:
       partition: 0
+    {{- end }}
   template:
     metadata:
       labels:

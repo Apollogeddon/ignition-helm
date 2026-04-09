@@ -1,0 +1,38 @@
+suite: GAN Certificate Rotation CronJob
+templates:
+  - cronjobs.yaml
+tests:
+  - it: should not render by default
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should render when certManager.rotation.enabled is true
+    set:
+      certManager:
+        rotation:
+          enabled: true
+    asserts:
+      - containsDocument:
+          kind: CronJob
+          apiVersion: batch/v1
+          name: ignition-failover-0-gan-rotation
+      - equal:
+          path: spec.jobTemplate.spec.template.spec.containers[0].command[0]
+          value: /config/scripts/invoke-args.sh
+      - equal:
+          path: spec.jobTemplate.spec.template.spec.containers[0].args[0]
+          value: /config/scripts/prepare-gan-certificates.sh
+
+  - it: should create two cronjobs when redundancy is enabled
+    set:
+      certManager:
+        rotation:
+          enabled: true
+      ignition:
+        redundancy:
+          enabled: true
+    asserts:
+      - hasDocuments:
+          count: 2
+      - matchSnapshot: {}

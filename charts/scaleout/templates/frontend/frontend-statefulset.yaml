@@ -13,6 +13,12 @@ spec:
       {{- include "ignition.selectorLabels" . | nindent 6 }}
   serviceName: {{ include "ignition.name" . }}-frontend-headless
   replicas: {{ .Values.frontend.redundancy.replicas }}
+  updateStrategy:
+    type: {{ .Values.frontend.updateStrategy.type }}
+    {{- if eq .Values.frontend.updateStrategy.type "RollingUpdate" }}
+    rollingUpdate:
+      partition: 0
+    {{- end }}
   template:
     metadata:
       labels:
