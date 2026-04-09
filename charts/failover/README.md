@@ -44,7 +44,14 @@ helm install my-ignition ignition-charts/ignition-failover \
   --set ignition.secrets.GATEWAY_ADMIN_PASSWORD=mysecretpassword
 ```
 
+## Lifecycle Management Insights
+
+* **SCADA Patch Pipeline:** Set `ignition.updateStrategy.type` to `OnDelete` to prevent automated Helm upgrades from unexpectedly terminating your running pods, allowing for strict, manual maintenance windows.
+* **External Module Sideloading:** Define a PersistentVolumeClaim via `ignition.externalModules.pvcName` to inject your custom `.modl` plugins on container startup, eliminating the need to maintain custom docker images.
+* **Zero-Downtime Cert Rotation:** Enable `certManager.rotation.enabled` to spin up smart Kubernetes CronJobs that securely rotate the Ignition instances' PKI trust fabric under-the-hood before certificate expiration.
+
 ## Configuration
+
 
 The following table lists the configurable parameters of the chart and their default values. For a comprehensive list, consult the `values.yaml` file.
 
@@ -61,3 +68,6 @@ The following table lists the configurable parameters of the chart and their def
 | `ignition.service.nodePorts` | Optional static NodePorts (http, https, gan). | `{}` |
 | `ignition.ingress.enabled` | Enable Ingress resource generation. | `false` |
 | `certManager.issuer.name` | Name of the Cert-Manager Issuer to use. | `cluster-issuer` |
+| `certManager.rotation.enabled` | Deploy CronJobs to auto-rotate GAN certificates without manual restart. | `false` |
+| `ignition.updateStrategy.type` | Helm patch rollout methodology (`RollingUpdate` or `OnDelete`). | `RollingUpdate` |
+| `ignition.externalModules.enabled` | Enable mounting an isolated Persistent Volume Claim for modules. | `false` |

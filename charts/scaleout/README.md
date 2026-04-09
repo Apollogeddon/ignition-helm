@@ -38,7 +38,14 @@ helm install my-scaleout ignition-charts/ignition-scaleout \
   --set frontend.replicas=2
 ```
 
+## Lifecycle Management Insights
+
+* **SCADA Patch Pipeline:** Set `frontend.updateStrategy.type` or `backend.updateStrategy.type` to `OnDelete` to prevent automated Helm upgrades from unexpectedly terminating your running pods, allowing for strict, manual maintenance windows.
+* **External Module Sideloading:** Define a PersistentVolumeClaim via `backend.externalModules.pvcName` (or frontend) to inject custom `.modl` plugins on startup.
+* **Zero-Downtime Cert Rotation:** Enable `certManager.rotation.enabled` to deploy CronJobs that transparently refresh the Gateway Network PKI trust matrix before certificates expire.
+
 ## Configuration
+
 
 | Parameter | Description | Default |
 | --------- | ----------- | ------- |
@@ -53,3 +60,8 @@ helm install my-scaleout ignition-charts/ignition-scaleout \
 | `backend.persistence.size` | Storage size for Backend nodes. | `3Gi` |
 | `frontend.service.nodePorts` | Optional static NodePorts for Frontend. | `{}` |
 | `backend.service.nodePorts` | Optional static NodePorts for Backend. | `{}` |
+| `certManager.rotation.enabled` | Deploy CronJobs to auto-rotate GAN certificates without manual restart. | `false` |
+| `frontend.updateStrategy.type` | Helm patch rollout methodology for Frontend layer. | `RollingUpdate` |
+| `backend.updateStrategy.type` | Helm patch rollout methodology for Backend layer. | `RollingUpdate` |
+| `frontend.externalModules.enabled` | Enable mounting an isolated Persistent Volume Claim for modules. | `false` |
+| `backend.externalModules.enabled` | Enable mounting an isolated Persistent Volume Claim for modules. | `false` |
