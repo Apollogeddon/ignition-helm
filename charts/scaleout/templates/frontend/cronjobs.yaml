@@ -1,0 +1,1 @@
+{{- include "ignition-common.ganRotationCronJob" (dict "name" "frontend" "values" .Values.frontend "replicas" .Values.frontend.redundancy.replicas "image" .Values.image "ganTlsSecretName" (printf "%s-frontend-gan-tls" (include "ignition.name" .)) "context" .) }}

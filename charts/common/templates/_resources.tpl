@@ -422,3 +422,89 @@ spec:
     {{- end }}
 {{- end }}
 {{- end }}
+
+{{/*
+Standard GAN Certificate Rotation CronJob
+Params:
+  name: The component name suffix (e.g. "backend")
+  values: The component-specific values object
+  replicas: The number of pod instances
+  image: The image repo/tag reference
+  ganTlsSecretName: The secret containing the GAN key/cert
+  context: The global context (Dot)
+*/}}
+{{- define "ignition-common.ganRotationCronJob" -}}
+{{- if .context.Values.certManager.rotation.enabled -}}
+{{- range $i := until (int .replicas) }}
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  {{- $fullname := include "ignition.name" $.context }}
+  {{- if $.name }}
+  {{- $fullname = printf "%s-%s" $fullname $.name }}
+  {{- end }}
+  name: {{ printf "%s-%v-gan-rotation" $fullname $i }}
+  namespace: {{ $.context.Release.Namespace }}
+  labels:
+    {{- include "ignition.labels" $.context | nindent 4 }}
+spec:
+  schedule: {{ $.context.Values.certManager.rotation.schedule | quote }}
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 60
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          securityContext:
+            runAsUser: 2003
+            runAsGroup: 2003
+            fsGroup: 2003
+            runAsNonRoot: true
+          restartPolicy: Never
+          affinity:
+            podAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+                - labelSelector:
+                    matchExpressions:
+                      - key: app.kubernetes.io/name
+                        operator: In
+                        values:
+                        - {{ include "ignition.name" $.context }}
+                      - key: statefulset.kubernetes.io/pod-name
+                        operator: In
+                        values:
+                        - {{ printf "%s-%v" $fullname $i }}
+                  topologyKey: "kubernetes.io/hostname"
+          containers:
+          - name: rotate-certs
+            image: {{ $.image.repository }}:{{ $.image.tag | default $.context.Chart.AppVersion }}
+            command:
+            - /config/scripts/invoke-args.sh
+            args:
+            - /config/scripts/prepare-gan-certificates.sh
+            volumeMounts:
+            - mountPath: /data
+              name: data
+            - mountPath: /config/scripts
+              name: config-scripts
+              readOnly: true
+            - mountPath: /run/secrets/gan-tls
+              name: gan-tls
+              readOnly: true
+          volumes:
+          - name: config-scripts
+            configMap:
+              name: {{ include "ignition-common.scriptsName" $.context }}
+              defaultMode: 0755
+          - name: gan-tls
+            secret:
+              secretName: {{ $.ganTlsSecretName }}
+          - name: data
+            persistentVolumeClaim:
+              claimName: {{ printf "data-%s-%v" $fullname $i }}
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 1
+{{- end }}
+{{- end }}
+{{- end }}

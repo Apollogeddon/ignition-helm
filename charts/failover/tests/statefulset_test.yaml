@@ -125,3 +125,34 @@ tests:
       - equal:
           path: spec.volumeClaimTemplates[0].spec.storageClassName
           value: ""
+
+  - it: should set updateStrategy to OnDelete when configured
+    set:
+      ignition:
+        updateStrategy:
+          type: OnDelete
+    asserts:
+      - equal:
+          path: spec.updateStrategy.type
+          value: OnDelete
+      - notExists:
+          path: spec.updateStrategy.rollingUpdate
+
+  - it: should mount external modules pvc
+    set:
+      ignition:
+        externalModules:
+          enabled: true
+          pvcName: "my-custom-modules"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].volumeMounts
+          content:
+            mountPath: /usr/local/bin/ignition/user-lib/modules
+            name: external-modules
+      - contains:
+          path: spec.template.spec.volumes
+          content:
+            name: external-modules
+            persistentVolumeClaim:
+              claimName: "my-custom-modules"

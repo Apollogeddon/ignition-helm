@@ -88,3 +88,34 @@ tests:
             name: ignition-scaleout-web-tls
             mountPath: /run/secrets/web-tls
             readOnly: true
+
+  - it: should set updateStrategy to OnDelete when configured
+    set:
+      backend:
+        updateStrategy:
+          type: OnDelete
+    asserts:
+      - equal:
+          path: spec.updateStrategy.type
+          value: OnDelete
+      - notExists:
+          path: spec.updateStrategy.rollingUpdate
+
+  - it: should mount external modules pvc
+    set:
+      backend:
+        externalModules:
+          enabled: true
+          pvcName: "my-backend-modules"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].volumeMounts
+          content:
+            mountPath: /usr/local/bin/ignition/user-lib/modules
+            name: external-modules
+      - contains:
+          path: spec.template.spec.volumes
+          content:
+            name: external-modules
+            persistentVolumeClaim:
+              claimName: "my-backend-modules"
