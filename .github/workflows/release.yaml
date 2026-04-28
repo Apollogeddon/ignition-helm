@@ -20,7 +20,7 @@ jobs:
 
       - name: Release Please
         id: release
-        uses: googleapis/release-please-action@v4
+        uses: googleapis/release-please-action@v5
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           config-file: .github/release.json
@@ -34,7 +34,7 @@ jobs:
 
       - name: Install Helm
         if: ${{ steps.release.outputs.releases_created }}
-        uses: azure/setup-helm@v4
+        uses: azure/setup-helm@v5
         with:
           version: v3.14.4
 
