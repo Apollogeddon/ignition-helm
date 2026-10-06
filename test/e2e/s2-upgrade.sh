@@ -64,19 +64,21 @@ start=$(date +%s)
 if [ "$UPGRADE_MODE" = staged ]; then
   # 4.1.0 pods run /config/scripts/shutdown.sh (gwcmd.sh -p, which resets the
   # gateway login) as their preStop hook. Upgrade with OnDelete first so only
-  # the scripts Secret changes; once the running pods' volume no longer has
-  # shutdown.sh, the old hook fails harmlessly and the rollout is safe.
-  log "staged upgrade 1/2: OnDelete, waiting for shutdown.sh to leave the running pods"
+  # the scripts Secret changes (the chart now ships shutdown.sh as a no-op);
+  # once the running pods' volume has the no-op, the rollout is safe.
+  log "staged upgrade 1/2: OnDelete, waiting for the no-op shutdown.sh to reach the running pods"
   e2e_install "${upgrade[@]}" --set ignition.updateStrategy.type=OnDelete
+  # count only pods positively confirmed to have the no-op (a failed exec
+  # during an API drop must not count as done)
   for _ in $(seq 60); do
-    left=0
+    clean=0
     for p in $STS-0 $STS-1; do
-      kubectl -n "$ns" exec "$p" -c gateway -- sh -c 'test -e /config/scripts/shutdown.sh' 2>/dev/null && left=$((left + 1))
+      kubectl -n "$ns" exec "$p" -c gateway -- sh -c 'test -f /config/scripts/shutdown.sh && ! grep -v "^ *#" /config/scripts/shutdown.sh | grep -q gwcmd' 2>/dev/null && clean=$((clean + 1))
     done
-    [ "$left" -eq 0 ] && break
+    [ "$clean" -eq 2 ] && break
     sleep 5
   done
-  [ "$left" -eq 0 ] || die "shutdown.sh still present in the running pods after 5 minutes"
+  [ "$clean" -eq 2 ] || die "the running pods still have the old shutdown.sh after 5 minutes"
   log "staged upgrade 2/2: RollingUpdate"
 fi
 log "upgrading to the working tree ${UPGRADE_SET:+(${UPGRADE_SET})}"
