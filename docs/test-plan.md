@@ -33,10 +33,10 @@ Status: **Live** verified on a real deployment, **Unit** helm-unittest only, **R
 | 1 | Install a standalone gateway | Live | Live | |
 | 2 | Auto-commission from env (EULA, admin, edition) | Live | Live | |
 | 3 | Data kept on the PVC across restarts | Live | Live | |
-| 4 | Upgrade from the previous release | Not tested | Live (single) | redundant upgrade pending |
+| 4 | Upgrade from the previous release | Not tested | Gap (S2) | from 4.1.0 the old preStop (`gwcmd.sh -p`) runs as each 4.1.0 pod is replaced and resets the admin login; the new pod needs commissioning (authSetup). Readiness held it un-Ready and the rollout stopped before the Master. Needs an upgrade procedure |
 | 5 | No password-resetting preStop | Live | Live | `gwcmd.sh -p` resets the login on 8.1 and 8.3 |
 | 6 | Custom lifecycle hooks | Live | Unit | |
-| 7 | Rolling update across a redundant pair in a safe order | Not tested | S2 | with activeRouting, readiness also waits for the Backup to be in sync before the Master is replaced |
+| 7 | Rolling update across a redundant pair in a safe order | Not tested | Live (S6) | with activeRouting, readiness also waits for the Backup to be in sync before the Master is replaced |
 | 8 | Health check reflects gateway state | Live | Live | `/StatusPing`; `/main/system/StatusPing` is 404 on 8.3.1 and redirects to a 404 on 8.1 |
 | 9 | Configured probe commands honoured | Live | Unit | |
 | 10 | startupProbe | Live | Unit | |
@@ -56,7 +56,7 @@ Status: **Live** verified on a real deployment, **Unit** helm-unittest only, **R
 | 24 | emptyDir size limits | Live | Unit | |
 | 25 | GAN certificates issued | Not tested | Live | |
 | 26 | GAN rotation CronJob | Not tested | Unit | superseded by restartOnRenewal (the init container re-reads certificates on every start) |
-| 27 | Renewed certificate picked up (restart) | Unit | S6 | fixed with `certManager.restartOnRenewal`: rolling restart when the certificate secrets change |
+| 27 | Renewed certificate picked up (restart) | Unit | Live (S6) | fixed with `certManager.restartOnRenewal`: rolling restart when the certificate secrets change |
 | 28 | Stable machine ID via extraVolumes | Not tested | Not tested | |
 | 29 | Scaleout frontend and backend run | Not tested | Live | |
 | 30 | Scaleout frontend connects to backend over GAN | Not tested | Not tested | |
@@ -130,3 +130,19 @@ The logs emptyDir then only holds `system_logs.idb` (~70-105 KB).
 
 - The GitLab agent tunnel to the staging API drops now and then; `kubectl` and `helm` calls are retried on connection errors and installs use `helm upgrade --install` without `--wait`.
 - Patching the StatefulSet (certify) shows a PodSecurity `restricted` warning because the `preconfigure` init container sets `runAsNonRoot: false`; a hardening item, not a failure.
+
+### S6 restart on certificate renewal
+
+Redundant pair with activeRouting and restartOnRenewal. After the GAN certificate was re-issued, certify started a rolling restart: Backup replaced at 12:18:41, Master at 12:21:09 (after the Backup was Ready and in sync), 328 s in all. Through the -active NodePort 208 s were served by the Active gateway and 2 s were not. A further certify run found the certificates unchanged and restarted nothing.
+
+### S9 (second run)
+
+Repeated the first run and added 8.1.53 with wrapperLogToStdout=false: wrapper.log reappears (27 KB at start-up) and `kubectl logs` drops to 28 lines.
+
+### S2 upgrade from 4.1.0 (stopped)
+
+The 4.1.0 pair (probes off) was healthy. On upgrade the Backup was replaced first as expected, but came back `NEEDS_COMMISSIONING` ("Resources needing commissioning: authSetup"): the terminating 4.1.0 pod ran its preStop `gwcmd.sh -p`, which resets the gateway login. The readiness check kept the Backup un-Ready (still commissioning), so the rollout never reached the Master, which kept serving on 4.1.0. Any pod created by 4.1.0 is affected when it is replaced, whatever it is upgraded to.
+
+### Not yet run
+
+S3 (failed on a Git Bash path rewrite in the script, since fixed), S5, S7, S4 (not written), S10 and the CI workflow (need the branch pushed).
