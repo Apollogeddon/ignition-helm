@@ -50,11 +50,15 @@ tests:
           path: stringData["health-check.sh"]
           pattern: 'curl[^\n]*/main/system/StatusPing'
 
-  - it: should not ship a shutdown script that calls gwcmd.sh -p
+  - it: should ship shutdown.sh as a no-op so 4.1.0 pods cannot reset the login
     template: configmap-scripts.yaml
     asserts:
-      - notExists:
+      - matchRegex:
           path: stringData["shutdown.sh"]
+          pattern: "exit 0"
+      - notMatchRegex:
+          path: stringData["shutdown.sh"]
+          pattern: '(?m)^\s*[^#\s][^\n]*gwcmd'
       - notMatchRegex:
           path: stringData["health-check.sh"]
           pattern: 'gwcmd'
