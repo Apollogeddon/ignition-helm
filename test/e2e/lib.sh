@@ -63,7 +63,15 @@ e2e_wait_ready() {
 # e2e_snapshot <file>: cluster-scoped resources, excluding the e2e namespaces
 # and the volumes bound to their claims, which teardown removes
 e2e_snapshot() {
-  kubectl get "$SNAPSHOT_KINDS" -o name | sort > "$1.all"
+  # an empty or partial listing would read as "everything removed", so retry
+  # until it at least contains kube-system
+  local i
+  for i in 1 2 3 4 5; do
+    kubectl get "$SNAPSHOT_KINDS" -o name 2>/dev/null | sort > "$1.all" || true
+    grep -qx 'namespace/kube-system' "$1.all" && break
+    [ "$i" -lt 5 ] || die "could not list cluster-scoped resources"
+    sleep 5
+  done
   { kubectl get ns -l "$E2E_LABEL" -o name
     kubectl get pv -o jsonpath='{range .items[*]}{.metadata.name} {.spec.claimRef.namespace}{"\n"}{end}' |
       awk '$2 ~ /^chart-e2e-/ {print "persistentvolume/" $1}'
