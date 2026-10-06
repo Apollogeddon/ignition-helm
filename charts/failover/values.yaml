@@ -183,6 +183,8 @@ ignition:
   ingress:
     # -- Enable Ingress
     enabled: false
+    # -- IngressClass name (e.g. contour, nginx); empty uses the cluster default
+    className: ""
     # -- TLS configuration for Ingress
     tls: []
     # -- Host and path configuration for Ingress
