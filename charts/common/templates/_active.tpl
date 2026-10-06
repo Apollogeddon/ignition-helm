@@ -154,8 +154,8 @@ spec:
               mountPath: /tmp
       volumes:
         - name: scripts
-          configMap:
-            name: {{ include "ignition-common.scriptsName" .context }}
+          secret:
+            secretName: {{ include "ignition-common.scriptsName" .context }}
             defaultMode: 0755
         - name: tmp
           emptyDir: {}
