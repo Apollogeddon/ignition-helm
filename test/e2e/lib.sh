@@ -42,6 +42,12 @@ e2e_render_check() {
   [ -z "$bad" ] || die "chart renders cluster-scoped kinds:$bad"
 }
 
+# e2e_chart <chart dir>: build the chart dependencies so the working-tree
+# common library is what gets rendered
+e2e_chart() {
+  "$HELM" dependency build "$1" >/dev/null
+}
+
 # e2e_ns <name>: create chart-e2e-<name> with the e2e label
 e2e_ns() {
   local ns="chart-e2e-$1"
