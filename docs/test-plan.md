@@ -41,13 +41,13 @@ Status: **Live** verified on a real deployment, **Unit** helm-unittest only, **R
 | 10 | startupProbe | Live | Unit | |
 | 11 | Uncommissioned gateway not reported healthy | Gap | Gap | `/StatusPing` reports RUNNING with `details: COMMISSIONING` |
 | 12 | Master/Backup pairing over GAN TLS, sync Good | Not tested | Live | |
-| 13 | Backup takes over when the Master goes away | Not tested | Live (graceful) | crash pending |
-| 14 | User traffic only reaches the active gateway | Gap | Gap | default readiness passes on a cold Backup, so the Service routes to it |
-| 15 | Failover downtime measured | Not tested | Not tested | |
+| 13 | Backup takes over when the Master goes away | Not tested | Live | S1: graceful and crash (force delete); a hung Master needs a partition test (CI) |
+| 14 | User traffic only reaches the active gateway | Gap | Gap (S1) | default readiness passes on a cold Backup; S1 measured 56% of Ingress requests answered by the cold Backup |
+| 15 | Failover downtime measured | Not tested | Live | S1: graceful <2s, crash ~3s; on failback both gateways report Active for up to ~10s |
 | 16 | Split-brain recovery after a crash | Gap | Not tested | |
 | 17 | PodDisruptionBudget protects the pair | Not tested | Live | |
-| 18 | Service (NodePort/ClusterIP/LB) serves traffic | Not tested | Rendered | |
-| 19 | Chart Ingress routes to the gateway | Not tested | Not tested | unit tests exist |
+| 18 | Service (NodePort/ClusterIP/LB) serves traffic | Not tested | Live (NodePort) | LoadBalancer needs MetalLB (CI) |
+| 19 | Chart Ingress routes to the gateway | Not tested | Live | S1 via Contour with `ingress.className` |
 | 20 | Web TLS (`ssl.enabled`) | Not tested | Not tested | |
 | 21 | NetworkPolicy and extraIngress enforced | Rendered | Rendered | needs an enforcing CNI (CI) |
 | 22 | Log files cannot grow without bound | Gap | Gap | `wrapper.log` is written unrotated to the logs emptyDir unless `wrapper.logfile=/dev/stdout` is passed |
@@ -72,3 +72,21 @@ Status: **Live** verified on a real deployment, **Unit** helm-unittest only, **R
 | S5 | Web TLS with a self-signed certificate | 8.3.1 | 20 |
 | S6 | GAN rotation CronJob triggered manually | 8.3.1 | 26 |
 | S7 | New options on 8.3 | 8.3.1 | 6, 9, 10, 23, 24 |
+
+## Results
+
+### S1 ingress and failover (Ignition 8.3.1, Contour, single node)
+
+Per-second samples through the Ingress. "Served" means the request was answered by the Active gateway; `/StatusPing` returns 200 on a cold Backup too, so a 2xx alone does not mean the gateway can serve.
+
+| Phase | Ingress 2xx | Served by Active | Notes |
+| --- | --- | --- | --- |
+| Steady (60s) | 100% | 44% | both pods Ready, so the Service balances across them and 56% of requests reach the cold Backup (#14) |
+| Graceful delete of Master | 100% | no gap at failover | Backup Active within 2s of the delete; Master took back over after ~2.5 min |
+| Crash (force delete of Master) | 100% | ~3s gap | Backup Active ~3s after the kill; detection is fast because the dead pod's connections close |
+
+Other observations:
+
+- On failback both gateways report Active for up to ~10s before the Backup returns to Cold.
+- cert-manager 1.18+ warns that `privateKey.rotationPolicy` now defaults to `Always` on the GAN certificates; the chart should set it explicitly.
+- Staging watch URL: no failures. Cluster-scoped resources unchanged after teardown.
