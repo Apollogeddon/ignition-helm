@@ -48,7 +48,7 @@ spec:
         image: {{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}
         imagePullPolicy: {{ .Values.image.pullPolicy }}
         resources: {{ .Values.backend.resources | toYaml | nindent 10 }}
-        args: {{ .Values.backend.args | toYaml | nindent 8 }}
+        {{- include "ignition-common.args" (dict "values" .Values.backend) | nindent 8 }}
         ports:
         - name: http
           containerPort: {{ .Values.backend.service.ports.http }}
