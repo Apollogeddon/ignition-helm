@@ -36,6 +36,17 @@ certManager:
     enabled: false
     schedule: "0 7 * * *"
 
+  # -- Rolling restart after certificate renewal. The init container copies the
+  # GAN and web certificates into the gateway on every start, but a running
+  # gateway does not re-read them; this CronJob hashes the certificate secrets
+  # and restarts the StatefulSet (Backup first) when they change. Pair with
+  # activeRouting so the Master only restarts once the Backup is in sync.
+  restartOnRenewal:
+    enabled: false
+    schedule: "*/15 * * * *"
+    # -- Needs /bin/sh, sha256sum and kubectl
+    image: alpine/kubectl:1.34.1
+
 affinity:
   # -- Enable or disable pod anti-affinity
   enabled: false
