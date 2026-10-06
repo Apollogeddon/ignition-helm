@@ -23,6 +23,7 @@ spec:
     metadata:
       labels:
         {{- include "ignition.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: backend
     spec:
       serviceAccountName: {{ include "ignition.serviceAccountName" . }}
       securityContext:
