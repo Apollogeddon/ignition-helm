@@ -109,6 +109,9 @@ metadata:
     {{- toYaml .values.ingress.annotations | nindent 4 }}
   {{- end }}
 spec:
+  {{- with .values.ingress.className }}
+  ingressClassName: {{ . }}
+  {{- end }}
   {{- if .values.ingress.tls }}
   tls:
     {{- range .values.ingress.tls }}

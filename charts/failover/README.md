@@ -68,6 +68,7 @@ The following table lists the configurable parameters of the chart and their def
 | `ignition.service.type` | Kubernetes Service type (NodePort, LoadBalancer, etc). | `NodePort` |
 | `ignition.service.nodePorts` | Optional static NodePorts (http, https, gan). | `{}` |
 | `ignition.ingress.enabled` | Enable Ingress resource generation. | `false` |
+| `ignition.ingress.className` | IngressClass name, e.g. `contour`; empty uses the cluster default. | `""` |
 | `certManager.issuer.name` | Name of the Cert-Manager Issuer to use. | `cluster-issuer` |
 | `certManager.rotation.enabled` | Deploy CronJobs to auto-rotate GAN certificates without manual restart. | `false` |
 | `ignition.updateStrategy.type` | Helm patch rollout methodology (`RollingUpdate` or `OnDelete`). | `RollingUpdate` |
