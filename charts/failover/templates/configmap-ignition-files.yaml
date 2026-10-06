@@ -11,4 +11,4 @@ stringData:
 {{ include "ignition-common.redundancyXml" (dict "role" "Backup" "host" (include "ignition-common.podFQDN" (dict "name" (include "ignition.name" .) "ordinal" 0)) "port" .Values.ignition.service.ports.gan "redundancy" .Values.ignition.redundancy) | indent 4 }}
 
   logback.xml: |-
-{{ include "ignition-common.logback" (dict "level" .Values.ignition.logging.level) | indent 4 }}
+{{ include "ignition-common.logback" (dict "level" .Values.ignition.logging.level "loggers" .Values.ignition.logging.loggers "sqlite" .Values.ignition.logging.sqlite) | indent 4 }}
