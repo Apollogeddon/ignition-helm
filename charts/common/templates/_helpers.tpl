@@ -158,6 +158,9 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "ignition.labels" . | nindent 4 }}
+    {{- with .name }}
+    app.kubernetes.io/component: {{ . }}
+    {{- end }}
   {{- if .values.service.annotations }}
   annotations:
     {{- toYaml .values.service.annotations | nindent 4 }}
@@ -197,6 +200,9 @@ spec:
       {{- end }}
   selector:
     {{- include "ignition.selectorLabels" . | nindent 4 }}
+    {{- with .name }}
+    app.kubernetes.io/component: {{ . }}
+    {{- end }}
 {{- end }}
 
 {{/*
@@ -234,6 +240,9 @@ spec:
       name: gan
   selector:
     {{- include "ignition.selectorLabels" . | nindent 4 }}
+    {{- with .name }}
+    app.kubernetes.io/component: {{ . }}
+    {{- end }}
 {{- end }}
 
 {{/*

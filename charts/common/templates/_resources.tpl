@@ -222,6 +222,9 @@ spec:
   selector:
     matchLabels:
       {{- include "ignition.selectorLabels" .context | nindent 6 }}
+      {{- with $.name }}
+      app.kubernetes.io/component: {{ . }}
+      {{- end }}
 {{- end }}
 
 {{/*
@@ -322,6 +325,9 @@ spec:
   podSelector:
     matchLabels:
       {{- include "ignition.selectorLabels" .context | nindent 6 }}
+      {{- with $.name }}
+      app.kubernetes.io/component: {{ . }}
+      {{- end }}
   policyTypes:
     - Ingress
   ingress:
@@ -379,6 +385,9 @@ spec:
   selector:
     matchLabels:
       {{- include "ignition.selectorLabels" .context | nindent 6 }}
+      {{- with $.name }}
+      app.kubernetes.io/component: {{ . }}
+      {{- end }}
   endpoints:
     - port: http
       path: {{ .values.serviceMonitor.path | default "/data/metrics" }}
