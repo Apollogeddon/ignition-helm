@@ -58,7 +58,25 @@ e2e_wait_ready() {
     fi
     sleep 5
   done
-  die "workloads in $1 not Ready after $2s"
+  e2e_diagnose "$1"
+  die "workloads in $1 not Ready after $2s (see $E2E_OUT/diag-$1.txt)"
+}
+
+# e2e_diagnose <ns>: save pod status, events, health and recent logs before
+# teardown removes the namespace
+e2e_diagnose() {
+  local out="$E2E_OUT/diag-$1.txt" p
+  {
+    echo "== pods"; kubectl -n "$1" get pods -o wide
+    echo "== events"; kubectl -n "$1" get events --sort-by=.lastTimestamp
+    for p in $(kubectl -n "$1" get pods -o jsonpath='{.items[*].metadata.name}'); do
+      echo "== $p StatusPing / gwinfo"
+      kubectl -n "$1" exec "$p" -- sh -c 'curl -s --max-time 3 http://localhost:8088/StatusPing; echo;
+        curl -s --max-time 3 http://localhost:8088/system/gwinfo | tr ";" "\n" | grep -E "ContextStatus|Redundan"'
+      echo "== $p logs (last 60)"; kubectl -n "$1" logs "$p" --all-containers --tail=60
+    done
+  } > "$out" 2>&1 || true
+  log "diagnostics saved to $out"
 }
 
 # e2e_snapshot <file>: cluster-scoped resources, excluding the e2e namespaces
