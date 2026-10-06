@@ -258,3 +258,9 @@ ignition:
   # -- Container lifecycle hooks (none by default: on SIGTERM the gateway shuts
   # down gracefully on its own)
   lifecycle: {}
+
+  # -- Optional sizeLimit for the gateway emptyDir volumes, e.g. "512Mi"
+  emptyDirSizeLimit:
+    logs: ""
+    temp: ""
+    dotIgnition: ""
