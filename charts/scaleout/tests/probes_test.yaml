@@ -25,11 +25,15 @@ tests:
           path: spec.template.spec.containers[0].livenessProbe.exec.command
           value: ["bash", "-c", "custom-check"]
 
-  - it: should ship the fixed health check and no shutdown script
+  - it: should ship the fixed health check and a no-op shutdown script
     template: templates/configmap-scripts.yaml
     asserts:
       - matchRegex:
           path: stringData["health-check.sh"]
           pattern: 'localhost:\$\{HTTP_PORT\}/StatusPing'
-      - notExists:
+      - matchRegex:
           path: stringData["shutdown.sh"]
+          pattern: 'exit 0'
+      - notMatchRegex:
+          path: stringData["shutdown.sh"]
+          pattern: '(?m)^\s*[^#\s][^\n]*gwcmd'
