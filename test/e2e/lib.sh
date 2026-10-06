@@ -27,7 +27,7 @@ e2e_retry() {
   local i rc err
   err=$(mktemp)
   for i in 1 2 3 4 5; do
-    "$@" 2>"$err"; rc=$?
+    if "$@" 2>"$err"; then rc=0; else rc=$?; fi
     if [ "$rc" -ne 0 ] && grep -qiE "$E2E_CONN_ERRORS" "$err"; then
       log "API connection dropped, retrying ($i/5): $1 ${2:-}"
       sleep 5
