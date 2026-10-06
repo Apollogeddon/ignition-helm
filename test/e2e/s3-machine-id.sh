@@ -37,7 +37,8 @@ e2e_wait_ready "$ns" 900
 
 check() {
   local seen state
-  seen=$(kubectl -n "$ns" exec $STS-0 -c gateway -- cat /etc/machine-id | tr -d '\r\n')
+  # sh -c keeps Git Bash on Windows from rewriting /etc/machine-id as a local path
+  seen=$(kubectl -n "$ns" exec $STS-0 -c gateway -- sh -c 'cat /etc/machine-id' | tr -d '\r\n')
   state=$(kubectl -n "$ns" exec $STS-0 -c gateway -- curl -s --max-time 3 http://localhost:8088/StatusPing)
   log "$1: machine-id $seen, $state"
   [ "$seen" = "$ID" ] || die "$1: machine-id is $seen, expected $ID"
