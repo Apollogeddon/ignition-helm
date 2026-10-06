@@ -339,6 +339,11 @@ spec:
       ports:
         - protocol: TCP
           port: {{ .values.service.ports.gan }}
+    {{- with .values.networkPolicy.extraIngress }}
+    # Additional ingress rules (e.g. the ingress controller's namespace, node
+    # CIDRs for NodePorts/load balancers)
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
 {{- end }}
 {{- end }}
 
