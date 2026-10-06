@@ -36,9 +36,13 @@ for tag in $IMAGE_TAGS; do
   restarts=$(kubectl -n "$ns" get pod ignition-failover-0 -o jsonpath='{.status.containerStatuses[0].restartCount}' ||
     kubectl -n "$ns" get pod ignition-failover-0 -o jsonpath='{.status.containerStatuses[0].restartCount}')
   log "$tag: bodies seen: $(cut -d' ' -f4- "$out" | sort | uniq -c | tr -s ' \n' ' ')"
-  log "$tag: ready samples $ready, restarts $restarts"
+  # not Ready must be for the right reason: the chart's check reporting commissioning
+  why=$(kubectl -n "$ns" get events --field-selector involvedObject.name=ignition-failover-0,reason=Unhealthy \
+    -o jsonpath='{range .items[*]}{.message}{"\n"}{end}' | sed 's/{.*//' | sort | uniq -c | sort -rn | head -3 | tr -s ' \n' ' ')
+  log "$tag: ready samples $ready, restarts $restarts; probe failures: $why"
   [ "$ready" -eq 0 ] || failed="$failed $tag:became-ready"
   [ "$restarts" -eq 0 ] || failed="$failed $tag:restarted"
+  grep -q 'still commissioning' <<< "$why" || failed="$failed $tag:not-failing-for-commissioning"
   e2e_watch_check
   e2e_retry "$HELM" uninstall s8 -n "$ns" --wait >/dev/null || true
   kubectl -n "$ns" delete pvc --all --wait=true >/dev/null
