@@ -119,7 +119,13 @@ e2e_chart() {
 
 # e2e_ns <name>: create chart-e2e-<name> with the e2e label
 e2e_ns() {
-  local ns="chart-e2e-$1"
+  local ns="chart-e2e-$1" i
+  # a namespace from an earlier run may still be terminating
+  for i in $(seq 120); do
+    kubectl get namespace "$ns" >/dev/null 2>&1 || break
+    [ "$i" -lt 120 ] || die "namespace $ns from an earlier run is still there"
+    sleep 5
+  done
   kubectl create namespace "$ns" >/dev/null
   kubectl label namespace "$ns" "$E2E_LABEL" >/dev/null
   echo "$ns"
