@@ -311,17 +311,24 @@ stringData:
     # {"state":"..."} on both Ignition 8.1 and 8.3; /main/system/StatusPing does
     # not exist on either (8.1 redirects to a 404, 8.3 returns 404).
     #
-    # Usage: health-check.sh [-t <timeout seconds>] [-s <expected state>]
+    # -r (readiness) also fails while the gateway is still commissioning:
+    # /StatusPing reports {"state":"RUNNING","details":"COMMISSIONING"} then.
+    # Liveness leaves -r off so a gateway stuck commissioning is not restarted
+    # in a loop (a restart does not finish commissioning).
+    #
+    # Usage: health-check.sh [-t <timeout seconds>] [-s <expected state>] [-r]
 
     HTTP_PORT=${IGNITION_HTTP_PORT:-8088}
     TIMEOUT=5
     EXPECTED_STATE=RUNNING
+    READINESS=false
 
-    while getopts ":t:s:" opt; do
+    while getopts ":t:s:r" opt; do
       case "${opt}" in
         t) TIMEOUT="${OPTARG}" ;;
         s) EXPECTED_STATE="${OPTARG}" ;;
-        *) echo "Usage: $0 [-t timeout] [-s state]" >&2; exit 2 ;;
+        r) READINESS=true ;;
+        *) echo "Usage: $0 [-t timeout] [-s state] [-r]" >&2; exit 2 ;;
       esac
     done
 
@@ -331,8 +338,14 @@ stringData:
     fi
 
     case "${body}" in
-      *"\"state\":\"${EXPECTED_STATE}\""*) exit 0 ;;
+      *"\"state\":\"${EXPECTED_STATE}\""*) ;;
+      *) echo "Gateway state is not ${EXPECTED_STATE}: ${body}"; exit 1 ;;
     esac
-    echo "Gateway state is not ${EXPECTED_STATE}: ${body}"
-    exit 1
+
+    if [ "${READINESS}" = true ]; then
+      case "${body}" in
+        *"\"details\":\"COMMISSIONING\""*) echo "Gateway is still commissioning: ${body}"; exit 1 ;;
+      esac
+    fi
+    exit 0
 {{- end -}}

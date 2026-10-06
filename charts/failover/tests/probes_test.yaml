@@ -9,7 +9,7 @@ tests:
     asserts:
       - equal:
           path: spec.template.spec.containers[0].readinessProbe.exec.command
-          value: ["health-check.sh", "-t", "3"]
+          value: ["health-check.sh", "-t", "3", "-r"]
       - equal:
           path: spec.template.spec.containers[0].livenessProbe.exec.command
           value: ["health-check.sh", "-t", "5"]

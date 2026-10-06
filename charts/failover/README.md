@@ -48,7 +48,7 @@ helm install my-ignition ignition-charts/ignition-failover \
 
 * **SCADA Patch Pipeline:** Set `ignition.updateStrategy.type` to `OnDelete` to prevent automated Helm upgrades from unexpectedly terminating your running pods, allowing for strict, manual maintenance windows.
 * **External Module Sideloading:** Define a PersistentVolumeClaim via `ignition.externalModules.pvcName` to inject your custom `.modl` plugins on container startup, eliminating the need to maintain custom docker images.
-* **Health Checks and Shutdown:** Probes check `/StatusPing` for `RUNNING`, which works on Ignition 8.1 and 8.3. There is no default `preStop` hook: on SIGTERM the gateway shuts down gracefully, and `gwcmd.sh -p` (previously used here) resets the gateway login password.
+* **Health Checks and Shutdown:** Probes check `/StatusPing` for `RUNNING`, which works on Ignition 8.1 and 8.3. Readiness (`health-check.sh -r`) also fails while the gateway is still commissioning; liveness does not, so a gateway stuck commissioning is not restarted in a loop. There is no default `preStop` hook: on SIGTERM the gateway shuts down gracefully, and `gwcmd.sh -p` (previously used here) resets the gateway login password.
 * **Zero-Downtime Cert Rotation:** Enable `certManager.rotation.enabled` to spin up smart Kubernetes CronJobs that securely rotate the Ignition instances' PKI trust fabric under-the-hood before certificate expiration.
 
 ## Configuration

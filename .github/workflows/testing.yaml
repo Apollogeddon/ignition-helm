@@ -38,6 +38,9 @@ jobs:
       - name: Run unit tests
         run: sh ./.github/scripts/ci/run-unit-tests.sh
 
+      - name: Run script tests
+        run: for t in test/scripts/*_test.sh; do bash "$t" || exit 1; done
+
       - name: Run chart-testing (list-changed)
         id: list-changed
         run: |
