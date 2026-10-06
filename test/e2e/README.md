@@ -23,3 +23,4 @@ kubectl delete ns -l e2e=ignition-helm
 ## Scenarios
 
 - `s1-ingress-failover.sh`: redundant pair behind the chart Ingress; records availability through the Ingress and NodePort, and which gateway answered, while the Master is deleted and then force-deleted (crash). Needs `NODE_IP` and `INGRESS_PORT` (the ingress controller's HTTP NodePort); optional `INGRESS_CLASS` (default `contour`), `WATCH_URL`, `IMAGE_TAG`.
+- `s8-uncommissioned.sh`: a gateway that cannot finish commissioning (EULA not accepted) must never become Ready and must not be restarted by liveness; runs on each of `IMAGE_TAGS` (default `8.3.1 8.1.53`) and records the `/StatusPing` bodies.
