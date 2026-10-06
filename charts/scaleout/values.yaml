@@ -210,6 +210,20 @@ frontend:
       - -t
       - "5"
 
+  # -- Startup Probe configuration (off by default). While it runs, liveness and
+  # readiness are held off, so livenessProbe.failureThreshold can stay low and
+  # slow starts (e.g. a redundant state transfer restart) are still tolerated.
+  startupProbe:
+    enabled: false
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    failureThreshold: 30
+    timeoutSeconds: 5
+    command:
+      - health-check.sh
+      - -t
+      - "5"
+
   # -- Container lifecycle hooks (none by default: on SIGTERM the gateway shuts
   # down gracefully on its own)
   lifecycle: {}
@@ -408,6 +422,20 @@ backend:
     initialDelaySeconds: 120
     periodSeconds: 10
     failureThreshold: 3
+    timeoutSeconds: 5
+    command:
+      - health-check.sh
+      - -t
+      - "5"
+
+  # -- Startup Probe configuration (off by default). While it runs, liveness and
+  # readiness are held off, so livenessProbe.failureThreshold can stay low and
+  # slow starts (e.g. a redundant state transfer restart) are still tolerated.
+  startupProbe:
+    enabled: false
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    failureThreshold: 30
     timeoutSeconds: 5
     command:
       - health-check.sh

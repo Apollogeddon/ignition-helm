@@ -321,7 +321,7 @@ Values win over the default: the probe's own `command` is used when set, and
 the chart's health-check script only when it is empty. (A plain `merge` gives
 the first dict precedence, which silently replaced any configured command.)
 Params:
-  probe: The probe values object (readinessProbe or livenessProbe)
+  probe: The probe values object (readinessProbe, livenessProbe or startupProbe)
 */}}
 {{- define "ignition-common.probeWithDefault" -}}
 {{- $probe := mergeOverwrite (dict "command" (list "/config/scripts/health-check.sh")) (deepCopy .probe) -}}
@@ -333,7 +333,7 @@ Params:
 
 {{/*
 Gateway container probes and lifecycle
-Renders readinessProbe/livenessProbe (each when enabled) and the
+Renders readinessProbe/livenessProbe/startupProbe (each when enabled) and the
 lifecycle block (only when set - there is no default preStop: on SIGTERM the
 gateway already shuts down gracefully, and `gwcmd.sh -p` resets the gateway
 login password on Ignition 8.1 and 8.3).
@@ -352,6 +352,10 @@ readinessProbe:
 {{- if .values.livenessProbe.enabled }}
 livenessProbe:
   {{- include "ignition-common.probeWithDefault" (dict "probe" .values.livenessProbe) | nindent 2 }}
+{{- end }}
+{{- if and .values.startupProbe .values.startupProbe.enabled }}
+startupProbe:
+  {{- include "ignition-common.probeWithDefault" (dict "probe" .values.startupProbe) | nindent 2 }}
 {{- end }}
 {{- end }}
 
