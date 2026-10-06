@@ -23,3 +23,18 @@ tests:
           content:
             name: TARGETS
             value: ignition-scaleout-frontend=ignition-scaleout-gan-ca,ignition-scaleout-frontend-gan-tls ignition-scaleout-backend=ignition-scaleout-gan-ca,ignition-scaleout-backend-gan-tls
+
+  - it: should mount the scripts Secret
+    set:
+      certManager:
+        restartOnRenewal:
+          enabled: true
+    asserts:
+      - documentIndex: 3
+        contains:
+          path: spec.jobTemplate.spec.template.spec.volumes
+          content:
+            name: scripts
+            secret:
+              secretName: ignition-scaleout-common-scripts
+              defaultMode: 0755

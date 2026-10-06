@@ -135,3 +135,21 @@ tests:
           content:
             name: IGNITION_READY_REQUIRES_BACKUP_SYNC
             value: "true"
+
+  - it: should mount the scripts Secret
+    template: active-routing.yaml
+    set:
+      ignition:
+        redundancy:
+          enabled: true
+        activeRouting:
+          enabled: true
+    asserts:
+      - documentIndex: 3
+        contains:
+          path: spec.template.spec.volumes
+          content:
+            name: scripts
+            secret:
+              secretName: ignition-failover-common-scripts
+              defaultMode: 0755
