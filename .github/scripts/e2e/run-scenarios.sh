@@ -27,6 +27,7 @@ for s in ${SCENARIOS}; do
       run "$s" ACTIVE_ROUTING=false
       run "$s:active" ACTIVE_ROUTING=true ;;
     s1-ingress-failover:active) run "$s" ACTIVE_ROUTING=true ;;
+    s2-upgrade:active) run "$s" UPGRADE_SET=ignition.activeRouting.enabled=true ;;
     *) run "$s" ;;
   esac
 done
