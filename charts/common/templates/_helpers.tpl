@@ -424,12 +424,13 @@ Params:
   secret:
     secretName: {{ .commonScriptsConfigMapName }}
     defaultMode: 0755
+{{- $limits := .values.emptyDirSizeLimit | default dict }}
 - name: {{ .name }}-logs
-  emptyDir: {}
+  emptyDir: {{ if $limits.logs }}{ sizeLimit: {{ $limits.logs }} }{{ else }}{}{{ end }}
 - name: {{ .name }}-temp
-  emptyDir: {}
+  emptyDir: {{ if $limits.temp }}{ sizeLimit: {{ $limits.temp }} }{{ else }}{}{{ end }}
 - name: {{ .name }}-dot-ignition
-  emptyDir: {}
+  emptyDir: {{ if $limits.dotIgnition }}{ sizeLimit: {{ $limits.dotIgnition }} }{{ else }}{}{{ end }}
 - name: {{ .name }}-config-files
   secret:
     secretName: {{ .name }}-config-files

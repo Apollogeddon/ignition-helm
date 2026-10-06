@@ -1,0 +1,16 @@
+suite: Ignition Scaleout emptyDir Size Limits
+templates:
+  - templates/frontend/frontend-statefulset.yaml
+tests:
+  - it: should set frontend emptyDir sizeLimits from values
+    set:
+      frontend:
+        emptyDirSizeLimit:
+          logs: 128Mi
+    asserts:
+      - contains:
+          path: spec.template.spec.volumes
+          content:
+            name: ignition-scaleout-logs
+            emptyDir:
+              sizeLimit: 128Mi
