@@ -1,0 +1,6 @@
+{{- $name := include "ignition.name" . }}
+{{- $secrets := list (printf "%s-gan-ca" $name) (printf "%s-gan-tls" $name) }}
+{{- if .Values.ignition.ssl.enabled }}
+{{- $secrets = append $secrets (.Values.ignition.ssl.secretName | default (printf "%s-web-tls" $name)) }}
+{{- end }}
+{{- include "ignition-common.certify" (dict "targets" (list (dict "statefulset" $name "secrets" $secrets)) "context" .) }}
