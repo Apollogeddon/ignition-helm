@@ -10,6 +10,7 @@ set -euo pipefail
 
 E2E_LABEL="e2e=ignition-helm"
 E2E_MIN_FREE_MI="${E2E_MIN_FREE_MI:-4096}"
+E2E_MIN_REQUEST_MI="${E2E_MIN_REQUEST_MI:-1024}"
 E2E_PROBE_IMAGE="${E2E_PROBE_IMAGE:-busybox:1.36}"
 E2E_OUT="${E2E_OUT:-$(pwd)/e2e-out}"
 HELM="${HELM:-helm}"
@@ -116,12 +117,38 @@ e2e_free_mi() {
   echo $(( kb / 1024 ))
 }
 
+# e2e_request_headroom_mi: the most memory any node can still promise to new
+# pods (allocatable minus the requests of its running pods)
+e2e_request_headroom_mi() {
+  local node alloc used best=0
+  for node in $(kubectl get nodes -o jsonpath='{.items[*].metadata.name}'); do
+    alloc=$(kubectl get node "$node" -o jsonpath='{.status.allocatable.memory}' | e2e_to_mi)
+    used=$(kubectl get pods -A --field-selector "spec.nodeName=$node,status.phase!=Succeeded,status.phase!=Failed" \
+      -o jsonpath='{range .items[*].spec.containers[*]}{.resources.requests.memory}{"\n"}{end}' | e2e_to_mi)
+    [ $(( alloc - used )) -le "$best" ] || best=$(( alloc - used ))
+  done
+  echo "$best"
+}
+# e2e_to_mi: sum Kubernetes memory quantities (one per line) in MiB
+e2e_to_mi() {
+  awk '/^[0-9]/ {
+    n = $0 + 0; u = $0; sub(/^[0-9.]+/, "", u)
+    f = (u == "Ki") ? 1/1024 : (u == "Mi") ? 1 : (u == "Gi") ? 1024 : (u == "Ti") ? 1048576 :
+        (u == "k") ? 1000/1048576 : (u == "M") ? 1e6/1048576 : (u == "G") ? 1e9/1048576 : 1/1048576
+    t += n * f
+  } END {printf "%d\n", t}'
+}
+
 # e2e_require_memory <ns>: stop unless the node has E2E_MIN_FREE_MI available
+# and some node can still schedule E2E_MIN_REQUEST_MI of requests, so a test
+# never competes with other workloads' rollouts for the last of the capacity
 e2e_require_memory() {
-  local free
+  local free headroom
   free=$(e2e_free_mi "$1")
-  log "node MemAvailable ${free}Mi (need ${E2E_MIN_FREE_MI}Mi)"
+  headroom=$(e2e_request_headroom_mi)
+  log "node MemAvailable ${free}Mi (need ${E2E_MIN_FREE_MI}Mi), request headroom ${headroom}Mi (need ${E2E_MIN_REQUEST_MI}Mi)"
   [ "$free" -ge "$E2E_MIN_FREE_MI" ] || die "not enough free memory to start more gateways"
+  [ "$headroom" -ge "$E2E_MIN_REQUEST_MI" ] || die "not enough unrequested memory to schedule more gateways"
 }
 
 # e2e_watch_start <url>: poll a URL once a second in the background; failures
