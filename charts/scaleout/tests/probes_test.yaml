@@ -9,10 +9,10 @@ tests:
     asserts:
       - equal:
           path: spec.template.spec.containers[0].readinessProbe.exec.command
-          value: ["health-check.sh", "-t", "3", "-r"]
+          value: ["/config/scripts/health-check.sh", "-t", "3", "-r"]
       - equal:
           path: spec.template.spec.containers[0].livenessProbe.exec.command
-          value: ["health-check.sh", "-t", "5"]
+          value: ["/config/scripts/health-check.sh", "-t", "5"]
 
   - it: should keep a custom backend probe command
     template: templates/backend/backend-statefulset.yaml

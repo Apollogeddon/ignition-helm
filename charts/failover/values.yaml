@@ -255,6 +255,8 @@ ignition:
       requests: {cpu: 10m, memory: 32Mi}
       limits: {cpu: 200m, memory: 128Mi}
 
+  # Probe commands use the chart's /config/scripts/health-check.sh by full path:
+  # the Ignition image has its own health-check.sh on PATH, which lacks -r.
   # -- Readiness Probe configuration
   readinessProbe:
     enabled: true
@@ -263,7 +265,7 @@ ignition:
     failureThreshold: 10
     timeoutSeconds: 3
     command:
-      - health-check.sh
+      - /config/scripts/health-check.sh
       - -t
       - "3"
       - -r
@@ -276,7 +278,7 @@ ignition:
     failureThreshold: 3
     timeoutSeconds: 5
     command:
-      - health-check.sh
+      - /config/scripts/health-check.sh
       - -t
       - "5"
 
@@ -290,7 +292,7 @@ ignition:
     failureThreshold: 30
     timeoutSeconds: 5
     command:
-      - health-check.sh
+      - /config/scripts/health-check.sh
       - -t
       - "5"
 

@@ -211,6 +211,8 @@ frontend:
     #       - path: /
     #         pathType: Prefix
 
+  # Probe commands use the chart's /config/scripts/health-check.sh by full path:
+  # the Ignition image has its own health-check.sh on PATH, which lacks -r.
   # -- Readiness Probe configuration
   readinessProbe:
     enabled: true
@@ -219,7 +221,7 @@ frontend:
     failureThreshold: 10
     timeoutSeconds: 3
     command:
-      - health-check.sh
+      - /config/scripts/health-check.sh
       - -t
       - "3"
       - -r
@@ -232,7 +234,7 @@ frontend:
     failureThreshold: 3
     timeoutSeconds: 5
     command:
-      - health-check.sh
+      - /config/scripts/health-check.sh
       - -t
       - "5"
 
@@ -246,7 +248,7 @@ frontend:
     failureThreshold: 30
     timeoutSeconds: 5
     command:
-      - health-check.sh
+      - /config/scripts/health-check.sh
       - -t
       - "5"
 
@@ -468,6 +470,8 @@ backend:
       requests: {cpu: 10m, memory: 32Mi}
       limits: {cpu: 200m, memory: 128Mi}
 
+  # Probe commands use the chart's /config/scripts/health-check.sh by full path:
+  # the Ignition image has its own health-check.sh on PATH, which lacks -r.
   # -- Readiness Probe configuration
   readinessProbe:
     enabled: true
@@ -476,7 +480,7 @@ backend:
     failureThreshold: 10
     timeoutSeconds: 3
     command:
-      - health-check.sh
+      - /config/scripts/health-check.sh
       - -t
       - "3"
       - -r
@@ -489,7 +493,7 @@ backend:
     failureThreshold: 3
     timeoutSeconds: 5
     command:
-      - health-check.sh
+      - /config/scripts/health-check.sh
       - -t
       - "5"
 
@@ -503,7 +507,7 @@ backend:
     failureThreshold: 30
     timeoutSeconds: 5
     command:
-      - health-check.sh
+      - /config/scripts/health-check.sh
       - -t
       - "5"
 
