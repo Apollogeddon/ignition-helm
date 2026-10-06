@@ -26,3 +26,6 @@ kubectl delete ns -l e2e=ignition-helm
 - `s8-uncommissioned.sh`: a gateway that cannot finish commissioning (EULA not accepted) must never become Ready and must not be restarted by liveness; runs on each of `IMAGE_TAGS` (default `8.3.1 8.1.53`) and records the `/StatusPing` bodies.
 - `s6-restart-on-renewal.sh`: redundant pair with `activeRouting` and `restartOnRenewal`; the first certify run only records the certificate hash, a renewal (GAN TLS secret deleted and re-issued) triggers a rolling restart with the Backup replaced before the Master, and a further run does nothing. Records availability through the `-active` NodePort. Needs `NODE_IP`.
 - `s9-wrapper-log.sh`: for each of `IMAGE_TAGS`, checks that with the default `wrapperLogToStdout` the gateway log reaches `kubectl logs` and `logs/wrapper.log` does not grow, and records the same with it turned off for comparison.
+- `s10-partition.sh` (disposable clusters only, needs Chaos Mesh): partitions the Master from the Backup (split-brain) and then isolates the Master entirely (hung Master); checks traffic is never routed to two gateways, measures the unserved time, and checks the pair settles afterwards.
+
+CI runs these on a disposable kind cluster with `.github/workflows/e2e.yaml` (manual or weekly); `.github/scripts/e2e/setup-cluster.sh` installs cert-manager, Contour and Chaos Mesh.
