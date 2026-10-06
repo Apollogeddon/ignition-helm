@@ -237,6 +237,10 @@ spec:
 Logback XML Configuration
 Params:
   level: The logging level (INFO, DEBUG, WARN, ERROR)
+  loggers: (Optional) Map of logger name -> level, e.g. {"gateway.SslManager": "DEBUG"}
+  sqlite: (Optional) SQLiteAppender maintenance settings (entryLimit,
+          maxEventsPerMaintenance, minTimeBetweenMaintenance, vacuumFrequency);
+          unset keys keep Ignition's defaults
 */}}
 {{- define "ignition-common.logback" -}}
 <?xml version="1.0" encoding="UTF-8"?>
@@ -248,6 +252,11 @@ Params:
   </appender>
   <appender name="DB" class="com.inductiveautomation.logging.SQLiteAppender">
     <dir>logs</dir>
+    {{- range $key := list "entryLimit" "maxEventsPerMaintenance" "minTimeBetweenMaintenance" "vacuumFrequency" }}
+    {{- with (get ($.sqlite | default dict) $key) }}
+    <{{ $key }}>{{ . }}</{{ $key }}>
+    {{- end }}
+    {{- end }}
   </appender>
   <appender name="SysoutAsync" class="ch.qos.logback.classic.AsyncAppender" queueSize="1000" discardingThreshold="0">
     <appender-ref ref="SysoutAppender" />
@@ -259,7 +268,9 @@ Params:
     <appender-ref ref="SysoutAsync"/>
     <appender-ref ref="DBAsync"/>
   </root>
-  <logger name="gateway.SslManager" level="DEBUG" />
+  {{- range $name, $level := (.loggers | default dict) }}
+  <logger name="{{ $name }}" level="{{ $level }}" />
+  {{- end }}
 </configuration>
 {{- end }}
 
