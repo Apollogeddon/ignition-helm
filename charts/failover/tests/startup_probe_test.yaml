@@ -19,4 +19,4 @@ tests:
           value: 60
       - equal:
           path: spec.template.spec.containers[0].startupProbe.exec.command
-          value: ["health-check.sh", "-t", "5"]
+          value: ["/config/scripts/health-check.sh", "-t", "5"]
