@@ -21,7 +21,7 @@ for tag in $IMAGE_TAGS; do
     --set ignition.readinessProbe.initialDelaySeconds=30)
   e2e_render_check "${args[@]}"
   log "$tag: installing an uncommissioned gateway"
-  "$HELM" install "${args[@]}" >/dev/null
+  e2e_install "${args[@]}"
   kubectl -n "$ns" wait pod/ignition-failover-0 --for=jsonpath='{.status.phase}'=Running --timeout=10m >/dev/null
 
   out="$E2E_OUT/s8-$tag.log"; : > "$out"
@@ -40,7 +40,7 @@ for tag in $IMAGE_TAGS; do
   [ "$ready" -eq 0 ] || failed="$failed $tag:became-ready"
   [ "$restarts" -eq 0 ] || failed="$failed $tag:restarted"
   e2e_watch_check
-  "$HELM" uninstall s8 -n "$ns" --wait >/dev/null
+  e2e_retry "$HELM" uninstall s8 -n "$ns" --wait >/dev/null || true
   kubectl -n "$ns" delete pvc --all --wait=true >/dev/null
 done
 

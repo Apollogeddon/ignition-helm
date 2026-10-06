@@ -32,7 +32,8 @@ args=(s1 "$CHART" -n "$ns" -f "$(dirname "$0")/values/small.yaml"
 e2e_render_check "${args[@]}"
 
 log "installing redundant pair"
-"$HELM" install "${args[@]}" --wait --timeout 15m >/dev/null
+e2e_install "${args[@]}"
+e2e_wait_ready "$ns" 900
 e2e_watch_check
 
 pods=($(kubectl -n "$ns" get pods -l app.kubernetes.io/name=ignition-failover -o jsonpath='{.items[*].metadata.name}' | tr ' ' '\n' | grep -v -- '-rotate' | sort))

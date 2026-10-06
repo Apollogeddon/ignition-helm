@@ -18,6 +18,48 @@ SNAPSHOT_KINDS="namespaces,customresourcedefinitions,clusterroles,clusterrolebin
 log() { echo "[$(date -u +%H:%M:%S)] $*" >&2; }
 die() { log "FAIL: $*"; exit 1; }
 
+# Clusters reached through a proxy drop API connections
+# now and then. kubectl and helm calls are retried on connection errors only;
+# any other error is returned at once.
+E2E_CONN_ERRORS='unable to connect|connection attempt failed|i/o timeout|connection reset|unexpected EOF|TLS handshake|connection refused|wsarecv|wsasend'
+e2e_retry() {
+  local i rc err
+  err=$(mktemp)
+  for i in 1 2 3 4 5; do
+    "$@" 2>"$err"; rc=$?
+    if [ "$rc" -ne 0 ] && grep -qiE "$E2E_CONN_ERRORS" "$err"; then
+      log "API connection dropped, retrying ($i/5): $1 ${2:-}"
+      sleep 5
+      continue
+    fi
+    cat "$err" >&2; rm -f "$err"
+    return "$rc"
+  done
+  cat "$err" >&2; rm -f "$err"
+  return 1
+}
+kubectl() { e2e_retry command kubectl "$@"; }
+
+# e2e_install <helm args...>: helm upgrade --install (safe to retry), without
+# --wait, which fails outright when the API connection drops; use e2e_wait_ready
+e2e_install() {
+  e2e_retry "$HELM" upgrade --install "$@" >/dev/null
+}
+
+# e2e_wait_ready <ns> <timeout seconds>: wait until every StatefulSet and
+# Deployment in the namespace has all its replicas Ready
+e2e_wait_ready() {
+  local deadline=$(( $(date +%s) + $2 )) s
+  while [ "$(date +%s)" -lt "$deadline" ]; do
+    if s=$(kubectl -n "$1" get statefulsets,deployments -o jsonpath='{range .items[*]}{.spec.replicas}/{.status.readyReplicas}{"\n"}{end}') &&
+      [ -n "$s" ] && awk -F/ '$1 != $2 {bad = 1} END {exit bad}' <<< "$s"; then
+      return 0
+    fi
+    sleep 5
+  done
+  die "workloads in $1 not Ready after $2s"
+}
+
 # e2e_snapshot <file>: cluster-scoped resources, excluding the e2e namespaces
 # and the volumes bound to their claims, which teardown removes
 e2e_snapshot() {
