@@ -12,6 +12,7 @@ CHART="$(dirname "$0")/../../charts/failover"
 HOST="s1.e2e.invalid"
 OBSERVE="${OBSERVE:-180}"
 
+e2e_chart "$CHART"
 e2e_begin "${WATCH_URL:-}"
 ns=$(e2e_ns s1)
 e2e_require_memory "$ns"
