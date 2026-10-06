@@ -77,6 +77,7 @@ The following table lists the configurable parameters of the chart and their def
 | `ignition.startupProbe.enabled` | Add a startupProbe so slow starts are tolerated while liveness stays strict. | `false` |
 | `ignition.lifecycle` | Container lifecycle hooks, rendered as-is. | `{}` (none) |
 | `ignition.logging.loggers` | Per-logger levels, e.g. `{"gateway.SslManager": "DEBUG"}`. | `{}` |
+| `ignition.logging.wrapperLogToStdout` | Append `wrapper.logfile=/dev/stdout` to `args` so the gateway log goes to the container log instead of an unrotated `logs/wrapper.log`. Skipped when `args` already set `wrapper.logfile`. | `true` |
 | `ignition.logging.sqlite` | SQLite log database maintenance (`entryLimit`, `maxEventsPerMaintenance`, `minTimeBetweenMaintenance`, `vacuumFrequency`). | `{}` (Ignition defaults) |
 | `ignition.emptyDirSizeLimit` | Optional `sizeLimit` for the `logs`, `temp` and `dotIgnition` emptyDir volumes. | unset |
 | `ignition.networkPolicy.extraIngress` | Extra NetworkPolicy ingress rules, e.g. the ingress controller namespace or node CIDRs. | `[]` |

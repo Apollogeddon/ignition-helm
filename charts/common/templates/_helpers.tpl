@@ -346,6 +346,31 @@ Params:
 {{- end }}
 
 {{/*
+Gateway container args
+Renders .values.args and, when logging.wrapperLogToStdout is set, appends the
+wrapper property wrapper.logfile=/dev/stdout (after "--", added if missing) so
+the gateway log goes to the container log instead of an unrotated
+logs/wrapper.log on the logs emptyDir. Skipped when args already set
+wrapper.logfile.
+Params:
+  values: The component-specific values object
+*/}}
+{{- define "ignition-common.args" -}}
+{{- $args := .values.args | default list }}
+{{- $logging := .values.logging | default dict }}
+{{- if and $logging.wrapperLogToStdout (not (regexMatch "(^| )wrapper\\.logfile=" (join " " $args))) }}
+{{- if not (has "--" $args) }}
+{{- $args = append $args "--" }}
+{{- end }}
+{{- $args = append $args "wrapper.logfile=/dev/stdout" }}
+{{- end }}
+{{- with $args }}
+args:
+{{- toStrings . | toYaml | nindent 2 }}
+{{- end }}
+{{- end }}
+
+{{/*
 Gateway container probes and lifecycle
 Renders readinessProbe/livenessProbe/startupProbe (each when enabled) and the
 lifecycle block (only when set - there is no default preStop: on SIGTERM the

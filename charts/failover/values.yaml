@@ -87,6 +87,10 @@ ignition:
     # -- SQLite log database maintenance; unset keys keep Ignition defaults:
     # entryLimit, maxEventsPerMaintenance, minTimeBetweenMaintenance, vacuumFrequency
     sqlite: {}
+    # -- Append wrapper.logfile=/dev/stdout to args so the gateway log goes to the
+    # container log (rotated by the kubelet) instead of an unrotated
+    # logs/wrapper.log on the logs emptyDir
+    wrapperLogToStdout: true
 
   # -- Web Server SSL/TLS Configuration
   ssl:
