@@ -1,0 +1,35 @@
+suite: Ignition Scaleout Probes and Health Check
+templates:
+  - templates/frontend/frontend-statefulset.yaml
+  - templates/backend/backend-statefulset.yaml
+  - templates/configmap-scripts.yaml
+tests:
+  - it: should use the probe commands from values in frontend
+    template: templates/frontend/frontend-statefulset.yaml
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].readinessProbe.exec.command
+          value: ["health-check.sh", "-t", "3"]
+      - equal:
+          path: spec.template.spec.containers[0].livenessProbe.exec.command
+          value: ["health-check.sh", "-t", "5"]
+
+  - it: should keep a custom backend probe command
+    template: templates/backend/backend-statefulset.yaml
+    set:
+      backend:
+        livenessProbe:
+          command: ["bash", "-c", "custom-check"]
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].livenessProbe.exec.command
+          value: ["bash", "-c", "custom-check"]
+
+  - it: should ship the fixed health check and no shutdown script
+    template: templates/configmap-scripts.yaml
+    asserts:
+      - matchRegex:
+          path: stringData["health-check.sh"]
+          pattern: 'localhost:\$\{HTTP_PORT\}/StatusPing'
+      - notExists:
+          path: stringData["shutdown.sh"]

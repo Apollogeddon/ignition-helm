@@ -48,6 +48,7 @@ helm install my-ignition ignition-charts/ignition-failover \
 
 * **SCADA Patch Pipeline:** Set `ignition.updateStrategy.type` to `OnDelete` to prevent automated Helm upgrades from unexpectedly terminating your running pods, allowing for strict, manual maintenance windows.
 * **External Module Sideloading:** Define a PersistentVolumeClaim via `ignition.externalModules.pvcName` to inject your custom `.modl` plugins on container startup, eliminating the need to maintain custom docker images.
+* **Health Checks and Shutdown:** Probes check `/StatusPing` for `RUNNING`, which works on Ignition 8.1 and 8.3. There is no default `preStop` hook: on SIGTERM the gateway shuts down gracefully, and `gwcmd.sh -p` (previously used here) resets the gateway login password.
 * **Zero-Downtime Cert Rotation:** Enable `certManager.rotation.enabled` to spin up smart Kubernetes CronJobs that securely rotate the Ignition instances' PKI trust fabric under-the-hood before certificate expiration.
 
 ## Configuration
@@ -71,3 +72,5 @@ The following table lists the configurable parameters of the chart and their def
 | `certManager.rotation.enabled` | Deploy CronJobs to auto-rotate GAN certificates without manual restart. | `false` |
 | `ignition.updateStrategy.type` | Helm patch rollout methodology (`RollingUpdate` or `OnDelete`). | `RollingUpdate` |
 | `ignition.externalModules.enabled` | Enable mounting an isolated Persistent Volume Claim for modules. | `false` |
+| `ignition.readinessProbe` / `ignition.livenessProbe` | Probe settings. A configured `command` is used as-is; the chart health check (`/StatusPing` must report `RUNNING`) is the fallback when it is empty. | image `health-check.sh -t 3` / `-t 5` |
+| `ignition.lifecycle` | Container lifecycle hooks, rendered as-is. | `{}` (none) |

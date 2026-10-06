@@ -45,10 +45,6 @@ spec:
             drop:
               - ALL
           readOnlyRootFilesystem: false
-        lifecycle:
-          preStop:
-            exec:
-              command: ["/config/scripts/shutdown.sh"]
         image: {{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}
         imagePullPolicy: {{ .Values.image.pullPolicy }}
         resources: {{ .Values.backend.resources | toYaml | nindent 10 }}
@@ -71,14 +67,7 @@ spec:
 
         volumeMounts:
 {{ include "ignition-common.volumeMounts" (dict "name" (include "ignition.name" .) "values" .Values.backend) | nindent 8 }}
-        {{- if .Values.backend.readinessProbe.enabled }}
-        readinessProbe:
-{{ include "ignition-common.probes" (dict "probe" (merge (dict "command" (list "/config/scripts/health-check.sh")) .Values.backend.readinessProbe)) | nindent 10 }}
-        {{- end }}
-        {{- if .Values.backend.livenessProbe.enabled }}
-        livenessProbe:
-{{ include "ignition-common.probes" (dict "probe" (merge (dict "command" (list "/config/scripts/health-check.sh")) .Values.backend.livenessProbe)) | nindent 10 }}
-        {{- end }}
+        {{- include "ignition-common.containerProbes" (dict "values" .Values.backend) | trim | nindent 8 }}
       initContainers:
 {{ include "ignition-common.initContainer.preconfigure" (dict "name" (include "ignition.name" .) "secretName" (printf "%s-backend-secrets" (include "ignition.name" .)) "image" .Values.image "values" .Values.backend "replicas" (ternary 2 1 .Values.backend.redundancy.enabled) "context" .) | nindent 6 }}
       volumes:
