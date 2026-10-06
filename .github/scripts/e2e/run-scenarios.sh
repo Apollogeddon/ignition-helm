@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Runs the test/e2e scenarios named in SCENARIOS against the current cluster and
-# reports each result; S1 runs with and without activeRouting.
+# reports each result; S1 runs with and without activeRouting
+# (s1-ingress-failover:active runs only the activeRouting mode).
 set -uo pipefail
 
 export HELM="${HELM:-helm}"
@@ -25,6 +26,7 @@ for s in ${SCENARIOS}; do
     s1-ingress-failover)
       run "$s" ACTIVE_ROUTING=false
       run "$s:active" ACTIVE_ROUTING=true ;;
+    s1-ingress-failover:active) run "$s" ACTIVE_ROUTING=true ;;
     *) run "$s" ;;
   esac
 done
