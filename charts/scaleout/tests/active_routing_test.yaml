@@ -1,0 +1,37 @@
+suite: Ignition Scaleout Active Routing
+templates:
+  - templates/backend/active-routing.yaml
+tests:
+  - it: should not render by default
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should scope the backend labeller and -active Service to backend pods
+    set:
+      backend:
+        redundancy:
+          enabled: true
+        activeRouting:
+          enabled: true
+    asserts:
+      - hasDocuments:
+          count: 5
+      - documentIndex: 1
+        equal:
+          path: rules[1].resourceNames
+          value: ["ignition-scaleout-backend-0", "ignition-scaleout-backend-1"]
+      - documentIndex: 3
+        contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: POD_SELECTOR
+            value: app.kubernetes.io/name=ignition-scaleout,app.kubernetes.io/instance=RELEASE-NAME,app.kubernetes.io/component=backend
+      - documentIndex: 4
+        equal:
+          path: spec.selector["app.kubernetes.io/component"]
+          value: backend
+      - documentIndex: 4
+        equal:
+          path: metadata.name
+          value: ignition-scaleout-backend-active

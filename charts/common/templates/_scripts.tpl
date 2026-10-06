@@ -304,6 +304,122 @@ stringData:
     fi
 
     echo "configure-ignition.sh finished."
+  active-routing.sh: |-
+    #!/bin/sh
+    # Keeps ACTIVE_LABEL=true on the gateway pod that is currently serving, so
+    # the <name>-active Service only reaches that pod. Readiness can't do this:
+    # a cold Backup must count as Ready or StatefulSet rolling updates stall.
+    #
+    # Every INTERVAL_SECONDS each gateway pod is classified from /system/gwinfo:
+    #   active   - ContextStatus=RUNNING and RedundantNodeActiveStatus=Active (or
+    #              no redundancy fields at all, i.e. standalone)
+    #   inactive - answered but not RUNNING/Active, has no IP yet, or is terminating
+    #   unknown  - didn't answer
+    # The label goes to the active Master, else any active node (a Backup that
+    # took over), so during a failback overlap traffic stays on one gateway.
+    # Explicit states switch immediately; if the labelled pod is merely unknown,
+    # the label is held for up to UNKNOWN_HOLD polls so one slow request doesn't
+    # drop traffic.
+    set -u
+
+    namespace="${NAMESPACE}"
+    selector="${POD_SELECTOR}"
+    label="${ACTIVE_LABEL}"
+    port="${HTTP_PORT:-8088}"
+    interval="${INTERVAL_SECONDS:-2}"
+    unknown_hold="${UNKNOWN_HOLD:-3}"
+    max_loops="${MAX_LOOPS:-0}" # 0 = forever (non-zero only for tests)
+
+    log() {
+      printf '[active] %s\n' "$*"
+    }
+
+    classify() {
+      ip="$1"
+      deleting="$2"
+      if [ -n "$deleting" ] || [ -z "$ip" ]; then
+        echo inactive
+        return
+      fi
+      info=$(curl -fsS --max-time 2 "http://${ip}:${port}/system/gwinfo" 2>/dev/null || true)
+      if [ -z "$info" ]; then
+        echo unknown
+        return
+      fi
+      case "$info" in
+        *"ContextStatus=RUNNING;"*) ;;
+        *)
+          echo inactive
+          return
+          ;;
+      esac
+      case "$info" in
+        *"RedundantNodeActiveStatus=Active;"*) ;;
+        *"RedundantNodeActiveStatus="*)
+          echo inactive
+          return
+          ;;
+      esac
+      case "$info" in
+        *"RedundancyStatus=Master;"*) echo active-master ;;
+        *) echo active ;;
+      esac
+    }
+
+    log "started: namespace=${namespace} selector=${selector} label=${label} interval=${interval}s"
+    streak=0
+    loops=0
+    while :; do
+      loops=$((loops + 1))
+      pods=$(kubectl get pods -n "$namespace" -l "$selector" \
+        -o jsonpath="{range .items[*]}{.metadata.name}|{.status.podIP}|{.metadata.deletionTimestamp}|{.metadata.labels.${label}}{\"\n\"}{end}" 2>/dev/null)
+      if [ -z "$pods" ]; then
+        log "WARN: no gateway pods listed"
+      else
+        want=""
+        other=""
+        current=""
+        current_state=""
+        states=""
+        while IFS='|' read -r name ip deleting has; do
+          [ -n "$name" ] || continue
+          state=$(classify "$ip" "$deleting")
+          states="${states} ${name}=${state}"
+          [ "$has" = "true" ] && current="$name" && current_state="$state"
+          case "$state" in
+            active-master) [ -n "$want" ] || want="$name" ;;
+            active) [ -n "$other" ] || other="$name" ;;
+          esac
+        done <<EOF
+    $pods
+    EOF
+        [ -n "$want" ] || want="$other"
+
+        if [ -z "$want" ] && [ -n "$current" ] && [ "$current_state" = "unknown" ]; then
+          streak=$((streak + 1))
+          if [ "$streak" -lt "$unknown_hold" ]; then
+            log "holding ${current}: no gwinfo answer (${streak}/${unknown_hold})"
+            want="$current"
+          fi
+        else
+          streak=0
+        fi
+
+        printf '%s\n' "$pods" | while IFS='|' read -r name ip deleting has; do
+          [ -n "$name" ] || continue
+          if [ "$name" = "$want" ] && [ "$has" != "true" ]; then
+            kubectl label pod "$name" -n "$namespace" "${label}=true" --overwrite >/dev/null &&
+              log "routing to ${name} (states:${states})"
+          elif [ "$name" != "$want" ] && [ "$has" = "true" ]; then
+            kubectl label pod "$name" -n "$namespace" "${label}-" >/dev/null &&
+              log "no longer routing to ${name} (states:${states})"
+          fi
+        done
+        [ -n "$want" ] || [ -z "$current" ] || log "WARN: no active gateway (states:${states})"
+      fi
+      [ "$max_loops" -gt 0 ] && [ "$loops" -ge "$max_loops" ] && exit 0
+      sleep "$interval"
+    done
   health-check.sh: |-
     #!/usr/bin/env bash
     # Health check for the Ignition Gateway: passes only when /StatusPing reports
@@ -315,6 +431,9 @@ stringData:
     # /StatusPing reports {"state":"RUNNING","details":"COMMISSIONING"} then.
     # Liveness leaves -r off so a gateway stuck commissioning is not restarted
     # in a loop (a restart does not finish commissioning).
+    # With IGNITION_READY_REQUIRES_BACKUP_SYNC=true (set by activeRouting), -r
+    # also fails on a Backup whose RedundantState is not Good, so a rolling
+    # update only restarts the Master once the Backup has caught up.
     #
     # Usage: health-check.sh [-t <timeout seconds>] [-s <expected state>] [-r]
 
@@ -346,6 +465,20 @@ stringData:
       case "${body}" in
         *"\"details\":\"COMMISSIONING\""*) echo "Gateway is still commissioning: ${body}"; exit 1 ;;
       esac
+      if [ "${IGNITION_READY_REQUIRES_BACKUP_SYNC:-false}" = true ]; then
+        if ! info=$(curl -s -f --max-time "${TIMEOUT}" "http://localhost:${HTTP_PORT}/system/gwinfo"); then
+          echo "Gateway not responding on /system/gwinfo"
+          exit 1
+        fi
+        case "${info}" in
+          *"RedundancyStatus=Backup;"*)
+            case "${info}" in
+              *"RedundantState=Good;"*) ;;
+              *) echo "Backup is not in sync with the Master: ${info}"; exit 1 ;;
+            esac
+            ;;
+        esac
+      fi
     fi
     exit 0
 {{- end -}}

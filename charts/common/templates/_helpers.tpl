@@ -132,7 +132,7 @@ spec:
             pathType: {{ .pathType }}
             backend:
               service:
-                name: {{ $fullname }}
+                name: {{ $fullname }}{{ if include "ignition-common.activeRoutingEnabled" (dict "values" $.values) }}-active{{ end }}
                 port:
                   number: {{ $.values.service.ports.http }}
           {{- end }}
@@ -151,6 +151,11 @@ Params:
 {{- if .name }}
 {{- $fullname = printf "%s-%s" $fullname .name }}
 {{- end }}
+{{- $type := .values.service.type }}
+{{- if include "ignition-common.activeRoutingEnabled" (dict "values" .values) }}
+{{- /* the <name>-active Service takes the configured type, nodePorts and annotations */}}
+{{- $type = "ClusterIP" }}
+{{- end }}
 apiVersion: v1
 kind: Service
 metadata:
@@ -166,7 +171,7 @@ metadata:
     {{- toYaml .values.service.annotations | nindent 4 }}
   {{- end }}
 spec:
-  type: {{ .values.service.type }}
+  type: {{ $type }}
   {{- if .values.service.sessionAffinity }}
   sessionAffinity: {{ .values.service.sessionAffinity }}
   {{- end }}
@@ -175,7 +180,7 @@ spec:
       targetPort: http
       protocol: TCP
       name: http
-      {{- if and (or (eq .values.service.type "NodePort") (eq .values.service.type "LoadBalancer")) .values.service.nodePorts }}
+      {{- if and (or (eq $type "NodePort") (eq $type "LoadBalancer")) .values.service.nodePorts }}
       {{- if .values.service.nodePorts.http }}
       nodePort: {{ .values.service.nodePorts.http }}
       {{- end }}
@@ -184,7 +189,7 @@ spec:
       targetPort: https
       protocol: TCP
       name: https
-      {{- if and (or (eq .values.service.type "NodePort") (eq .values.service.type "LoadBalancer")) .values.service.nodePorts }}
+      {{- if and (or (eq $type "NodePort") (eq $type "LoadBalancer")) .values.service.nodePorts }}
       {{- if .values.service.nodePorts.https }}
       nodePort: {{ .values.service.nodePorts.https }}
       {{- end }}
@@ -193,7 +198,7 @@ spec:
       targetPort: gan
       protocol: TCP
       name: gan
-      {{- if and (or (eq .values.service.type "NodePort") (eq .values.service.type "LoadBalancer")) .values.service.nodePorts }}
+      {{- if and (or (eq $type "NodePort") (eq $type "LoadBalancer")) .values.service.nodePorts }}
       {{- if .values.service.nodePorts.gan }}
       nodePort: {{ .values.service.nodePorts.gan }}
       {{- end }}

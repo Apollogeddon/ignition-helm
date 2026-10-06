@@ -40,4 +40,15 @@ check 0 "liveness tolerates commissioning" PING='{"state":"RUNNING","details":"C
 check 1 "readiness fails while commissioning" PING='{"state":"RUNNING","details":"COMMISSIONING"}' -- -r
 check 0 "readiness passes when running" PING='{"state":"RUNNING"}' -- -r
 
+SYNC=IGNITION_READY_REQUIRES_BACKUP_SYNC=true
+GOOD_BACKUP="ContextStatus=RUNNING;RedundancyStatus=Backup;RedundantState=Good;RedundantNodeActiveStatus=Cold;"
+STALE_BACKUP="ContextStatus=RUNNING;RedundancyStatus=Backup;RedundantState=Unknown;RedundantNodeActiveStatus=Cold;"
+MASTER="ContextStatus=RUNNING;RedundancyStatus=Master;RedundantState=Unknown;RedundantNodeActiveStatus=Active;"
+check 0 "backup sync ignored unless required" PING='{"state":"RUNNING"}' GWINFO="$STALE_BACKUP" -- -r
+check 0 "backup in sync is ready" PING='{"state":"RUNNING"}' GWINFO="$GOOD_BACKUP" "$SYNC" -- -r
+check 1 "backup out of sync is not ready" PING='{"state":"RUNNING"}' GWINFO="$STALE_BACKUP" "$SYNC" -- -r
+check 0 "master ready without a peer" PING='{"state":"RUNNING"}' GWINFO="$MASTER" "$SYNC" -- -r
+check 1 "no gwinfo answer is not ready" PING='{"state":"RUNNING"}' GWINFO= "$SYNC" -- -r
+check 0 "liveness ignores backup sync" PING='{"state":"RUNNING"}' GWINFO="$STALE_BACKUP" "$SYNC" --
+
 [ "$fails" -eq 0 ] && echo "all passed" || { echo "$fails failed"; exit 1; }
