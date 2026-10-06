@@ -19,7 +19,7 @@ e2e_require_memory "$ns"
 args=(s1 "$CHART" -n "$ns" -f "$(dirname "$0")/values/small.yaml"
   --set ignition.redundancy.enabled=true
   --set ignition.ingress.enabled=true
-  --set-string "ignition.ingress.annotations.kubernetes\.io/ingress\.class=$INGRESS_CLASS"
+  --set "ignition.ingress.className=$INGRESS_CLASS"
   --set "ignition.ingress.hosts[0].host=$HOST"
   --set "ignition.ingress.hosts[0].paths[0].path=/"
   --set "ignition.ingress.hosts[0].paths[0].pathType=Prefix")
