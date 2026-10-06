@@ -237,6 +237,7 @@ ignition:
       - health-check.sh
       - -t
       - "3"
+      - -r
 
   # -- Liveness Probe configuration
   livenessProbe:
