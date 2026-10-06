@@ -55,6 +55,9 @@ ignition:
   # -- NetworkPolicy configuration
   networkPolicy:
     enabled: true
+    # -- Additional ingress rules (list of NetworkPolicyIngressRule), e.g. the
+    # ingress controller namespace or node CIDRs for NodePorts/load balancers
+    extraIngress: []
 
   # -- Defines the behavior during StatefulSet upgrades.
   # Options: RollingUpdate, OnDelete

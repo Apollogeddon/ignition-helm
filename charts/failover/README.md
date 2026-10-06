@@ -78,3 +78,4 @@ The following table lists the configurable parameters of the chart and their def
 | `ignition.logging.loggers` | Per-logger levels, e.g. `{"gateway.SslManager": "DEBUG"}`. | `{}` |
 | `ignition.logging.sqlite` | SQLite log database maintenance (`entryLimit`, `maxEventsPerMaintenance`, `minTimeBetweenMaintenance`, `vacuumFrequency`). | `{}` (Ignition defaults) |
 | `ignition.emptyDirSizeLimit` | Optional `sizeLimit` for the `logs`, `temp` and `dotIgnition` emptyDir volumes. | unset |
+| `ignition.networkPolicy.extraIngress` | Extra NetworkPolicy ingress rules, e.g. the ingress controller namespace or node CIDRs. | `[]` |

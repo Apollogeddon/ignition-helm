@@ -1,0 +1,17 @@
+suite: Ignition Scaleout NetworkPolicy Extra Ingress
+templates:
+  - templates/frontend/networkpolicy.yaml
+tests:
+  - it: should append frontend NetworkPolicy extra ingress rules
+    set:
+      frontend:
+        networkPolicy:
+          enabled: true
+          extraIngress:
+            - from:
+                - ipBlock:
+                    cidr: 10.0.0.0/8
+    asserts:
+      - equal:
+          path: spec.ingress[2].from[0].ipBlock.cidr
+          value: 10.0.0.0/8
