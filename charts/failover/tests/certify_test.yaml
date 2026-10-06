@@ -49,3 +49,18 @@ tests:
           content:
             name: TARGETS
             value: ignition-failover=ignition-failover-gan-ca,ignition-failover-gan-tls,my-web-tls
+
+  - it: should mount the scripts Secret
+    set:
+      certManager:
+        restartOnRenewal:
+          enabled: true
+    asserts:
+      - documentIndex: 3
+        contains:
+          path: spec.jobTemplate.spec.template.spec.volumes
+          content:
+            name: scripts
+            secret:
+              secretName: ignition-failover-common-scripts
+              defaultMode: 0755
