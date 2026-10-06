@@ -501,6 +501,14 @@ stringData:
       fi
     done
     exit "$status"
+  shutdown.sh: |-
+    #!/bin/sh
+    # Deliberately a no-op. Chart 4.1.0 and earlier ran this as the gateway preStop
+    # hook and it called gwcmd.sh -p, which resets the gateway login. Pods created
+    # by those versions still run it when they are replaced; keeping the key (a
+    # Secret key removed from stringData stays in the Secret) with harmless content
+    # lets an upgrade replace them without losing the login.
+    exit 0
   health-check.sh: |-
     #!/usr/bin/env bash
     # Health check for the Ignition Gateway: passes only when /StatusPing reports
