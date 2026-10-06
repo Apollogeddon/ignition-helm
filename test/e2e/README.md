@@ -29,3 +29,4 @@ kubectl delete ns -l e2e=ignition-helm
 - `s10-partition.sh` (disposable clusters only, needs Chaos Mesh): partitions the Master from the Backup (split-brain) and then isolates the Master entirely (hung Master); checks traffic is never routed to two gateways, measures the unserved time, and checks the pair settles afterwards.
 
 CI runs these on a disposable kind cluster with `.github/workflows/e2e.yaml` (manual or weekly); `.github/scripts/e2e/setup-cluster.sh` installs cert-manager, Contour and Chaos Mesh.
+- `s2-upgrade.sh`: installs a redundant pair from a released version (`FROM_VERSION`, default 4.1.0, with its probes off because they never pass on 8.3) and upgrades it to the working tree (`UPGRADE_SET` adds values, e.g. `ignition.activeRouting.enabled=true`); checks the Backup is replaced before the Master and the pair recovers, and records the unserved time. Needs `NODE_IP`.
