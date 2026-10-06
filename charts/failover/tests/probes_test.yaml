@@ -1,0 +1,60 @@
+suite: Ignition Failover Probes and Health Check
+templates:
+  - ignition-statefulset.yaml
+  - configmap-scripts.yaml
+tests:
+  # Probes: values win over the chart default (a plain merge used to discard them)
+  - it: should use the probe commands from values by default
+    template: ignition-statefulset.yaml
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].readinessProbe.exec.command
+          value: ["health-check.sh", "-t", "3"]
+      - equal:
+          path: spec.template.spec.containers[0].livenessProbe.exec.command
+          value: ["health-check.sh", "-t", "5"]
+
+  - it: should keep a custom probe command
+    template: ignition-statefulset.yaml
+    set:
+      ignition:
+        readinessProbe:
+          command: ["bash", "-c", "custom-check"]
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].readinessProbe.exec.command
+          value: ["bash", "-c", "custom-check"]
+
+  - it: should fall back to the chart health check when the command is empty
+    template: ignition-statefulset.yaml
+    set:
+      ignition:
+        livenessProbe:
+          command: []
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].livenessProbe.exec.command
+          value: ["/config/scripts/health-check.sh"]
+
+  # Scripts: health check works on 8.1 and 8.3; no password-resetting shutdown script
+  - it: should check /StatusPing for the expected state
+    template: configmap-scripts.yaml
+    asserts:
+      - matchRegex:
+          path: stringData["health-check.sh"]
+          pattern: 'localhost:\$\{HTTP_PORT\}/StatusPing'
+      - matchRegex:
+          path: stringData["health-check.sh"]
+          pattern: '"state'
+      - notMatchRegex:
+          path: stringData["health-check.sh"]
+          pattern: 'curl[^\n]*/main/system/StatusPing'
+
+  - it: should not ship a shutdown script that calls gwcmd.sh -p
+    template: configmap-scripts.yaml
+    asserts:
+      - notExists:
+          path: stringData["shutdown.sh"]
+      - notMatchRegex:
+          path: stringData["health-check.sh"]
+          pattern: 'gwcmd'

@@ -4,6 +4,7 @@ templates:
   - templates/frontend/networkpolicy.yaml
   - templates/frontend/frontend-statefulset.yaml
   - templates/backend/networkpolicy.yaml
+  - templates/backend/backend-statefulset.yaml
 tests:
   - it: should create HPA for frontend when enabled
     template: templates/frontend/hpa.yaml
@@ -28,8 +29,21 @@ tests:
       - isKind:
           of: NetworkPolicy
 
-  - it: should include lifecycle hook in frontend
+  - it: should not include a lifecycle hook in frontend by default
     template: templates/frontend/frontend-statefulset.yaml
     asserts:
-      - exists:
-          path: spec.template.spec.containers[0].lifecycle.preStop
+      - notExists:
+          path: spec.template.spec.containers[0].lifecycle
+
+  - it: should render a lifecycle hook in backend from values
+    template: templates/backend/backend-statefulset.yaml
+    set:
+      backend:
+        lifecycle:
+          preStop:
+            exec:
+              command: ["sleep", "5"]
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].lifecycle.preStop.exec.command
+          value: ["sleep", "5"]

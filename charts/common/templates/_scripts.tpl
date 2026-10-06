@@ -306,29 +306,33 @@ stringData:
     echo "configure-ignition.sh finished."
   health-check.sh: |-
     #!/usr/bin/env bash
-    # Robust health check for Ignition Gateway
-    
-    HTTP_PORT=${IGNITION_HTTP_PORT:-8088}
-    GAN_PORT=${IGNITION_GAN_PORT:-8060}
-    TIMEOUT=5
+    # Health check for the Ignition Gateway: passes only when /StatusPing reports
+    # the expected state (RUNNING by default). /StatusPing answers with
+    # {"state":"..."} on both Ignition 8.1 and 8.3; /main/system/StatusPing does
+    # not exist on either (8.1 redirects to a 404, 8.3 returns 404).
+    #
+    # Usage: health-check.sh [-t <timeout seconds>] [-s <expected state>]
 
-    # 1. Check if the Web Server is responding
-    if ! curl -s -f --max-time "${TIMEOUT}" "http://localhost:${HTTP_PORT}/main/system/StatusPing" > /dev/null; then
-      echo "Web Server not responding"
+    HTTP_PORT=${IGNITION_HTTP_PORT:-8088}
+    TIMEOUT=5
+    EXPECTED_STATE=RUNNING
+
+    while getopts ":t:s:" opt; do
+      case "${opt}" in
+        t) TIMEOUT="${OPTARG}" ;;
+        s) EXPECTED_STATE="${OPTARG}" ;;
+        *) echo "Usage: $0 [-t timeout] [-s state]" >&2; exit 2 ;;
+      esac
+    done
+
+    if ! body=$(curl -s -f --max-time "${TIMEOUT}" "http://localhost:${HTTP_PORT}/StatusPing"); then
+      echo "Gateway not responding on /StatusPing"
       exit 1
     fi
 
-    # 2. Check if the GAN port is listening (basic check)
-    if ! timeout "${TIMEOUT}" bash -c "cat < /dev/null > /dev/tcp/localhost/${GAN_PORT}" 2>/dev/null; then
-      echo "GAN Port ${GAN_PORT} not listening"
-      # We don't exit 1 here yet as GAN might take longer to bind
-    fi
-
-    exit 0
-  shutdown.sh: |-
-    #!/usr/bin/env bash
-    # Graceful shutdown script
-    echo "Initiating graceful shutdown of Ignition Gateway..."
-    /usr/local/bin/ignition/gwcmd.sh -p
-    echo "Shutdown signal sent."
+    case "${body}" in
+      *"\"state\":\"${EXPECTED_STATE}\""*) exit 0 ;;
+    esac
+    echo "Gateway state is not ${EXPECTED_STATE}: ${body}"
+    exit 1
 {{- end -}}

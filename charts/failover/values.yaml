@@ -235,3 +235,7 @@ ignition:
       - health-check.sh
       - -t
       - "5"
+
+  # -- Container lifecycle hooks (none by default: on SIGTERM the gateway shuts
+  # down gracefully on its own)
+  lifecycle: {}

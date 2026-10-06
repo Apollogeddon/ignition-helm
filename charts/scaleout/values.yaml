@@ -210,6 +210,10 @@ frontend:
       - -t
       - "5"
 
+  # -- Container lifecycle hooks (none by default: on SIGTERM the gateway shuts
+  # down gracefully on its own)
+  lifecycle: {}
+
 backend:
   # -- Redundancy settings
   redundancy:
@@ -409,3 +413,7 @@ backend:
       - health-check.sh
       - -t
       - "5"
+
+  # -- Container lifecycle hooks (none by default: on SIGTERM the gateway shuts
+  # down gracefully on its own)
+  lifecycle: {}
