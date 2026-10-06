@@ -69,6 +69,10 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.name
+        {{- if include "ignition-common.activeRoutingEnabled" (dict "values" .Values.ignition) }}
+        - name: IGNITION_READY_REQUIRES_BACKUP_SYNC
+          value: "true"
+        {{- end }}
 
         volumeMounts:
 {{ include "ignition-common.volumeMounts" (dict "name" (include "ignition.name" .) "values" .Values.ignition) | nindent 8 }}

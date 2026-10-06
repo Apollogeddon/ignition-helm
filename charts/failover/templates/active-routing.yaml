@@ -1,0 +1,1 @@
+{{- include "ignition-common.activeRouting" (dict "values" .Values.ignition "context" .) }}
