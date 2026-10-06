@@ -75,3 +75,5 @@ The following table lists the configurable parameters of the chart and their def
 | `ignition.readinessProbe` / `ignition.livenessProbe` | Probe settings. A configured `command` is used as-is; the chart health check (`/StatusPing` must report `RUNNING`) is the fallback when it is empty. | image `health-check.sh -t 3` / `-t 5` |
 | `ignition.startupProbe.enabled` | Add a startupProbe so slow starts are tolerated while liveness stays strict. | `false` |
 | `ignition.lifecycle` | Container lifecycle hooks, rendered as-is. | `{}` (none) |
+| `ignition.logging.loggers` | Per-logger levels, e.g. `{"gateway.SslManager": "DEBUG"}`. | `{}` |
+| `ignition.logging.sqlite` | SQLite log database maintenance (`entryLimit`, `maxEventsPerMaintenance`, `minTimeBetweenMaintenance`, `vacuumFrequency`). | `{}` (Ignition defaults) |

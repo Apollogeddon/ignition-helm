@@ -90,6 +90,11 @@ frontend:
   logging:
     # -- Log level for the Frontend Gateway (INFO, DEBUG, WARN, ERROR)
     level: "INFO"
+    # -- Per-logger levels, e.g. {"gateway.SslManager": "DEBUG"}
+    loggers: {}
+    # -- SQLite log database maintenance; unset keys keep Ignition defaults:
+    # entryLimit, maxEventsPerMaintenance, minTimeBetweenMaintenance, vacuumFrequency
+    sqlite: {}
 
   # -- Web Server SSL/TLS Configuration
   ssl:
@@ -288,6 +293,11 @@ backend:
   logging:
     # -- Log level for the Backend Gateway (INFO, DEBUG, WARN, ERROR)
     level: "INFO"
+    # -- Per-logger levels, e.g. {"gateway.SslManager": "DEBUG"}
+    loggers: {}
+    # -- SQLite log database maintenance; unset keys keep Ignition defaults:
+    # entryLimit, maxEventsPerMaintenance, minTimeBetweenMaintenance, vacuumFrequency
+    sqlite: {}
 
   # -- Web Server SSL/TLS Configuration
   ssl:
