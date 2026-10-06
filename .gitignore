@@ -137,3 +137,4 @@ dist
 
 # vitest
 junit-report.xml
+e2e-out/
