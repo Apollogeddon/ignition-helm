@@ -41,10 +41,11 @@ wait_pair() {
   done
   die "pair not healthy: $STS-0 $(gwinfo $STS-0 || true), $STS-1 $(gwinfo $STS-1 || true)"
 }
-# certify: run the CronJob now and print its log
-n=0
+# certify: run the CronJob now and print its log (called in $(...), so the job
+# name comes from the clock rather than a counter)
 certify() {
-  n=$((n + 1))
+  local n
+  n=$(date +%s)
   kubectl -n "$ns" create job "certify-$n" --from=cronjob/$STS-certify >/dev/null
   kubectl -n "$ns" wait job "certify-$n" --for=condition=complete --timeout=3m >/dev/null ||
     { kubectl -n "$ns" logs job/"certify-$n" >&2 || true; die "certify job $n failed"; }
