@@ -67,6 +67,7 @@ The following table lists the configurable parameters of the chart and their def
 | `ignition.persistence.size` | Size of the persistent volume claim. | `3Gi` |
 | `ignition.service.type` | Kubernetes Service type (NodePort, LoadBalancer, etc). | `NodePort` |
 | `ignition.service.nodePorts` | Optional static NodePorts (http, https, gan). | `{}` |
+| `ignition.activeRouting.enabled` | Route user traffic only to the Active gateway of a redundant pair: a labeller keeps `redundancy-active=true` on the Active pod, the `<name>-active` Service (which takes the configured service type, nodePorts and annotations) selects it, and the Ingress points at it. Readiness also requires a Backup to be in sync. | `false` |
 | `ignition.ingress.enabled` | Enable Ingress resource generation. | `false` |
 | `ignition.ingress.className` | IngressClass name, e.g. `contour`; empty uses the cluster default. | `""` |
 | `certManager.issuer.name` | Name of the Cert-Manager Issuer to use. | `cluster-issuer` |

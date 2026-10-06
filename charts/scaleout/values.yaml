@@ -439,6 +439,24 @@ backend:
     # -- OR, path to a mounted .gwbk file
     # path: ""
 
+  # -- Route user traffic only to the Active gateway of a redundant pair
+  # (needs redundancy.enabled). A labeller Deployment keeps the label
+  # redundancy-active=true on the Active gateway and a <name>-active Service
+  # selects it; that Service takes service.type/nodePorts/annotations, the main
+  # Service becomes ClusterIP, and the Ingress points at it. Readiness then
+  # also requires a Backup to be in sync, so rolling updates wait for it.
+  activeRouting:
+    enabled: false
+    # -- Labeller image; needs /bin/sh, curl and kubectl
+    image: alpine/kubectl:1.34.1
+    # -- Seconds between /system/gwinfo polls
+    intervalSeconds: 2
+    # -- Polls to keep the label on a gateway that stops answering
+    unknownHold: 3
+    resources:
+      requests: {cpu: 10m, memory: 32Mi}
+      limits: {cpu: 200m, memory: 128Mi}
+
   # -- Readiness Probe configuration
   readinessProbe:
     enabled: true

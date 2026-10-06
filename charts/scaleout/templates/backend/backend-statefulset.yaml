@@ -65,6 +65,10 @@ spec:
         env:
         - name: EAM_SETUP_INSTALLSELECTION
           value: {{ .Values.backend.eam.role | quote }}
+        {{- if include "ignition-common.activeRoutingEnabled" (dict "values" .Values.backend) }}
+        - name: IGNITION_READY_REQUIRES_BACKUP_SYNC
+          value: "true"
+        {{- end }}
 
         volumeMounts:
 {{ include "ignition-common.volumeMounts" (dict "name" (include "ignition.name" .) "values" .Values.backend) | nindent 8 }}
