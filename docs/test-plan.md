@@ -18,7 +18,7 @@ Staging e2e runs on a shared cluster, so it must leave no lasting or breaking ch
 
 1. Every test runs in its own namespace `chart-e2e-<test>` labelled `e2e=ignition-helm`; nothing is created in existing namespaces.
 2. No cluster-scoped changes. Before a run the chart render is checked for cluster-scoped kinds, and a snapshot of cluster-scoped resources (namespaces, CRDs, ClusterRoles/Bindings, webhooks, IngressClasses, PVs, StorageClasses) is taken; after teardown the diff must be empty. Existing services (an ingress controller, cert-manager issuers) are only used, never changed.
-3. Resource budget: at most two test gateways at a time with small requests, and a run only starts when the node has more than 4Gi of memory available.
+3. Resource budget: at most two test gateways at a time with small requests. A run only starts when the node has more than 4Gi of memory available and at least 1Gi of memory not yet promised to other pods' requests, so a test never takes the last schedulable capacity from someone else's rollout.
 4. An optional watch URL (a production-like app on the same cluster) is polled every second for the whole run; any failure stops the run.
 5. Teardown always runs; an interrupted session is cleaned with `kubectl delete ns -l e2e=ignition-helm`.
 
