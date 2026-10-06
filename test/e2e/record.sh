@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# record.sh <seconds> <outfile> <name=url>...: once a second, record each URL's
-# HTTP status and, for /system/gwinfo URLs, the redundancy role/state that answered
+# record.sh <seconds> <outfile> <name=url>...: on each wall-clock second, record each URL's
+# HTTP status (extra curl args from RECORD_CURL_ARGS, e.g. --resolve) and, for /system/gwinfo URLs, the redundancy role/state that answered
 set -uo pipefail
 end=$(( $(date +%s) + $1 )); out=$2; shift 2
 tmp=$(mktemp -d); trap 'rm -rf "$tmp"' EXIT
@@ -9,11 +9,12 @@ while [ "$(date +%s)" -lt "$end" ]; do
   for target in "$@"; do
     i=$((i + 1)); name=${target%%=*}; url=${target#*=}
     case "$url" in
-      */system/gwinfo) ( b=$(curl -sk --max-time 1.5 "$url"); [ -n "$b" ] || b="down"
-           echo "$name=$(tr ';' '\n' <<< "$b" | grep -E '^(RedundancyStatus|RedundantNodeActiveStatus)=' | sed 's/^[^=]*=//' | paste -sd/ -)" > "$tmp/$i" ) & ;;
-      *) ( echo "$name=$(curl -sk --max-time 1.5 -o /dev/null -w '%{http_code}' "$url")" > "$tmp/$i" ) & ;;
+      */system/gwinfo) ( s=$(curl -sk --max-time 0.9 ${RECORD_CURL_ARGS:-} "$url" | tr ';' '\n' |
+             grep -E '^(RedundancyStatus|RedundantNodeActiveStatus)=' | sed 's/^[^=]*=//' | paste -sd/ -)
+           echo "$name=${s:-down}" > "$tmp/$i" ) & ;;
+      *) ( echo "$name=$(curl -sk --max-time 0.9 ${RECORD_CURL_ARGS:-} -o /dev/null -w '%{http_code}' "$url")" > "$tmp/$i" ) & ;;
     esac
   done
   wait; echo "$t $(cat "$tmp"/* | paste -sd' ' -)" >> "$out"; rm -f "$tmp"/*
-  sleep 1
+  ms=$(( $(date +%s%N) / 1000000 % 1000 )); sleep "0.$(printf %03d $(( 999 - ms )))"
 done
