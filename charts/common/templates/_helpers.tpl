@@ -316,6 +316,46 @@ timeoutSeconds: {{ .probe.timeoutSeconds }}
 {{- end }}
 
 {{/*
+Probe with a default command
+Values win over the default: the probe's own `command` is used when set, and
+the chart's health-check script only when it is empty. (A plain `merge` gives
+the first dict precedence, which silently replaced any configured command.)
+Params:
+  probe: The probe values object (readinessProbe or livenessProbe)
+*/}}
+{{- define "ignition-common.probeWithDefault" -}}
+{{- $probe := mergeOverwrite (dict "command" (list "/config/scripts/health-check.sh")) (deepCopy .probe) -}}
+{{- if not $probe.command }}
+{{- $_ := set $probe "command" (list "/config/scripts/health-check.sh") }}
+{{- end }}
+{{- include "ignition-common.probes" (dict "probe" $probe) }}
+{{- end }}
+
+{{/*
+Gateway container probes and lifecycle
+Renders readinessProbe/livenessProbe (each when enabled) and the
+lifecycle block (only when set - there is no default preStop: on SIGTERM the
+gateway already shuts down gracefully, and `gwcmd.sh -p` resets the gateway
+login password on Ignition 8.1 and 8.3).
+Params:
+  values: The component-specific values object
+*/}}
+{{- define "ignition-common.containerProbes" -}}
+{{- with .values.lifecycle }}
+lifecycle:
+  {{- toYaml . | nindent 2 }}
+{{- end }}
+{{- if .values.readinessProbe.enabled }}
+readinessProbe:
+  {{- include "ignition-common.probeWithDefault" (dict "probe" .values.readinessProbe) | nindent 2 }}
+{{- end }}
+{{- if .values.livenessProbe.enabled }}
+livenessProbe:
+  {{- include "ignition-common.probeWithDefault" (dict "probe" .values.livenessProbe) | nindent 2 }}
+{{- end }}
+{{- end }}
+
+{{/*
 Standard Volume Mounts
 Params:
   name: The base name of the application/component
