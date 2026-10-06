@@ -420,6 +420,87 @@ stringData:
       [ "$max_loops" -gt 0 ] && [ "$loops" -ge "$max_loops" ] && exit 0
       sleep "$interval"
     done
+  certify.sh: |-
+    #!/bin/sh
+    # Restarts gateways after their certificates are renewed. The preconfigure
+    # init container copies the GAN and web certificates into the gateway on
+    # every start, so a rolling restart is all a renewal needs.
+    #
+    # TARGETS is a space-separated list of "<statefulset>=<secret>,<secret>".
+    # For each, the secrets' data is hashed and compared with the StatefulSet's
+    # certify-hash annotation:
+    #   - no annotation yet: record the hash (first run, no restart)
+    #   - same hash: nothing to do
+    #   - different: kubectl rollout restart, then record the new hash. The
+    #     StatefulSet restarts the highest ordinal (the Backup) first and waits
+    #     for it to be Ready before the Master.
+    # A StatefulSet that is still rolling out is left for the next run.
+    set -u
+
+    namespace="${NAMESPACE}"
+    status=0
+
+    log() {
+      printf '[certify] %s\n' "$*"
+    }
+
+    for target in ${TARGETS}; do
+      sts="${target%%=*}"
+      secrets=$(printf '%s' "${target#*=}" | tr ',' ' ')
+
+      data=""
+      missing=""
+      for secret in $secrets; do
+        if d=$(kubectl get secret "$secret" -n "$namespace" -o jsonpath='{.data}' 2>/dev/null) && [ -n "$d" ]; then
+          data="${data}${secret}=${d};"
+        else
+          missing="${missing} ${secret}"
+        fi
+      done
+      if [ -n "$missing" ]; then
+        log "WARN: ${sts}: secrets not found:${missing}; skipping"
+        status=1
+        continue
+      fi
+      hash=$(printf '%s' "$data" | sha256sum | cut -c1-16)
+
+      if ! current=$(kubectl get statefulset "$sts" -n "$namespace" -o jsonpath='{.metadata.annotations.certify-hash}' 2>/dev/null); then
+        log "WARN: ${sts}: StatefulSet not found; skipping"
+        status=1
+        continue
+      fi
+
+      if [ -z "$current" ]; then
+        kubectl annotate statefulset "$sts" -n "$namespace" "certify-hash=${hash}" --overwrite >/dev/null &&
+          log "${sts}: recorded certificate hash ${hash}"
+        continue
+      fi
+      if [ "$current" = "$hash" ]; then
+        log "${sts}: certificates unchanged"
+        continue
+      fi
+
+      settled=$(kubectl get statefulset "$sts" -n "$namespace" \
+        -o jsonpath='{.status.replicas}/{.status.readyReplicas}/{.status.updatedReplicas}/{.status.currentRevision}/{.status.updateRevision}')
+      replicas=$(printf '%s' "$settled" | cut -d/ -f1)
+      ready=$(printf '%s' "$settled" | cut -d/ -f2)
+      updated=$(printf '%s' "$settled" | cut -d/ -f3)
+      current_rev=$(printf '%s' "$settled" | cut -d/ -f4)
+      update_rev=$(printf '%s' "$settled" | cut -d/ -f5)
+      if [ "$ready" != "$replicas" ] || [ "$updated" != "$replicas" ] || [ "$current_rev" != "$update_rev" ]; then
+        log "${sts}: certificates renewed but a rollout is in progress (${ready}/${replicas} ready); will retry"
+        continue
+      fi
+
+      if kubectl rollout restart statefulset "$sts" -n "$namespace" >/dev/null &&
+        kubectl annotate statefulset "$sts" -n "$namespace" "certify-hash=${hash}" --overwrite >/dev/null; then
+        log "${sts}: certificates renewed; rolling restart started (hash ${current} -> ${hash})"
+      else
+        log "ERROR: ${sts}: rolling restart failed"
+        status=1
+      fi
+    done
+    exit "$status"
   health-check.sh: |-
     #!/usr/bin/env bash
     # Health check for the Ignition Gateway: passes only when /StatusPing reports

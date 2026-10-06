@@ -1,0 +1,51 @@
+suite: Ignition Failover Restart On Renewal
+templates:
+  - certify.yaml
+tests:
+  - it: should not render by default
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should watch the GAN secrets of the StatefulSet
+    set:
+      certManager:
+        restartOnRenewal:
+          enabled: true
+    asserts:
+      - hasDocuments:
+          count: 4
+      - documentIndex: 1
+        equal:
+          path: rules[0].resourceNames
+          value: ["ignition-failover-gan-ca", "ignition-failover-gan-tls"]
+      - documentIndex: 1
+        equal:
+          path: rules[1].resourceNames
+          value: ["ignition-failover"]
+      - documentIndex: 3
+        isKind:
+          of: CronJob
+      - documentIndex: 3
+        contains:
+          path: spec.jobTemplate.spec.template.spec.containers[0].env
+          content:
+            name: TARGETS
+            value: ignition-failover=ignition-failover-gan-ca,ignition-failover-gan-tls
+
+  - it: should also watch the web certificate when ssl is enabled
+    set:
+      certManager:
+        restartOnRenewal:
+          enabled: true
+      ignition:
+        ssl:
+          enabled: true
+          secretName: my-web-tls
+    asserts:
+      - documentIndex: 3
+        contains:
+          path: spec.jobTemplate.spec.template.spec.containers[0].env
+          content:
+            name: TARGETS
+            value: ignition-failover=ignition-failover-gan-ca,ignition-failover-gan-tls,my-web-tls
