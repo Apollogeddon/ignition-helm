@@ -237,6 +237,66 @@ e2e_watch_stop() {
   E2E_WATCH_PID=""
 }
 
+# e2e_probe_start <ns> <name> <seconds> <name=url>...: run record.sh in a pod
+# in the test namespace, so availability is also measured from inside the
+# cluster, without the test machine's network. RECORD_INTERVAL_MS and
+# RECORD_CURL_ARGS are passed through. The image needs bash, curl and GNU date;
+# the Ignition image has them and is already on the node.
+E2E_RECORD_IMAGE="${E2E_RECORD_IMAGE:-inductiveautomation/ignition:8.3.1}"
+e2e_probe_start() {
+  local ns=$1 name=$2 secs=$3 pod="e2e-probe-$2"; shift 3
+  e2e_retry kubectl -n "$ns" create configmap "$pod" --from-file=record.sh="$(dirname "${BASH_SOURCE[0]}")/record.sh" \
+    --dry-run=client -o yaml | e2e_retry kubectl apply -f - >/dev/null
+  local args="" a
+  for a in "$@"; do args="$args, \"$a\""; done
+  e2e_retry kubectl -n "$ns" apply -f - >/dev/null <<EOF2
+apiVersion: v1
+kind: Pod
+metadata:
+  name: $pod
+  labels: {app.kubernetes.io/name: e2e-probe}
+spec:
+  restartPolicy: Never
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 2003
+    seccompProfile: {type: RuntimeDefault}
+  containers:
+    - name: probe
+      image: $E2E_RECORD_IMAGE
+      command: ["bash", "-c", "bash /probe/record.sh \"\$@\"; echo done > /tmp/probe.done; sleep 3600", "--", "$secs", "/tmp/probe.log"$args]
+      env:
+        - {name: RECORD_INTERVAL_MS, value: "${RECORD_INTERVAL_MS:-}"}
+        - {name: RECORD_CURL_ARGS, value: "${RECORD_CURL_ARGS:-}"}
+      resources:
+        requests: {cpu: 50m, memory: 32Mi}
+        limits: {cpu: 500m, memory: 128Mi}
+      securityContext:
+        allowPrivilegeEscalation: false
+        capabilities: {drop: ["ALL"]}
+      volumeMounts:
+        - {name: probe, mountPath: /probe}
+  volumes:
+    - name: probe
+      configMap: {name: $pod}
+EOF2
+  e2e_retry kubectl -n "$ns" wait "pod/$pod" --for=condition=Ready --timeout=5m >/dev/null
+  log "in-cluster probe $pod recording ${secs}s"
+}
+
+# e2e_probe_collect <ns> <name> <outfile>: wait for the probe to finish, copy
+# its log to <outfile> and delete the pod
+e2e_probe_collect() {
+  local ns=$1 pod="e2e-probe-$2" out=$3 i
+  for i in $(seq 120); do
+    kubectl -n "$ns" exec "$pod" -- sh -c 'test -f /tmp/probe.done' 2>/dev/null && break
+    sleep 5
+  done
+  # sh -c keeps Git Bash on Windows from rewriting /tmp/probe.log as a local path
+  e2e_retry kubectl -n "$ns" exec "$pod" -- sh -c 'cat /tmp/probe.log' > "$out"
+  kubectl -n "$ns" delete "pod/$pod" "configmap/$pod" --wait=false >/dev/null 2>&1 || true
+}
+
 # e2e_teardown: delete every e2e namespace and wait until they are gone
 e2e_teardown() {
   e2e_watch_stop

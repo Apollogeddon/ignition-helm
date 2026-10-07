@@ -5,7 +5,10 @@
 #
 # Env: NODE_IP (a node address), INGRESS_PORT (ingress controller HTTP NodePort),
 # INGRESS_CLASS (default contour), WATCH_URL (optional), IMAGE_TAG (default chart appVersion),
-# ACTIVE_ROUTING (true: enable ignition.activeRouting; results are named s01-active-*)
+# ACTIVE_ROUTING (true: enable ignition.activeRouting; results are named s01-active-*),
+# IN_CLUSTER (true: also record from a probe pod in the test namespace, through
+# the Service, the NodePort and, when INGRESS_SERVICE (default projectcontour/envoy)
+# exists, the ingress controller; results are named *-incluster.log)
 source "$(dirname "$0")/lib.sh"
 : "${NODE_IP:?}" "${INGRESS_PORT:?}"
 INGRESS_CLASS="${INGRESS_CLASS:-contour}"
@@ -13,6 +16,8 @@ CHART="$(dirname "$0")/../../charts/failover"
 HOST="s01.e2e.invalid"
 OBSERVE="${OBSERVE:-180}"
 ACTIVE_ROUTING="${ACTIVE_ROUTING:-false}"
+IN_CLUSTER="${IN_CLUSTER:-false}"
+INGRESS_SERVICE="${INGRESS_SERVICE:-projectcontour/envoy}"
 tag=s01; [ "$ACTIVE_ROUTING" != true ] || tag=s01-active
 
 e2e_chart "$CHART"
@@ -65,16 +70,34 @@ nodeport=$(kubectl -n "$ns" get svc "ignition-failover$([ "$ACTIVE_ROUTING" != t
 export RECORD_CURL_ARGS="--resolve $HOST:$INGRESS_PORT:$NODE_IP"
 targets=(ingress="http://$HOST:$INGRESS_PORT/StatusPing" nodeport="http://$NODE_IP:$nodeport/StatusPing"
   via="http://$HOST:$INGRESS_PORT/system/gwinfo")
+svc="ignition-failover$([ "$ACTIVE_ROUTING" != true ] || echo -active)"
+inside=(service="http://$svc.$ns.svc:8088/StatusPing" nodeport="http://$NODE_IP:$nodeport/StatusPing"
+  via="http://$svc.$ns.svc:8088/system/gwinfo")
+inside_args=""
+if [ "$IN_CLUSTER" = true ]; then
+  envoy=$(kubectl -n "${INGRESS_SERVICE%%/*}" get svc "${INGRESS_SERVICE##*/}" -o jsonpath='{.spec.clusterIP}' 2>/dev/null || true)
+  if [ -n "$envoy" ]; then
+    inside+=(ingress="http://$HOST/StatusPing")
+    inside_args="--resolve $HOST:80:$envoy"
+  fi
+fi
 
 # observe <name> <action...>: record OBSERVE seconds, running the action after 10s
 observe() {
   local name=$1; shift
   log "$name: recording ${OBSERVE}s"
+  [ "$IN_CLUSTER" != true ] ||
+    RECORD_CURL_ARGS="$inside_args" e2e_probe_start "$ns" "$name" "$(( OBSERVE + 5 ))" "${inside[@]}"
   "$(dirname "$0")/record.sh" "$OBSERVE" "$E2E_OUT/$tag-$name.log" "${targets[@]}" &
   local rec=$!
   sleep 10; log "$name: $*"; "$@"
   wait "$rec"
   summarise "$E2E_OUT/$tag-$name.log"
+  if [ "$IN_CLUSTER" = true ]; then
+    e2e_probe_collect "$ns" "$name" "$E2E_OUT/$tag-$name-incluster.log"
+    echo "  in-cluster:" | tee -a "$E2E_OUT/$tag-summary.txt" >&2
+    summarise "$E2E_OUT/$tag-$name-incluster.log"
+  fi
   e2e_watch_check
 }
 
