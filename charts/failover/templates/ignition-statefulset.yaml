@@ -23,6 +23,10 @@ spec:
     metadata:
       labels:
         {{- include "ignition.selectorLabels" . | nindent 8 }}
+      annotations:
+        # restart the gateways when redundancy values change; seed-redundancy.sh
+        # applies them to the data volume on start
+        checksum/redundancy: {{ .Values.ignition.redundancy | toJson | sha256sum }}
     spec:
       serviceAccountName: {{ include "ignition.serviceAccountName" . }}
       terminationGracePeriodSeconds: 60
@@ -46,16 +50,10 @@ spec:
             drop:
               - ALL
           readOnlyRootFilesystem: false
-        lifecycle:
-          preStop:
-            exec:
-              command: ["/config/scripts/shutdown.sh"]
         image: {{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}
         imagePullPolicy: {{ .Values.image.pullPolicy }}
         resources: {{ .Values.ignition.resources | toYaml | nindent 10 }}
-        {{- if .Values.ignition.args }}
-        args: {{ .Values.ignition.args | toYaml | nindent 8 }}
-        {{- end }}
+        {{- include "ignition-common.args" (dict "values" .Values.ignition) | nindent 8 }}
         ports:
         - name: http
           containerPort: {{ .Values.ignition.service.ports.http }}
@@ -75,17 +73,14 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.name
+        {{- if include "ignition-common.activeRoutingEnabled" (dict "values" .Values.ignition) }}
+        - name: IGNITION_READY_REQUIRES_BACKUP_SYNC
+          value: "true"
+        {{- end }}
 
         volumeMounts:
 {{ include "ignition-common.volumeMounts" (dict "name" (include "ignition.name" .) "values" .Values.ignition) | nindent 8 }}
-        {{- if .Values.ignition.readinessProbe.enabled }}
-        readinessProbe:
-{{ include "ignition-common.probes" (dict "probe" (merge (dict "command" (list "/config/scripts/health-check.sh")) .Values.ignition.readinessProbe)) | nindent 10 }}
-        {{- end }}
-        {{- if .Values.ignition.livenessProbe.enabled }}
-        livenessProbe:
-{{ include "ignition-common.probes" (dict "probe" (merge (dict "command" (list "/config/scripts/health-check.sh")) .Values.ignition.livenessProbe)) | nindent 10 }}
-        {{- end }}
+        {{- include "ignition-common.containerProbes" (dict "values" .Values.ignition) | trim | nindent 8 }}
       initContainers:
 {{ include "ignition-common.initContainer.preconfigure" (dict "name" (include "ignition.name" .) "image" .Values.image "values" .Values.ignition "replicas" (ternary 2 1 .Values.ignition.redundancy.enabled) "context" .) | nindent 6 }}
       volumes:

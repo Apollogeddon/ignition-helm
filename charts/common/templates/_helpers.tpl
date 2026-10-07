@@ -109,6 +109,9 @@ metadata:
     {{- toYaml .values.ingress.annotations | nindent 4 }}
   {{- end }}
 spec:
+  {{- with .values.ingress.className }}
+  ingressClassName: {{ . }}
+  {{- end }}
   {{- if .values.ingress.tls }}
   tls:
     {{- range .values.ingress.tls }}
@@ -129,7 +132,7 @@ spec:
             pathType: {{ .pathType }}
             backend:
               service:
-                name: {{ $fullname }}
+                name: {{ $fullname }}{{ if include "ignition-common.activeRoutingEnabled" (dict "values" $.values) }}-active{{ end }}
                 port:
                   number: {{ $.values.service.ports.http }}
           {{- end }}
@@ -148,6 +151,11 @@ Params:
 {{- if .name }}
 {{- $fullname = printf "%s-%s" $fullname .name }}
 {{- end }}
+{{- $type := .values.service.type }}
+{{- if include "ignition-common.activeRoutingEnabled" (dict "values" .values) }}
+{{- /* the <name>-active Service takes the configured type, nodePorts and annotations */}}
+{{- $type = "ClusterIP" }}
+{{- end }}
 apiVersion: v1
 kind: Service
 metadata:
@@ -155,12 +163,15 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "ignition.labels" . | nindent 4 }}
+    {{- with .name }}
+    app.kubernetes.io/component: {{ . }}
+    {{- end }}
   {{- if .values.service.annotations }}
   annotations:
     {{- toYaml .values.service.annotations | nindent 4 }}
   {{- end }}
 spec:
-  type: {{ .values.service.type }}
+  type: {{ $type }}
   {{- if .values.service.sessionAffinity }}
   sessionAffinity: {{ .values.service.sessionAffinity }}
   {{- end }}
@@ -169,7 +180,7 @@ spec:
       targetPort: http
       protocol: TCP
       name: http
-      {{- if and (or (eq .values.service.type "NodePort") (eq .values.service.type "LoadBalancer")) .values.service.nodePorts }}
+      {{- if and (or (eq $type "NodePort") (eq $type "LoadBalancer")) .values.service.nodePorts }}
       {{- if .values.service.nodePorts.http }}
       nodePort: {{ .values.service.nodePorts.http }}
       {{- end }}
@@ -178,7 +189,7 @@ spec:
       targetPort: https
       protocol: TCP
       name: https
-      {{- if and (or (eq .values.service.type "NodePort") (eq .values.service.type "LoadBalancer")) .values.service.nodePorts }}
+      {{- if and (or (eq $type "NodePort") (eq $type "LoadBalancer")) .values.service.nodePorts }}
       {{- if .values.service.nodePorts.https }}
       nodePort: {{ .values.service.nodePorts.https }}
       {{- end }}
@@ -187,13 +198,16 @@ spec:
       targetPort: gan
       protocol: TCP
       name: gan
-      {{- if and (or (eq .values.service.type "NodePort") (eq .values.service.type "LoadBalancer")) .values.service.nodePorts }}
+      {{- if and (or (eq $type "NodePort") (eq $type "LoadBalancer")) .values.service.nodePorts }}
       {{- if .values.service.nodePorts.gan }}
       nodePort: {{ .values.service.nodePorts.gan }}
       {{- end }}
       {{- end }}
   selector:
     {{- include "ignition.selectorLabels" . | nindent 4 }}
+    {{- with .name }}
+    app.kubernetes.io/component: {{ . }}
+    {{- end }}
 {{- end }}
 
 {{/*
@@ -231,12 +245,19 @@ spec:
       name: gan
   selector:
     {{- include "ignition.selectorLabels" . | nindent 4 }}
+    {{- with .name }}
+    app.kubernetes.io/component: {{ . }}
+    {{- end }}
 {{- end }}
 
 {{/*
 Logback XML Configuration
 Params:
   level: The logging level (INFO, DEBUG, WARN, ERROR)
+  loggers: (Optional) Map of logger name -> level, e.g. {"gateway.SslManager": "DEBUG"}
+  sqlite: (Optional) SQLiteAppender maintenance settings (entryLimit,
+          maxEventsPerMaintenance, minTimeBetweenMaintenance, vacuumFrequency);
+          unset keys keep Ignition's defaults
 */}}
 {{- define "ignition-common.logback" -}}
 <?xml version="1.0" encoding="UTF-8"?>
@@ -248,6 +269,11 @@ Params:
   </appender>
   <appender name="DB" class="com.inductiveautomation.logging.SQLiteAppender">
     <dir>logs</dir>
+    {{- range $key := list "entryLimit" "maxEventsPerMaintenance" "minTimeBetweenMaintenance" "vacuumFrequency" }}
+    {{- with (get ($.sqlite | default dict) $key) }}
+    <{{ $key }}>{{ . }}</{{ $key }}>
+    {{- end }}
+    {{- end }}
   </appender>
   <appender name="SysoutAsync" class="ch.qos.logback.classic.AsyncAppender" queueSize="1000" discardingThreshold="0">
     <appender-ref ref="SysoutAppender" />
@@ -259,7 +285,9 @@ Params:
     <appender-ref ref="SysoutAsync"/>
     <appender-ref ref="DBAsync"/>
   </root>
-  <logger name="gateway.SslManager" level="DEBUG" />
+  {{- range $name, $level := (.loggers | default dict) }}
+  <logger name="{{ $name }}" level="{{ $level }}" />
+  {{- end }}
 </configuration>
 {{- end }}
 
@@ -316,6 +344,75 @@ timeoutSeconds: {{ .probe.timeoutSeconds }}
 {{- end }}
 
 {{/*
+Probe with a default command
+Values win over the default: the probe's own `command` is used when set, and
+the chart's health-check script only when it is empty. (A plain `merge` gives
+the first dict precedence, which silently replaced any configured command.)
+Params:
+  probe: The probe values object (readinessProbe, livenessProbe or startupProbe)
+*/}}
+{{- define "ignition-common.probeWithDefault" -}}
+{{- $probe := mergeOverwrite (dict "command" (list "/config/scripts/health-check.sh")) (deepCopy .probe) -}}
+{{- if not $probe.command }}
+{{- $_ := set $probe "command" (list "/config/scripts/health-check.sh") }}
+{{- end }}
+{{- include "ignition-common.probes" (dict "probe" $probe) }}
+{{- end }}
+
+{{/*
+Gateway container args
+Renders .values.args and, when logging.wrapperLogToStdout is set, appends the
+wrapper property wrapper.logfile=/dev/stdout (after "--", added if missing) so
+the gateway log goes to the container log instead of an unrotated
+logs/wrapper.log on the logs emptyDir. Skipped when args already set
+wrapper.logfile.
+Params:
+  values: The component-specific values object
+*/}}
+{{- define "ignition-common.args" -}}
+{{- $args := .values.args | default list }}
+{{- $logging := .values.logging | default dict }}
+{{- if and $logging.wrapperLogToStdout (not (regexMatch "(^| )wrapper\\.logfile=" (join " " $args))) }}
+{{- if not (has "--" $args) }}
+{{- $args = append $args "--" }}
+{{- end }}
+{{- $args = append $args "wrapper.logfile=/dev/stdout" }}
+{{- end }}
+{{- with $args }}
+args:
+{{- toStrings . | toYaml | nindent 2 }}
+{{- end }}
+{{- end }}
+
+{{/*
+Gateway container probes and lifecycle
+Renders readinessProbe/livenessProbe/startupProbe (each when enabled) and the
+lifecycle block (only when set - there is no default preStop: on SIGTERM the
+gateway already shuts down gracefully, and `gwcmd.sh -p` resets the gateway
+login password on Ignition 8.1 and 8.3).
+Params:
+  values: The component-specific values object
+*/}}
+{{- define "ignition-common.containerProbes" -}}
+{{- with .values.lifecycle }}
+lifecycle:
+  {{- toYaml . | nindent 2 }}
+{{- end }}
+{{- if .values.readinessProbe.enabled }}
+readinessProbe:
+  {{- include "ignition-common.probeWithDefault" (dict "probe" .values.readinessProbe) | nindent 2 }}
+{{- end }}
+{{- if .values.livenessProbe.enabled }}
+livenessProbe:
+  {{- include "ignition-common.probeWithDefault" (dict "probe" .values.livenessProbe) | nindent 2 }}
+{{- end }}
+{{- if and .values.startupProbe .values.startupProbe.enabled }}
+startupProbe:
+  {{- include "ignition-common.probeWithDefault" (dict "probe" .values.startupProbe) | nindent 2 }}
+{{- end }}
+{{- end }}
+
+{{/*
 Standard Volume Mounts
 Params:
   name: The base name of the application/component
@@ -369,12 +466,13 @@ Params:
   secret:
     secretName: {{ .commonScriptsConfigMapName }}
     defaultMode: 0755
+{{- $limits := .values.emptyDirSizeLimit | default dict }}
 - name: {{ .name }}-logs
-  emptyDir: {}
+  emptyDir: {{ if $limits.logs }}{ sizeLimit: {{ $limits.logs }} }{{ else }}{}{{ end }}
 - name: {{ .name }}-temp
-  emptyDir: {}
+  emptyDir: {{ if $limits.temp }}{ sizeLimit: {{ $limits.temp }} }{{ else }}{}{{ end }}
 - name: {{ .name }}-dot-ignition
-  emptyDir: {}
+  emptyDir: {{ if $limits.dotIgnition }}{ sizeLimit: {{ $limits.dotIgnition }} }{{ else }}{}{{ end }}
 - name: {{ .name }}-config-files
   secret:
     secretName: {{ .name }}-config-files
@@ -463,9 +561,7 @@ Params:
   - {{ include "ignition-common.scriptMountPath" . }}/invoke-args.sh
   args:
   - {{ include "ignition-common.scriptMountPath" . }}/seed-data-volume.sh
-  {{- if gt (int .replicas) 1 }}
   - {{ include "ignition-common.scriptMountPath" . }}/seed-redundancy.sh
-  {{- end }}
   - {{ include "ignition-common.scriptMountPath" . }}/prepare-gan-certificates.sh
   {{- if and .values.ssl .values.ssl.enabled }}
   - {{ include "ignition-common.scriptMountPath" . }}/prepare-tls-certificates.sh

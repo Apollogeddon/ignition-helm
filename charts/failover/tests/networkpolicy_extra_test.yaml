@@ -1,0 +1,30 @@
+suite: Ignition Failover NetworkPolicy Extra Ingress
+templates:
+  - networkpolicy.yaml
+tests:
+  - it: should only have the built-in ingress rules by default
+    asserts:
+      - lengthEqual:
+          path: spec.ingress
+          count: 2
+
+  - it: should append extra ingress rules
+    set:
+      ignition:
+        networkPolicy:
+          enabled: true
+          extraIngress:
+            - from:
+                - namespaceSelector:
+                    matchLabels:
+                      kubernetes.io/metadata.name: projectcontour
+              ports:
+                - protocol: TCP
+                  port: 8088
+    asserts:
+      - lengthEqual:
+          path: spec.ingress
+          count: 3
+      - equal:
+          path: spec.ingress[2].from[0].namespaceSelector.matchLabels["kubernetes.io/metadata.name"]
+          value: projectcontour

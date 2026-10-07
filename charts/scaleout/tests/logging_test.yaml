@@ -1,0 +1,14 @@
+suite: Ignition Scaleout Logging
+templates:
+  - templates/configmap-ignition-files.yaml
+tests:
+  - it: should render backend logger levels into logback
+    set:
+      backend:
+        logging:
+          loggers:
+            gateway.SslManager: WARN
+    asserts:
+      - matchRegex:
+          path: stringData["logback.xml"]
+          pattern: '<logger name="gateway.SslManager" level="WARN" />'

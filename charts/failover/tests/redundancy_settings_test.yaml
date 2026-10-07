@@ -1,0 +1,33 @@
+suite: Ignition Failover Redundancy Settings
+templates:
+  - ignition-statefulset.yaml
+tests:
+  - it: should apply redundancy settings on start for a standalone gateway too
+    asserts:
+      - contains:
+          path: spec.template.spec.initContainers[0].args
+          content: /config/scripts/seed-redundancy.sh
+
+  - it: should apply redundancy settings on start for a pair
+    set:
+      ignition:
+        redundancy:
+          enabled: true
+    asserts:
+      - contains:
+          path: spec.template.spec.initContainers[0].args
+          content: /config/scripts/seed-redundancy.sh
+
+  # the default hash below is the checksum of the default redundancy values
+  - it: should restart the gateways when a redundancy value changes
+    set:
+      ignition:
+        redundancy:
+          masterRecoveryMode: Manual
+    asserts:
+      - matchRegex:
+          path: spec.template.metadata.annotations["checksum/redundancy"]
+          pattern: ^[0-9a-f]{64}$
+      - notEqual:
+          path: spec.template.metadata.annotations["checksum/redundancy"]
+          value: a77e22d8ce69c6e14e8aeb0e820bbba4ee2b227c58ad0ad895b48cd322890103

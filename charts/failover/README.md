@@ -48,7 +48,19 @@ helm install my-ignition ignition-charts/ignition-failover \
 
 * **SCADA Patch Pipeline:** Set `ignition.updateStrategy.type` to `OnDelete` to prevent automated Helm upgrades from unexpectedly terminating your running pods, allowing for strict, manual maintenance windows.
 * **External Module Sideloading:** Define a PersistentVolumeClaim via `ignition.externalModules.pvcName` to inject your custom `.modl` plugins on container startup, eliminating the need to maintain custom docker images.
+* **Health Checks and Shutdown:** Probes check `/StatusPing` for `RUNNING`, which works on Ignition 8.1 and 8.3. Readiness (`health-check.sh -r`) also fails while the gateway is still commissioning; liveness does not, so a gateway stuck commissioning is not restarted in a loop. There is no default `preStop` hook: on SIGTERM the gateway shuts down gracefully, and `gwcmd.sh -p` (previously used here) resets the gateway login password.
 * **Zero-Downtime Cert Rotation:** Enable `certManager.rotation.enabled` to spin up smart Kubernetes CronJobs that securely rotate the Ignition instances' PKI trust fabric under-the-hood before certificate expiration.
+
+## Upgrading from 4.0.0 or earlier
+
+From 4.1.0 the StatefulSet is governed by the `<name>-headless` Service, and Kubernetes does not allow `serviceName` to change on an existing StatefulSet, so `helm upgrade` from 4.0.0 or earlier is rejected. Delete only the StatefulSet object first; its pods and volumes keep running and the upgraded StatefulSet adopts them, then replaces the Backup before the Master:
+
+```sh
+kubectl delete statefulset ignition-failover --cascade=orphan -n <namespace>
+helm upgrade <release> ignition-charts/ignition-failover -n <namespace> ...
+```
+
+On start the gateways apply the chart's redundancy settings to their volume, including the peer address under the new Service name, so the pair reconnects once both pods have been replaced.
 
 ## Configuration
 
@@ -60,14 +72,25 @@ The following table lists the configurable parameters of the chart and their def
 | `ignition.secrets.GATEWAY_ADMIN_PASSWORD` | **Required.** Password for the `admin` user. | `admin` |
 | `ignition.secrets.IGNITION_GAN_KEYSTORE_PASSWORD` | Password for the Gateway Network keystore. | `metro` |
 | `ignition.secrets.IGNITION_WEB_KEYSTORE_PASSWORD` | Password for the Web Server TLS keystore. | `ignition` |
-| `ignition.redundancy.enabled` | Enable Master/Backup redundancy (2 replicas). | `false` |
+| `ignition.redundancy.enabled` | Enable Master/Backup redundancy (2 replicas). Changing it, or any other `ignition.redundancy.*` value, on an existing install restarts the gateways and applies the role (Master, Backup, or Independent when turned off) and settings to their data volumes on start. | `false` |
 | `ignition.image.tag` | Ignition version to deploy. | `8.3` |
 | `ignition.resources` | CPU/Memory requests and limits. | `Requests: 500m/1Gi` |
 | `ignition.persistence.size` | Size of the persistent volume claim. | `3Gi` |
 | `ignition.service.type` | Kubernetes Service type (NodePort, LoadBalancer, etc). | `NodePort` |
 | `ignition.service.nodePorts` | Optional static NodePorts (http, https, gan). | `{}` |
+| `ignition.activeRouting.enabled` | Route user traffic only to the Active gateway of a redundant pair: a labeller keeps `redundancy-active=true` on the Active pod, the `<name>-active` Service (which takes the configured service type, nodePorts and annotations) selects it, and the Ingress points at it. Readiness also requires a Backup to be in sync. | `false` |
+| `certManager.restartOnRenewal.enabled` | CronJob that starts a rolling restart (Backup first) when the GAN or web certificate secrets change, so renewed certificates are loaded. | `false` |
 | `ignition.ingress.enabled` | Enable Ingress resource generation. | `false` |
+| `ignition.ingress.className` | IngressClass name, e.g. `contour`; empty uses the cluster default. | `""` |
 | `certManager.issuer.name` | Name of the Cert-Manager Issuer to use. | `cluster-issuer` |
 | `certManager.rotation.enabled` | Deploy CronJobs to auto-rotate GAN certificates without manual restart. | `false` |
 | `ignition.updateStrategy.type` | Helm patch rollout methodology (`RollingUpdate` or `OnDelete`). | `RollingUpdate` |
 | `ignition.externalModules.enabled` | Enable mounting an isolated Persistent Volume Claim for modules. | `false` |
+| `ignition.readinessProbe` / `ignition.livenessProbe` | Probe settings. A configured `command` is used as-is; the chart health check (`/StatusPing` must report `RUNNING`) is the fallback when it is empty. | image `health-check.sh -t 3` / `-t 5` |
+| `ignition.startupProbe.enabled` | Add a startupProbe so slow starts are tolerated while liveness stays strict. | `false` |
+| `ignition.lifecycle` | Container lifecycle hooks, rendered as-is. | `{}` (none) |
+| `ignition.logging.loggers` | Per-logger levels, e.g. `{"gateway.SslManager": "DEBUG"}`. | `{}` |
+| `ignition.logging.wrapperLogToStdout` | Append `wrapper.logfile=/dev/stdout` to `args` so the gateway log goes to the container log instead of an unrotated `logs/wrapper.log`. Skipped when `args` already set `wrapper.logfile`. | `true` |
+| `ignition.logging.sqlite` | SQLite log database maintenance (`entryLimit`, `maxEventsPerMaintenance`, `minTimeBetweenMaintenance`, `vacuumFrequency`). | `{}` (Ignition defaults) |
+| `ignition.emptyDirSizeLimit` | Optional `sizeLimit` for the `logs`, `temp` and `dotIgnition` emptyDir volumes. | unset |
+| `ignition.networkPolicy.extraIngress` | Extra NetworkPolicy ingress rules, e.g. the ingress controller namespace or node CIDRs. | `[]` |

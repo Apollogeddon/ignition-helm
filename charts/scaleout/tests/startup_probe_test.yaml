@@ -1,0 +1,20 @@
+suite: Ignition Scaleout Startup Probe
+templates:
+  - templates/frontend/frontend-statefulset.yaml
+  - templates/backend/backend-statefulset.yaml
+tests:
+  - it: should not render a frontend startupProbe by default
+    template: templates/frontend/frontend-statefulset.yaml
+    asserts:
+      - notExists:
+          path: spec.template.spec.containers[0].startupProbe
+
+  - it: should render a backend startupProbe when enabled
+    template: templates/backend/backend-statefulset.yaml
+    set:
+      backend:
+        startupProbe:
+          enabled: true
+    asserts:
+      - exists:
+          path: spec.template.spec.containers[0].startupProbe
