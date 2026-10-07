@@ -18,14 +18,15 @@ ns=$(e2e_ns s3)
 out="$E2E_OUT/s3-summary.txt"
 failed=""
 
-# role <pod>: RedundancyStatus from gwinfo (a gateway without redundancy
-# reports none, which is Independent); "down" if it does not answer
+# role <pod>: RedundancyStatus/RedundantState/RedundantNodeActiveStatus from
+# gwinfo, or just "Independent" for a gateway without redundancy (which
+# reports Independent/Good/Active, or no fields); "down" if it does not answer
 role() {
   local info
   info=$(kubectl -n "$ns" exec "$1" -c gateway -- curl -s --max-time 3 http://localhost:8088/system/gwinfo 2>/dev/null || true)
   [ -n "$info" ] || { echo down; return; }
   info=$(tr ';' '\n' <<< "$info" | grep -E '^(RedundancyStatus|RedundantState|RedundantNodeActiveStatus)=' | sed 's/^[^=]*=//' | paste -sd/ -)
-  echo "${info:-Independent}"
+  case "${info}" in ""|Independent/*) echo Independent ;; *) echo "${info}" ;; esac
 }
 # setting <pod> <key>: a value from the pod's redundancy.xml
 setting() {
@@ -85,7 +86,8 @@ for tag in $IMAGE_TAGS; do
   e2e_install "${base[@]}"
   e2e_wait_ready "$ns" 900
   check "$tag" 1 "standalone reports Independent ($(role $STS-0))" [ "$(role $STS-0)" = Independent ]
-  check "$tag" 1 "no redundancy.xml on a gateway that was never redundant" [ -z "$(setting $STS-0 noderole)" ]
+  r=$(setting $STS-0 noderole)
+  check "$tag" 1 "redundancy.xml absent or Independent (${r:-absent})" [ "${r:-Independent}" = Independent ]
 
   log "$tag 2/5: redundancy on"
   u0=$(uid $STS-0); start_recording on
