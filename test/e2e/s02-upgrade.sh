@@ -69,9 +69,12 @@ wait_pair() {
   die "pair not healthy: $NAME-0 $(gwinfo "$NAME-0" || true), $NAME-1 $(gwinfo "$NAME-1" || true)"
 }
 # the frontend's outgoing Gateway Network connection to the backend is Running
-# in its current pod's log
+# in its current pod's log: the container log, or logs/wrapper.log for chart
+# versions that do not send the wrapper log to stdout (4.0.0 and earlier)
 frontend_connected() {
-  kubectl -n "$ns" logs "$front-0" -c gateway 2>/dev/null | grep -E "to Running" | grep -qF "$NAME-backend-0"
+  { kubectl -n "$ns" logs "$front-0" -c gateway 2>/dev/null
+    kubectl -n "$ns" exec "$front-0" -c gateway -- sh -c 'cat /usr/local/bin/ignition/logs/wrapper.log 2>/dev/null' 2>/dev/null
+  } | grep -E "to Running" | grep -qF "$NAME-backend-0"
 }
 wait_frontend() {
   local deadline=$(( $(date +%s) + 600 ))
