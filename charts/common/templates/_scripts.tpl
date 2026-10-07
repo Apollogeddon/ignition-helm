@@ -18,27 +18,42 @@ stringData:
   seed-redundancy.sh: |-
     #!/usr/bin/env bash
     set -eo pipefail
+    DATA_DIR="${DATA_DIR:-/data}"
+    FILES_DIR="${FILES_DIR:-/config/files}"
 
     if [ "${IGNITION_REPLICAS}" -eq "1" ]; then
       echo "Running single replica, skipping redundancy setup."
       exit 0
     fi
 
-    if [[ "${HOSTNAME}" =~ -([0-9])$ ]] && [ ! -f /data/redundancy.xml ]; then
-      case "${BASH_REMATCH[1]}" in
-        0) 
-          echo "Initializing Redundancy as Primary"
-          cp /config/files/redundancy-primary.xml /data/redundancy.xml
-          ;;
-        1) 
-          echo "Initializing Redundancy as Backup"
-          cp /config/files/redundancy-backup.xml /data/redundancy.xml
-          ;;
-        *)
-          echo "Unknown Redundancy Hostname Suffix: ${HOSTNAME}"
-          ;;
-      esac
+    if ! [[ "${HOSTNAME}" =~ -([0-9])$ ]]; then
+      echo "Unknown Redundancy Hostname Suffix: ${HOSTNAME}"
+      exit 0
     fi
+    case "${BASH_REMATCH[1]}" in
+      0) role=Primary; template="${FILES_DIR}/redundancy-primary.xml" ;;
+      1) role=Backup; template="${FILES_DIR}/redundancy-backup.xml" ;;
+      *) echo "Unknown Redundancy Hostname Suffix: ${HOSTNAME}"; exit 0 ;;
+    esac
+
+    if [ ! -f "${DATA_DIR}/redundancy.xml" ]; then
+      echo "Initializing Redundancy as ${role}"
+      cp "${template}" "${DATA_DIR}/redundancy.xml"
+      exit 0
+    fi
+
+    # Keep the peer address in step with the chart. It is built from the
+    # StatefulSet's Service, which changed in 4.1.0 (the main Service became
+    # <name>-headless); a data volume from an older chart would otherwise keep
+    # a peer name that no longer resolves and both gateways would go Active.
+    for key in redundancy.gan.host redundancy.gan.port; do
+      want=$(grep "key=\"${key}\"" "${template}" || true)
+      have=$(grep "key=\"${key}\"" "${DATA_DIR}/redundancy.xml" || true)
+      if [ -n "${want}" ] && [ -n "${have}" ] && [ "${want}" != "${have}" ]; then
+        echo "Updating ${key} in redundancy.xml: $(echo "${have}" | sed 's/^ *//') -> $(echo "${want}" | sed 's/^ *//')"
+        sed -i "s|^.*key=\"${key}\".*$|${want}|" "${DATA_DIR}/redundancy.xml"
+      fi
+    done
   prepare-gan-certificates.sh: |-
     #!/usr/bin/env bash
     set -eo pipefail
