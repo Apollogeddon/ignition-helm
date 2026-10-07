@@ -72,9 +72,14 @@ wait_pair() {
 # in its current pod's log: the container log, or logs/wrapper.log for chart
 # versions that do not send the wrapper log to stdout (4.0.0 and earlier)
 frontend_connected() {
-  { kubectl -n "$ns" logs "$front-0" -c gateway 2>/dev/null
-    kubectl -n "$ns" exec "$front-0" -c gateway -- sh -c 'cat /usr/local/bin/ignition/logs/wrapper.log 2>/dev/null' 2>/dev/null
-  } | grep -E "to Running" | grep -qF "$NAME-backend-0"
+  local logs running
+  logs=$(kubectl -n "$ns" logs "$front-0" -c gateway 2>/dev/null || true
+    kubectl -n "$ns" exec "$front-0" -c gateway -- sh -c 'cat /usr/local/bin/ignition/logs/wrapper.log 2>/dev/null' 2>/dev/null || true)
+  # collect first and tolerate each source failing: with pipefail, a missing
+  # wrapper.log (newer charts) or a writer cut off by grep -q would otherwise
+  # make a match look like a failure
+  running=$(grep -E "to Running" <<< "$logs" | grep -cF "$NAME-backend-0" || true)
+  [ "${running:-0}" -gt 0 ]
 }
 wait_frontend() {
   local deadline=$(( $(date +%s) + 600 ))
