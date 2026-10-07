@@ -561,9 +561,7 @@ Params:
   - {{ include "ignition-common.scriptMountPath" . }}/invoke-args.sh
   args:
   - {{ include "ignition-common.scriptMountPath" . }}/seed-data-volume.sh
-  {{- if gt (int .replicas) 1 }}
   - {{ include "ignition-common.scriptMountPath" . }}/seed-redundancy.sh
-  {{- end }}
   - {{ include "ignition-common.scriptMountPath" . }}/prepare-gan-certificates.sh
   {{- if and .values.ssl .values.ssl.enabled }}
   - {{ include "ignition-common.scriptMountPath" . }}/prepare-tls-certificates.sh
