@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# S5: web TLS (ssl.enabled). A certificate for the gateway is issued in the test
+# S4: web TLS (ssl.enabled). A certificate for the gateway is issued in the test
 # namespace by the chart's own GAN CA Issuer as a PKCS#12 keystore; the gateway
 # must serve it on its HTTPS port and stay healthy.
 #
@@ -7,15 +7,15 @@
 source "$(dirname "$0")/lib.sh"
 CHART="$(dirname "$0")/../../charts/failover"
 STS=ignition-failover
-CN="s5-web.e2e.invalid"
+CN="s4-web.e2e.invalid"
 
 e2e_chart "$CHART"
 e2e_begin "${WATCH_URL:-}"
-ns=$(e2e_ns s5)
+ns=$(e2e_ns s4)
 e2e_require_memory "$ns"
 
-args=(s5 "$CHART" -n "$ns" -f "$(dirname "$0")/values/small.yaml"
-  --set ignition.ssl.enabled=true --set ignition.ssl.secretName=s5-web-tls)
+args=(s4 "$CHART" -n "$ns" -f "$(dirname "$0")/values/small.yaml"
+  --set ignition.ssl.enabled=true --set ignition.ssl.secretName=s4-web-tls)
 [ -z "${IMAGE_TAG:-}" ] || args+=(--set "image.tag=$IMAGE_TAG")
 e2e_render_check "${args[@]}"
 log "installing with ssl.enabled"
@@ -23,14 +23,14 @@ e2e_install "${args[@]}"
 
 # the pod waits for the web certificate secret; issue it from the chart's CA
 pass=$(kubectl -n "$ns" get secret $STS-secrets -o jsonpath='{.data.IGNITION_WEB_KEYSTORE_PASSWORD}' | base64 -d)
-kubectl -n "$ns" create secret generic s5-web-keystore-pass --from-literal=password="$pass" >/dev/null
+kubectl -n "$ns" create secret generic s4-web-keystore-pass --from-literal=password="$pass" >/dev/null
 kubectl -n "$ns" apply -f - >/dev/null <<EOF
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
-  name: s5-web
+  name: s4-web
 spec:
-  secretName: s5-web-tls
+  secretName: s4-web-tls
   commonName: $CN
   dnsNames: [$CN]
   issuerRef:
@@ -40,10 +40,10 @@ spec:
     pkcs12:
       create: true
       passwordSecretRef:
-        name: s5-web-keystore-pass
+        name: s4-web-keystore-pass
         key: password
 EOF
-kubectl -n "$ns" wait certificate s5-web --for=condition=Ready --timeout=5m >/dev/null
+kubectl -n "$ns" wait certificate s4-web --for=condition=Ready --timeout=5m >/dev/null
 log "web certificate issued"
 e2e_wait_ready "$ns" 900
 
@@ -52,6 +52,6 @@ served=$(kubectl -n "$ns" exec $STS-0 -c gateway -- sh -c 'curl -skv --max-time 
 log "HTTPS: $served"
 grep -q "CN=$CN" <<< "$served" || grep -q "CN = $CN" <<< "$served" || die "gateway does not serve the issued certificate"
 grep -q '"state":"RUNNING"' <<< "$served" || die "gateway not RUNNING over HTTPS"
-echo "S5 $(date -u +%FT%TZ) image=${IMAGE_TAG:-default}: $served" >> "$E2E_OUT/s5-summary.txt"
+echo "S4 $(date -u +%FT%TZ) image=${IMAGE_TAG:-default}: $served" >> "$E2E_OUT/s4-summary.txt"
 e2e_watch_check
-log "S5 passed"
+log "S4 passed"
