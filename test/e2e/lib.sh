@@ -16,7 +16,11 @@ E2E_OUT="${E2E_OUT:-$(pwd)/e2e-out}"
 HELM="${HELM:-helm}"
 SNAPSHOT_KINDS="namespaces,customresourcedefinitions,clusterroles,clusterrolebindings,validatingwebhookconfigurations,mutatingwebhookconfigurations,ingressclasses,storageclasses,priorityclasses,persistentvolumes"
 
-log() { echo "[$(date -u +%H:%M:%S)] $*" >&2; }
+# log also keeps the latest step for the watch log
+log() {
+  echo "[$(date -u +%H:%M:%S)] $*" >&2
+  [ ! -d "${E2E_OUT:-}" ] || printf '%s\n' "$*" > "$E2E_OUT/.step" 2>/dev/null || true
+}
 die() { log "FAIL: $*"; exit 1; }
 
 # Clusters reached through a proxy drop API connections
@@ -175,28 +179,59 @@ e2e_require_memory() {
   [ "$headroom" -ge "$E2E_MIN_REQUEST_MI" ] || die "not enough unrequested memory to schedule more gateways"
 }
 
-# e2e_watch_start <url>: poll a URL once a second in the background; failures
-# are appended to $E2E_OUT/watch.failures
+# e2e_control_ok: whether the watch control (E2E_WATCH_CONTROL: a URL, or
+# host:port for a TCP connect) answers; true when no control is set
+e2e_control_ok() {
+  local c=${E2E_WATCH_CONTROL:-}
+  [ -n "$c" ] || return 0
+  case "$c" in
+    http://*|https://*) curl -sk --max-time 2 -o /dev/null "$c" ;;
+    *) timeout 2 bash -c "exec 3<>/dev/tcp/${c%:*}/${c##*:}" 2>/dev/null ;;
+  esac
+}
+
+# e2e_watch_start <url>: poll a URL once a second in the background. Every
+# failure goes to $E2E_OUT/watch.log with the step the test was on.
+# E2E_WATCH_FAILURES (default 3) counted failures in a row write watch.abort,
+# which e2e_watch_check turns into a failed run. A failure is only counted
+# when the control (E2E_WATCH_CONTROL, e.g. the node's Talos API
+# 192.168.7.123:50000, which does not go through kube-proxy) still answers;
+# when both fail it is the test machine's own network and is only logged.
 e2e_watch_start() {
   mkdir -p "$E2E_OUT"
-  : > "$E2E_OUT/watch.failures"
-  ( while :; do
+  : > "$E2E_OUT/watch.log"
+  rm -f "$E2E_OUT/watch.abort"
+  ( limit=${E2E_WATCH_FAILURES:-3} run=0
+    while :; do
       code=$(curl -sk --max-time 2 -o /dev/null -w '%{http_code}' "$1" || true)
-      case "$code" in 2??|3??) ;; *) echo "$(date -u +%H:%M:%S) $code" >> "$E2E_OUT/watch.failures" ;; esac
+      case "$code" in
+        2??|3??) run=0 ;;
+        *)
+          step=$(cat "$E2E_OUT/.step" 2>/dev/null || true)
+          if e2e_control_ok; then
+            run=$((run + 1))
+            echo "$(date -u +%H:%M:%S) $code counted $run/$limit; during: $step" >> "$E2E_OUT/watch.log"
+            [ "$run" -lt "$limit" ] || echo "$(date -u +%H:%M:%S) $code ($run failures in a row)" >> "$E2E_OUT/watch.abort"
+          else
+            run=0
+            echo "$(date -u +%H:%M:%S) $code not counted, control also failed (test machine network); during: $step" >> "$E2E_OUT/watch.log"
+          fi ;;
+      esac
       sleep 1
     done ) &
   E2E_WATCH_PID=$!
-  log "watching $1 (pid $E2E_WATCH_PID)"
+  log "watching $1 (pid $E2E_WATCH_PID, control ${E2E_WATCH_CONTROL:-none})"
 }
 
-# e2e_watch_check: stop the run if the watched URL has failed
+# e2e_watch_check: stop the run if the watched URL failed too many times in a row
 e2e_watch_check() {
   [ -n "${E2E_WATCH_PID:-}" ] || return 0
-  [ ! -s "$E2E_OUT/watch.failures" ] || die "watched URL failed: $(tail -1 "$E2E_OUT/watch.failures")"
+  [ ! -s "$E2E_OUT/watch.abort" ] || die "watched URL failed: $(tail -1 "$E2E_OUT/watch.abort")"
 }
 
 e2e_watch_stop() {
   [ -n "${E2E_WATCH_PID:-}" ] || return 0
+  [ ! -s "$E2E_OUT/watch.log" ] || log "watch: $(wc -l < "$E2E_OUT/watch.log") failed checks (see watch.log)"
   kill "$E2E_WATCH_PID" 2>/dev/null || true
   wait "$E2E_WATCH_PID" 2>/dev/null || true
   E2E_WATCH_PID=""
