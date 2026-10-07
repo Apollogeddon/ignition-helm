@@ -30,7 +30,6 @@ kubectl delete ns -l e2e=ignition-helm
 
 CI runs these on a disposable kind cluster with `.github/workflows/e2e.yaml` (manual only; a full run takes about two hours); `.github/scripts/e2e/setup-cluster.sh` installs cert-manager, Contour and Chaos Mesh.
 - `s2-upgrade.sh`: installs a redundant pair from a released version (`FROM_VERSION`, default 4.0.0; `FROM_SET` adds values to that install) and upgrades it to the working tree (`UPGRADE_SET` adds values, e.g. `ignition.activeRouting.enabled=true`); checks the Backup is replaced before the Master and the pair recovers, and records the unserved time. Needs `NODE_IP`.
-- `s3-machine-id.sh`: mounts a machine ID from a ConfigMap with `extraVolumes`/`extraVolumeMounts` (default image 8.1.53) and checks the gateway runs with it and keeps it after the pod is replaced.
 - `s5-web-tls.sh`: `ssl.enabled` with a PKCS#12 web certificate issued in the test namespace by the chart's GAN CA Issuer; checks the gateway serves it on 8043 and is RUNNING.
 - `s7-options.sh`: postStart lifecycle hook, custom readiness command, startupProbe, per-logger levels, SQLite limits and emptyDir size limits together; checks each is in effect and the gateway is Ready without restarts.
 - `s4-scaleout-gan.sh`: one scaleout frontend and a standalone backend; checks from the gateway logs that the frontend's Gateway Network connection to the backend reaches Running, the backend registers it, and no gateway is named by an unexpanded `$(GATEWAY_SYSTEM_NAME)`.
