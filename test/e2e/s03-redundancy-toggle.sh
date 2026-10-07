@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# S3: redundancy values take effect on an existing install. For each Ignition
+# S03: redundancy values take effect on an existing install. For each Ignition
 # version: install standalone, turn redundancy on, change a redundancy value,
 # turn redundancy off, and turn it back on (the Backup's volume is kept). Each
 # step checks the gateways' roles from /system/gwinfo and their redundancy.xml,
@@ -14,8 +14,8 @@ IMAGE_TAGS="${IMAGE_TAGS:-8.1.53 8.3.1}"
 
 e2e_chart "$CHART"
 e2e_begin "${WATCH_URL:-}"
-ns=$(e2e_ns s3)
-out="$E2E_OUT/s3-summary.txt"
+ns=$(e2e_ns s03)
+out="$E2E_OUT/s03-summary.txt"
 failed=""
 
 # role <pod>: RedundancyStatus/RedundantState/RedundantNodeActiveStatus from
@@ -61,13 +61,13 @@ rec=""
 start_recording() {
   local np
   np=$(kubectl -n "$ns" get svc $STS -o jsonpath='{.spec.ports[?(@.name=="http")].nodePort}')
-  "$(dirname "$0")/record.sh" 1200 "$E2E_OUT/s3-$tag-$1.log" via="http://$NODE_IP:$np/system/gwinfo" &
+  "$(dirname "$0")/record.sh" 1200 "$E2E_OUT/s03-$tag-$1.log" via="http://$NODE_IP:$np/system/gwinfo" &
   rec=$!
 }
 stop_recording() {
   kill "$rec" 2>/dev/null; wait "$rec" 2>/dev/null || true
   awk '{split($2, v, "="); if (v[2] ~ /\/Active$|^Independent$/) run = 0; else {run++; if (run > max) max = run}}
-    END {printf "%d", max + 0}' "$E2E_OUT/s3-$tag-$1.log"
+    END {printf "%d", max + 0}' "$E2E_OUT/s03-$tag-$1.log"
 }
 check() { # check <tag> <step> <description> <test...>
   local t=$1 s=$2 d=$3; shift 3
@@ -78,9 +78,9 @@ init_log() { kubectl -n "$ns" logs "$1" -c preconfigure 2>/dev/null | grep -E 'U
 
 for tag in $IMAGE_TAGS; do
   e2e_require_memory "$ns"
-  base=(s3 "$CHART" -n "$ns" -f "$(dirname "$0")/values/small.yaml" --set "image.tag=$tag" --set ignition.service.type=NodePort)
+  base=(s03 "$CHART" -n "$ns" -f "$(dirname "$0")/values/small.yaml" --set "image.tag=$tag" --set ignition.service.type=NodePort)
   e2e_render_check "${base[@]}"
-  echo "S3 $(date -u +%FT%TZ) image=$tag" >> "$out"
+  echo "S03 $(date -u +%FT%TZ) image=$tag" >> "$out"
 
   log "$tag 1/5: standalone"
   e2e_install "${base[@]}"
@@ -131,9 +131,9 @@ for tag in $IMAGE_TAGS; do
   check "$tag" 5 "pair formed again ($(role $STS-0), $(role $STS-1)); longest unserved ${gap}s" wait_roles Master/Good/Active Backup/Good/Cold
 
   e2e_watch_check
-  e2e_retry "$HELM" uninstall s3 -n "$ns" --wait >/dev/null || true
+  e2e_retry "$HELM" uninstall s03 -n "$ns" --wait >/dev/null || true
   kubectl -n "$ns" delete pvc --all --wait=true >/dev/null
 done
 
-[ -z "$failed" ] || die "S3:$failed"
-log "S3 passed"
+[ -z "$failed" ] || die "S03:$failed"
+log "S03 passed"
