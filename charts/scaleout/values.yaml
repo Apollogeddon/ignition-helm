@@ -64,7 +64,7 @@ frontend:
     runAsUser: 2003
     runAsGroup: 2003
     fsGroup: 2003
-    runAsNonRoot: false
+    runAsNonRoot: true
 
   # -- NetworkPolicy configuration
   networkPolicy:
@@ -285,7 +285,7 @@ backend:
     runAsUser: 2003
     runAsGroup: 2003
     fsGroup: 2003
-    runAsNonRoot: false
+    runAsNonRoot: true
 
   # -- NetworkPolicy configuration
   networkPolicy:

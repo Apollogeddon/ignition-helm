@@ -480,6 +480,8 @@ spec:
             runAsGroup: 2003
             fsGroup: 2003
             runAsNonRoot: true
+            seccompProfile:
+              type: RuntimeDefault
           restartPolicy: Never
           affinity:
             podAffinity:
@@ -498,6 +500,11 @@ spec:
           containers:
           - name: rotate-certs
             image: {{ $.image.repository }}:{{ $.image.tag | default $.context.Chart.AppVersion }}
+            securityContext:
+              allowPrivilegeEscalation: false
+              capabilities:
+                drop:
+                  - ALL
             command:
             - /config/scripts/invoke-args.sh
             args:
