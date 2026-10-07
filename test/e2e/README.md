@@ -36,3 +36,7 @@ kubectl delete ns -l e2e=ignition-helm
 - `s10-partition.sh` (disposable clusters only, needs Chaos Mesh): partitions the Master from the Backup (split-brain) and then isolates the Master entirely (hung Master); checks traffic is never routed to two gateways, measures the unserved time, and checks the pair settles afterwards.
 
 CI runs these on a disposable kind cluster with `.github/workflows/e2e.yaml` (manual only; a full run takes about two hours); `.github/scripts/e2e/setup-cluster.sh` installs cert-manager, Contour and Chaos Mesh.
+
+## Experiments
+
+- `experiments/service-churn.sh`: creates and deletes Services in a test namespace while a probe pod samples a test NodePort (and optionally another NodePort on the node, `WATCH_NODEPORT`) every 200 ms, and the test machine samples them once a second; reports failed samples per phase and saves kube-proxy's log for the window. Checks whether Service changes make NodePorts drop. Needs `NODE_IP`.
