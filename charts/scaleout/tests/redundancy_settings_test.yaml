@@ -1,0 +1,29 @@
+suite: Ignition Scaleout Redundancy Settings
+templates:
+  - templates/backend/backend-statefulset.yaml
+  - templates/frontend/frontend-statefulset.yaml
+tests:
+  - it: should apply redundancy settings on start for the backend
+    template: templates/backend/backend-statefulset.yaml
+    asserts:
+      - contains:
+          path: spec.template.spec.initContainers[0].args
+          content: /config/scripts/seed-redundancy.sh
+
+  # the default hash below is the checksum of the default backend redundancy values
+  - it: should restart the backend gateways when a redundancy value changes
+    template: templates/backend/backend-statefulset.yaml
+    set:
+      backend:
+        redundancy:
+          masterRecoveryMode: Manual
+    asserts:
+      - notEqual:
+          path: spec.template.metadata.annotations["checksum/redundancy"]
+          value: a77e22d8ce69c6e14e8aeb0e820bbba4ee2b227c58ad0ad895b48cd322890103
+
+  - it: should not add the redundancy checksum to frontends
+    template: templates/frontend/frontend-statefulset.yaml
+    asserts:
+      - notExists:
+          path: spec.template.metadata.annotations["checksum/redundancy"]

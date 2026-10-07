@@ -1,0 +1,9 @@
+# Disposable cluster for the chart e2e scenarios: a control plane and two
+# workers, so a redundant pair can be spread across nodes. kindnet (the
+# default CNI) enforces NetworkPolicy.
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+  - role: control-plane
+  - role: worker
+  - role: worker

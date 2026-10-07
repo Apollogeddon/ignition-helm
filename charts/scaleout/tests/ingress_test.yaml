@@ -44,3 +44,47 @@ tests:
       - equal:
           path: spec.rules[0].host
           value: frontend.local
+
+  - it: should set ingressClassName on the frontend ingress
+    template: templates/frontend/frontend-ingress.yaml
+    set:
+      frontend:
+        ingress:
+          enabled: true
+          className: contour
+    asserts:
+      - equal:
+          path: spec.ingressClassName
+          value: contour
+
+  - it: should omit ingressClassName by default on the frontend ingress
+    template: templates/frontend/frontend-ingress.yaml
+    set:
+      frontend:
+        ingress:
+          enabled: true
+    asserts:
+      - notExists:
+          path: spec.ingressClassName
+
+  - it: should set ingressClassName on the backend ingress
+    template: templates/backend/backend-ingress.yaml
+    set:
+      backend:
+        ingress:
+          enabled: true
+          className: contour
+    asserts:
+      - equal:
+          path: spec.ingressClassName
+          value: contour
+
+  - it: should omit ingressClassName by default on the backend ingress
+    template: templates/backend/backend-ingress.yaml
+    set:
+      backend:
+        ingress:
+          enabled: true
+    asserts:
+      - notExists:
+          path: spec.ingressClassName

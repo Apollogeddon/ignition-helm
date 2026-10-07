@@ -1,0 +1,40 @@
+suite: Ignition Failover Wrapper Log
+templates:
+  - ignition-statefulset.yaml
+tests:
+  - it: should send the wrapper log to stdout by default
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].args
+          content: wrapper.logfile=/dev/stdout
+      - equal:
+          path: spec.template.spec.containers[0].args[6]
+          value: wrapper.logfile=/dev/stdout
+
+  - it: should add the -- separator when args have none
+    set:
+      ignition:
+        args: ["-m", 512]
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].args
+          value: ["-m", "512", "--", "wrapper.logfile=/dev/stdout"]
+
+  - it: should keep a wrapper.logfile already set in args
+    set:
+      ignition:
+        args: ["--", "wrapper.logfile=/var/log/w.log"]
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].args
+          value: ["--", "wrapper.logfile=/var/log/w.log"]
+
+  - it: should leave args alone when disabled
+    set:
+      ignition:
+        logging:
+          wrapperLogToStdout: false
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].args
+          content: wrapper.logfile=/dev/stdout

@@ -1,0 +1,39 @@
+suite: Ignition Failover Logging
+templates:
+  - configmap-ignition-files.yaml
+tests:
+  - it: should not force any logger level by default
+    asserts:
+      - notMatchRegex:
+          path: stringData["logback.xml"]
+          pattern: '<logger '
+      - notMatchRegex:
+          path: stringData["logback.xml"]
+          pattern: 'entryLimit'
+
+  - it: should render per-logger levels and SQLite limits from values
+    set:
+      ignition:
+        logging:
+          loggers:
+            gateway.SslManager: DEBUG
+            com.inductiveautomation.ignition.gateway.redundancy: INFO
+          sqlite:
+            entryLimit: 20000
+            vacuumFrequency: 2
+    asserts:
+      - matchRegex:
+          path: stringData["logback.xml"]
+          pattern: '<logger name="gateway.SslManager" level="DEBUG" />'
+      - matchRegex:
+          path: stringData["logback.xml"]
+          pattern: '<logger name="com.inductiveautomation.ignition.gateway.redundancy" level="INFO" />'
+      - matchRegex:
+          path: stringData["logback.xml"]
+          pattern: '<entryLimit>20000</entryLimit>'
+      - matchRegex:
+          path: stringData["logback.xml"]
+          pattern: '<vacuumFrequency>2</vacuumFrequency>'
+      - notMatchRegex:
+          path: stringData["logback.xml"]
+          pattern: 'maxEventsPerMaintenance'

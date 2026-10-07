@@ -1,0 +1,5 @@
+# Small requests so test gateways fit beside other workloads on a shared node
+ignition:
+  resources:
+    requests: {cpu: 100m, memory: 200Mi}
+    limits: {cpu: "2", memory: 2Gi}

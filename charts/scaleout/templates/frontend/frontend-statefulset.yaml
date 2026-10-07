@@ -23,6 +23,7 @@ spec:
     metadata:
       labels:
         {{- include "ignition.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: frontend
     spec:
       serviceAccountName: {{ include "ignition.serviceAccountName" . }}
       securityContext:
@@ -45,14 +46,10 @@ spec:
             drop:
               - ALL
           readOnlyRootFilesystem: false
-        lifecycle:
-          preStop:
-            exec:
-              command: ["/config/scripts/shutdown.sh"]
         image: {{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}
         imagePullPolicy: {{ .Values.image.pullPolicy }}
         resources: {{ .Values.frontend.resources | toYaml | nindent 10 }}
-        args: {{ .Values.frontend.args | toYaml | nindent 8 }}
+        {{- include "ignition-common.args" (dict "values" .Values.frontend) | nindent 8 }}
         ports:
         - name: http
           containerPort: {{ .Values.frontend.service.ports.http }}
@@ -81,14 +78,7 @@ spec:
               fieldPath: metadata.name
         volumeMounts:
 {{ include "ignition-common.volumeMounts" (dict "name" (include "ignition.name" .) "values" .Values.frontend) | nindent 8 }}
-        {{- if .Values.frontend.readinessProbe.enabled }}
-        readinessProbe:
-{{ include "ignition-common.probes" (dict "probe" (merge (dict "command" (list "/config/scripts/health-check.sh")) .Values.frontend.readinessProbe)) | nindent 10 }}
-        {{- end }}
-        {{- if .Values.frontend.livenessProbe.enabled }}
-        livenessProbe:
-{{ include "ignition-common.probes" (dict "probe" (merge (dict "command" (list "/config/scripts/health-check.sh")) .Values.frontend.livenessProbe)) | nindent 10 }}
-        {{- end }}
+        {{- include "ignition-common.containerProbes" (dict "values" .Values.frontend) | trim | nindent 8 }}
       initContainers:
 {{ include "ignition-common.initContainer.preconfigure" (dict "name" (include "ignition.name" .) "secretName" (printf "%s-frontend-secrets" (include "ignition.name" .)) "image" .Values.image "values" .Values.frontend "replicas" 1 "context" .) | nindent 6 }}
       volumes:

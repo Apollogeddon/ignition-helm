@@ -17,28 +17,77 @@ stringData:
     fi
   seed-redundancy.sh: |-
     #!/usr/bin/env bash
+    # Applies the chart's redundancy settings to the gateway's data volume on
+    # every start, so redundancy values - including turning redundancy on or
+    # off - take effect on existing installs, not only on the first start:
+    #   - pair, no redundancy.xml yet: seed it from the chart's template
+    #     (pod 0 Master, pod 1 Backup)
+    #   - pair, redundancy.xml exists: set every key the chart renders to the
+    #     chart's value (role, peer address, timeouts, recovery mode, ...)
+    #   - single replica with a redundancy.xml left from a pair: set the role
+    #     to Independent
+    #   - single replica that was never redundant: nothing
+    # Ignition's own sync state (systemstateuid, systemstaterevision) and keys
+    # the chart does not render are never changed.
     set -eo pipefail
+    DATA_DIR="${DATA_DIR:-/data}"
+    FILES_DIR="${FILES_DIR:-/config/files}"
+    file="${DATA_DIR}/redundancy.xml"
+    runtime_keys=" redundancy.systemstateuid redundancy.systemstaterevision "
 
-    if [ "${IGNITION_REPLICAS}" -eq "1" ]; then
-      echo "Running single replica, skipping redundancy setup."
+    # value <entry line>: the value of an <entry key="...">value</entry> line
+    value() {
+      if [ -n "$1" ]; then printf '%s' "$1" | sed 's/.*">\(.*\)<\/entry>.*/\1/'; else printf '(unset)'; fi
+    }
+
+    # set_entry <key> <entry line>: make the key's line in redundancy.xml match,
+    # replacing it or adding it before </properties>
+    set_entry() {
+      local key="$1" want="$2" have esc key_re
+      have=$(grep -F "key=\"${key}\"" "${file}" | tr -d '\r' || true)
+      [ "${have}" = "${want}" ] && return 0
+      echo "Updating ${key}: $(value "${have}") -> $(value "${want}")"
+      esc=$(printf '%s' "${want}" | sed 's/[&|\]/\&/g')
+      key_re=$(printf '%s' "${key}" | sed 's/[.]/\./g')
+      if [ -n "${have}" ]; then
+        sed -i "s|^.*key=\"${key_re}\".*\$|${esc}|" "${file}"
+      else
+        sed -i "s|</properties>|${esc}\n</properties>|" "${file}"
+      fi
+    }
+
+    if [ "${IGNITION_REPLICAS:-1}" -eq 1 ]; then
+      if [ -f "${file}" ]; then
+        set_entry redundancy.noderole '<entry key="redundancy.noderole">Independent</entry>'
+      else
+        echo "Single replica, no redundancy settings to apply."
+      fi
       exit 0
     fi
 
-    if [[ "${HOSTNAME}" =~ -([0-9])$ ]] && [ ! -f /data/redundancy.xml ]; then
-      case "${BASH_REMATCH[1]}" in
-        0) 
-          echo "Initializing Redundancy as Primary"
-          cp /config/files/redundancy-primary.xml /data/redundancy.xml
-          ;;
-        1) 
-          echo "Initializing Redundancy as Backup"
-          cp /config/files/redundancy-backup.xml /data/redundancy.xml
-          ;;
-        *)
-          echo "Unknown Redundancy Hostname Suffix: ${HOSTNAME}"
-          ;;
-      esac
+    if ! [[ "${HOSTNAME}" =~ -([0-9]+)$ ]]; then
+      echo "Unknown Redundancy Hostname Suffix: ${HOSTNAME}"
+      exit 0
     fi
+    case "${BASH_REMATCH[1]}" in
+      0) role=Master; template="${FILES_DIR}/redundancy-primary.xml" ;;
+      1) role=Backup; template="${FILES_DIR}/redundancy-backup.xml" ;;
+      *) echo "Unknown Redundancy Hostname Suffix: ${HOSTNAME}"; exit 0 ;;
+    esac
+
+    if [ ! -f "${file}" ]; then
+      echo "Initializing Redundancy as ${role}"
+      tr -d '\r' < "${template}" > "${file}"
+      exit 0
+    fi
+
+    while IFS= read -r line; do
+      line="${line%$'\r'}"
+      [[ "${line}" =~ key=\"([^\"]+)\" ]] || continue
+      key="${BASH_REMATCH[1]}"
+      case "${runtime_keys}" in *" ${key} "*) continue ;; esac
+      set_entry "${key}" "${line}"
+    done < "${template}"
   prepare-gan-certificates.sh: |-
     #!/usr/bin/env bash
     set -eo pipefail
@@ -304,31 +353,262 @@ stringData:
     fi
 
     echo "configure-ignition.sh finished."
+  active-routing.sh: |-
+    #!/bin/sh
+    # Keeps ACTIVE_LABEL=true on the gateway pod that is currently serving, so
+    # the <name>-active Service only reaches that pod. Readiness can't do this:
+    # a cold Backup must count as Ready or StatefulSet rolling updates stall.
+    #
+    # Every INTERVAL_SECONDS each gateway pod is classified from /system/gwinfo:
+    #   active   - ContextStatus=RUNNING and RedundantNodeActiveStatus=Active (or
+    #              no redundancy fields at all, i.e. standalone)
+    #   inactive - answered but not RUNNING/Active, has no IP yet, or is terminating
+    #   unknown  - didn't answer
+    # The label goes to the active Master, else any active node (a Backup that
+    # took over), so during a failback overlap traffic stays on one gateway.
+    # Explicit states switch immediately; if the labelled pod is merely unknown,
+    # the label is held for up to UNKNOWN_HOLD polls so one slow request doesn't
+    # drop traffic.
+    set -u
+
+    namespace="${NAMESPACE}"
+    selector="${POD_SELECTOR}"
+    label="${ACTIVE_LABEL}"
+    port="${HTTP_PORT:-8088}"
+    interval="${INTERVAL_SECONDS:-2}"
+    unknown_hold="${UNKNOWN_HOLD:-3}"
+    max_loops="${MAX_LOOPS:-0}" # 0 = forever (non-zero only for tests)
+
+    log() {
+      printf '[active] %s\n' "$*"
+    }
+
+    classify() {
+      ip="$1"
+      deleting="$2"
+      if [ -n "$deleting" ] || [ -z "$ip" ]; then
+        echo inactive
+        return
+      fi
+      info=$(curl -fsS --max-time 2 "http://${ip}:${port}/system/gwinfo" 2>/dev/null || true)
+      if [ -z "$info" ]; then
+        echo unknown
+        return
+      fi
+      case "$info" in
+        *"ContextStatus=RUNNING;"*) ;;
+        *)
+          echo inactive
+          return
+          ;;
+      esac
+      case "$info" in
+        *"RedundantNodeActiveStatus=Active;"*) ;;
+        *"RedundantNodeActiveStatus="*)
+          echo inactive
+          return
+          ;;
+      esac
+      case "$info" in
+        *"RedundancyStatus=Master;"*) echo active-master ;;
+        *) echo active ;;
+      esac
+    }
+
+    log "started: namespace=${namespace} selector=${selector} label=${label} interval=${interval}s"
+    streak=0
+    loops=0
+    while :; do
+      loops=$((loops + 1))
+      pods=$(kubectl get pods -n "$namespace" -l "$selector" \
+        -o jsonpath="{range .items[*]}{.metadata.name}|{.status.podIP}|{.metadata.deletionTimestamp}|{.metadata.labels.${label}}{\"\n\"}{end}" 2>/dev/null)
+      if [ -z "$pods" ]; then
+        log "WARN: no gateway pods listed"
+      else
+        want=""
+        other=""
+        current=""
+        current_state=""
+        states=""
+        while IFS='|' read -r name ip deleting has; do
+          [ -n "$name" ] || continue
+          state=$(classify "$ip" "$deleting")
+          states="${states} ${name}=${state}"
+          [ "$has" = "true" ] && current="$name" && current_state="$state"
+          case "$state" in
+            active-master) [ -n "$want" ] || want="$name" ;;
+            active) [ -n "$other" ] || other="$name" ;;
+          esac
+        done <<EOF
+    $pods
+    EOF
+        [ -n "$want" ] || want="$other"
+
+        if [ -z "$want" ] && [ -n "$current" ] && [ "$current_state" = "unknown" ]; then
+          streak=$((streak + 1))
+          if [ "$streak" -lt "$unknown_hold" ]; then
+            log "holding ${current}: no gwinfo answer (${streak}/${unknown_hold})"
+            want="$current"
+          fi
+        else
+          streak=0
+        fi
+
+        printf '%s\n' "$pods" | while IFS='|' read -r name ip deleting has; do
+          [ -n "$name" ] || continue
+          if [ "$name" = "$want" ] && [ "$has" != "true" ]; then
+            kubectl label pod "$name" -n "$namespace" "${label}=true" --overwrite >/dev/null &&
+              log "routing to ${name} (states:${states})"
+          elif [ "$name" != "$want" ] && [ "$has" = "true" ]; then
+            kubectl label pod "$name" -n "$namespace" "${label}-" >/dev/null &&
+              log "no longer routing to ${name} (states:${states})"
+          fi
+        done
+        [ -n "$want" ] || [ -z "$current" ] || log "WARN: no active gateway (states:${states})"
+      fi
+      [ "$max_loops" -gt 0 ] && [ "$loops" -ge "$max_loops" ] && exit 0
+      sleep "$interval"
+    done
+  certify.sh: |-
+    #!/bin/sh
+    # Restarts gateways after their certificates are renewed. The preconfigure
+    # init container copies the GAN and web certificates into the gateway on
+    # every start, so a rolling restart is all a renewal needs.
+    #
+    # TARGETS is a space-separated list of "<statefulset>=<secret>,<secret>".
+    # For each, the secrets' data is hashed and compared with the StatefulSet's
+    # certify-hash annotation:
+    #   - no annotation yet: record the hash (first run, no restart)
+    #   - same hash: nothing to do
+    #   - different: kubectl rollout restart, then record the new hash. The
+    #     StatefulSet restarts the highest ordinal (the Backup) first and waits
+    #     for it to be Ready before the Master.
+    # A StatefulSet that is still rolling out is left for the next run.
+    set -u
+
+    namespace="${NAMESPACE}"
+    status=0
+
+    log() {
+      printf '[certify] %s\n' "$*"
+    }
+
+    for target in ${TARGETS}; do
+      sts="${target%%=*}"
+      secrets=$(printf '%s' "${target#*=}" | tr ',' ' ')
+
+      data=""
+      missing=""
+      for secret in $secrets; do
+        if d=$(kubectl get secret "$secret" -n "$namespace" -o jsonpath='{.data}' 2>/dev/null) && [ -n "$d" ]; then
+          data="${data}${secret}=${d};"
+        else
+          missing="${missing} ${secret}"
+        fi
+      done
+      if [ -n "$missing" ]; then
+        log "WARN: ${sts}: secrets not found:${missing}; skipping"
+        status=1
+        continue
+      fi
+      hash=$(printf '%s' "$data" | sha256sum | cut -c1-16)
+
+      if ! current=$(kubectl get statefulset "$sts" -n "$namespace" -o jsonpath='{.metadata.annotations.certify-hash}' 2>/dev/null); then
+        log "WARN: ${sts}: StatefulSet not found; skipping"
+        status=1
+        continue
+      fi
+
+      if [ -z "$current" ]; then
+        kubectl annotate statefulset "$sts" -n "$namespace" "certify-hash=${hash}" --overwrite >/dev/null &&
+          log "${sts}: recorded certificate hash ${hash}"
+        continue
+      fi
+      if [ "$current" = "$hash" ]; then
+        log "${sts}: certificates unchanged"
+        continue
+      fi
+
+      settled=$(kubectl get statefulset "$sts" -n "$namespace" \
+        -o jsonpath='{.status.replicas}/{.status.readyReplicas}/{.status.updatedReplicas}/{.status.currentRevision}/{.status.updateRevision}')
+      replicas=$(printf '%s' "$settled" | cut -d/ -f1)
+      ready=$(printf '%s' "$settled" | cut -d/ -f2)
+      updated=$(printf '%s' "$settled" | cut -d/ -f3)
+      current_rev=$(printf '%s' "$settled" | cut -d/ -f4)
+      update_rev=$(printf '%s' "$settled" | cut -d/ -f5)
+      if [ "$ready" != "$replicas" ] || [ "$updated" != "$replicas" ] || [ "$current_rev" != "$update_rev" ]; then
+        log "${sts}: certificates renewed but a rollout is in progress (${ready}/${replicas} ready); will retry"
+        continue
+      fi
+
+      if kubectl rollout restart statefulset "$sts" -n "$namespace" >/dev/null &&
+        kubectl annotate statefulset "$sts" -n "$namespace" "certify-hash=${hash}" --overwrite >/dev/null; then
+        log "${sts}: certificates renewed; rolling restart started (hash ${current} -> ${hash})"
+      else
+        log "ERROR: ${sts}: rolling restart failed"
+        status=1
+      fi
+    done
+    exit "$status"
   health-check.sh: |-
     #!/usr/bin/env bash
-    # Robust health check for Ignition Gateway
-    
-    HTTP_PORT=${IGNITION_HTTP_PORT:-8088}
-    GAN_PORT=${IGNITION_GAN_PORT:-8060}
-    TIMEOUT=5
+    # Health check for the Ignition Gateway: passes only when /StatusPing reports
+    # the expected state (RUNNING by default). /StatusPing answers with
+    # {"state":"..."} on both Ignition 8.1 and 8.3; /main/system/StatusPing does
+    # not exist on either (8.1 redirects to a 404, 8.3 returns 404).
+    #
+    # -r (readiness) also fails while the gateway is still commissioning:
+    # /StatusPing reports {"state":"RUNNING","details":"COMMISSIONING"} then.
+    # Liveness leaves -r off so a gateway stuck commissioning is not restarted
+    # in a loop (a restart does not finish commissioning).
+    # With IGNITION_READY_REQUIRES_BACKUP_SYNC=true (set by activeRouting), -r
+    # also fails on a Backup whose RedundantState is not Good, so a rolling
+    # update only restarts the Master once the Backup has caught up.
+    #
+    # Usage: health-check.sh [-t <timeout seconds>] [-s <expected state>] [-r]
 
-    # 1. Check if the Web Server is responding
-    if ! curl -s -f --max-time "${TIMEOUT}" "http://localhost:${HTTP_PORT}/main/system/StatusPing" > /dev/null; then
-      echo "Web Server not responding"
+    HTTP_PORT=${IGNITION_HTTP_PORT:-8088}
+    TIMEOUT=5
+    EXPECTED_STATE=RUNNING
+    READINESS=false
+
+    while getopts ":t:s:r" opt; do
+      case "${opt}" in
+        t) TIMEOUT="${OPTARG}" ;;
+        s) EXPECTED_STATE="${OPTARG}" ;;
+        r) READINESS=true ;;
+        *) echo "Usage: $0 [-t timeout] [-s state] [-r]" >&2; exit 2 ;;
+      esac
+    done
+
+    if ! body=$(curl -s -f --max-time "${TIMEOUT}" "http://localhost:${HTTP_PORT}/StatusPing"); then
+      echo "Gateway not responding on /StatusPing"
       exit 1
     fi
 
-    # 2. Check if the GAN port is listening (basic check)
-    if ! timeout "${TIMEOUT}" bash -c "cat < /dev/null > /dev/tcp/localhost/${GAN_PORT}" 2>/dev/null; then
-      echo "GAN Port ${GAN_PORT} not listening"
-      # We don't exit 1 here yet as GAN might take longer to bind
-    fi
+    case "${body}" in
+      *"\"state\":\"${EXPECTED_STATE}\""*) ;;
+      *) echo "Gateway state is not ${EXPECTED_STATE}: ${body}"; exit 1 ;;
+    esac
 
+    if [ "${READINESS}" = true ]; then
+      case "${body}" in
+        *"\"details\":\"COMMISSIONING\""*) echo "Gateway is still commissioning: ${body}"; exit 1 ;;
+      esac
+      if [ "${IGNITION_READY_REQUIRES_BACKUP_SYNC:-false}" = true ]; then
+        if ! info=$(curl -s -f --max-time "${TIMEOUT}" "http://localhost:${HTTP_PORT}/system/gwinfo"); then
+          echo "Gateway not responding on /system/gwinfo"
+          exit 1
+        fi
+        case "${info}" in
+          *"RedundancyStatus=Backup;"*)
+            case "${info}" in
+              *"RedundantState=Good;"*) ;;
+              *) echo "Backup is not in sync with the Master: ${info}"; exit 1 ;;
+            esac
+            ;;
+        esac
+      fi
+    fi
     exit 0
-  shutdown.sh: |-
-    #!/usr/bin/env bash
-    # Graceful shutdown script
-    echo "Initiating graceful shutdown of Ignition Gateway..."
-    /usr/local/bin/ignition/gwcmd.sh -p
-    echo "Shutdown signal sent."
 {{- end -}}

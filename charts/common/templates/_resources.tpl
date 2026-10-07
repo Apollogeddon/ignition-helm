@@ -116,6 +116,8 @@ spec:
   privateKey:
     algorithm: ECDSA
     size: 256
+    # keep the CA key on renewal so certificates it already signed stay valid
+    rotationPolicy: Never
   duration: 17520h0m0s  # 2 years
   issuerRef:
     name: {{ .context.Values.certManager.issuer.name }}
@@ -184,6 +186,9 @@ spec:
   - {{ . | quote }}
   {{- end }}
   duration: 8760h0m0s  # 1 year
+  privateKey:
+    # explicit: the cert-manager default changed from Never to Always in 1.18
+    rotationPolicy: Always
   keystores:
     pkcs12:
       create: true
@@ -217,6 +222,9 @@ spec:
   selector:
     matchLabels:
       {{- include "ignition.selectorLabels" .context | nindent 6 }}
+      {{- with $.name }}
+      app.kubernetes.io/component: {{ . }}
+      {{- end }}
 {{- end }}
 
 {{/*
@@ -317,6 +325,9 @@ spec:
   podSelector:
     matchLabels:
       {{- include "ignition.selectorLabels" .context | nindent 6 }}
+      {{- with $.name }}
+      app.kubernetes.io/component: {{ . }}
+      {{- end }}
   policyTypes:
     - Ingress
   ingress:
@@ -339,6 +350,11 @@ spec:
       ports:
         - protocol: TCP
           port: {{ .values.service.ports.gan }}
+    {{- with .values.networkPolicy.extraIngress }}
+    # Additional ingress rules (e.g. the ingress controller's namespace, node
+    # CIDRs for NodePorts/load balancers)
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
 {{- end }}
 {{- end }}
 
@@ -369,6 +385,9 @@ spec:
   selector:
     matchLabels:
       {{- include "ignition.selectorLabels" .context | nindent 6 }}
+      {{- with $.name }}
+      app.kubernetes.io/component: {{ . }}
+      {{- end }}
   endpoints:
     - port: http
       path: {{ .values.serviceMonitor.path | default "/data/metrics" }}

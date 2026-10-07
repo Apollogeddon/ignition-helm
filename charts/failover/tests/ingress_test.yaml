@@ -55,3 +55,23 @@ tests:
           path: metadata.annotations
           value:
             kubernetes.io/ingress.class: nginx
+
+  - it: should set ingressClassName
+    set:
+      ignition:
+        ingress:
+          enabled: true
+          className: contour
+    asserts:
+      - equal:
+          path: spec.ingressClassName
+          value: contour
+
+  - it: should omit ingressClassName by default
+    set:
+      ignition:
+        ingress:
+          enabled: true
+    asserts:
+      - notExists:
+          path: spec.ingressClassName
