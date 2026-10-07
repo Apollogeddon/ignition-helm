@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# S2: upgrade a redundant pair from a released chart version to the working
+# S02: upgrade a redundant pair from a released chart version to the working
 # tree. The StatefulSet must replace the Backup (pod 1) before the Master
 # (pod 0), the pair must come back healthy, and the time user traffic is not
 # served by an Active gateway is recorded through the NodePort.
@@ -17,14 +17,14 @@ STS=ignition-failover
 
 e2e_chart "$CHART"
 e2e_begin "${WATCH_URL:-}"
-ns=$(e2e_ns s2)
+ns=$(e2e_ns s02)
 e2e_require_memory "$ns"
 
 common=(-n "$ns" -f "$(dirname "$0")/values/small.yaml" --set ignition.redundancy.enabled=true
   --set ignition.service.type=NodePort)
 [ -z "${IMAGE_TAG:-}" ] || common+=(--set "image.tag=$IMAGE_TAG")
 
-from=(s2 ignition-failover --repo "$CHART_REPO" --version "$FROM_VERSION" "${common[@]}")
+from=(s02 ignition-failover --repo "$CHART_REPO" --version "$FROM_VERSION" "${common[@]}")
 for s in ${FROM_SET:-}; do from+=(--set "$s"); done
 e2e_render_check "${from[@]}"
 log "installing $FROM_VERSION from $CHART_REPO"
@@ -45,13 +45,13 @@ wait_pair
 log "pair healthy on $FROM_VERSION"
 before=$(kubectl -n "$ns" get pod $STS-0 $STS-1 -o jsonpath='{.items[*].metadata.uid}')
 
-upgrade=(s2 "$CHART" "${common[@]}")
+upgrade=(s02 "$CHART" "${common[@]}")
 for s in ${UPGRADE_SET:-}; do upgrade+=(--set "$s"); done
 e2e_render_check "${upgrade[@]}"
 svc=$STS; [[ " ${UPGRADE_SET:-} " != *" ignition.activeRouting.enabled=true "* ]] || svc=$STS-active
 nodeport=$(kubectl -n "$ns" get svc $STS -o jsonpath='{.spec.ports[?(@.name=="http")].nodePort}')
 
-"$(dirname "$0")/record.sh" 1200 "$E2E_OUT/s2-upgrade.log" via="http://$NODE_IP:$nodeport/system/gwinfo" &
+"$(dirname "$0")/record.sh" 1200 "$E2E_OUT/s02-upgrade.log" via="http://$NODE_IP:$nodeport/system/gwinfo" &
 rec=$!
 sleep 5
 start=$(date +%s)
@@ -72,7 +72,7 @@ e2e_install "${upgrade[@]}"
 if [ "$svc" != "$STS" ]; then
   kill "$rec" 2>/dev/null; wait "$rec" 2>/dev/null || true
   nodeport=$(kubectl -n "$ns" get svc "$svc" -o jsonpath='{.spec.ports[?(@.name=="http")].nodePort}')
-  "$(dirname "$0")/record.sh" 1200 "$E2E_OUT/s2-upgrade.log" via="http://$NODE_IP:$nodeport/system/gwinfo" &
+  "$(dirname "$0")/record.sh" 1200 "$E2E_OUT/s02-upgrade.log" via="http://$NODE_IP:$nodeport/system/gwinfo" &
   rec=$!
 fi
 for _ in $(seq 240); do
@@ -92,11 +92,11 @@ t1=$(kubectl -n "$ns" get pod $STS-1 -o jsonpath='{.metadata.creationTimestamp}'
 [[ "$t1" < "$t0" ]] || die "Master (pod 0) was replaced before the Backup (pod 1)"
 
 {
-  echo "S2 $(date -u +%FT%TZ) from=$FROM_VERSION image=${IMAGE_TAG:-default} set=${UPGRADE_SET:-none}"
+  echo "S02 $(date -u +%FT%TZ) from=$FROM_VERSION image=${IMAGE_TAG:-default} set=${UPGRADE_SET:-none}"
   awk '{split($2, v, "="); if (v[2] ~ /\/Active$/) {ok++; run = 0} else {bad++; run++; if (run > max) max = run}}
-    END {printf "  served %ds, not served %ds, longest gap %ds\n", ok, bad, max}' "$E2E_OUT/s2-upgrade.log"
+    END {printf "  served %ds, not served %ds, longest gap %ds\n", ok, bad, max}' "$E2E_OUT/s02-upgrade.log"
   echo "  pod 1 replaced at $t1, pod 0 at $t0"
-} | tee -a "$E2E_OUT/s2-summary.txt" >&2
-awk '{s=$2} s!=p {print; p=s}' "$E2E_OUT/s2-upgrade.log" > "$E2E_OUT/s2-transitions.txt"
+} | tee -a "$E2E_OUT/s02-summary.txt" >&2
+awk '{s=$2} s!=p {print; p=s}' "$E2E_OUT/s02-upgrade.log" > "$E2E_OUT/s02-transitions.txt"
 e2e_watch_check
-log "S2 passed"
+log "S02 passed"

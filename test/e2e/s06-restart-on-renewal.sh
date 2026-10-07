@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# S6: certificate renewal is picked up by a rolling restart (restartOnRenewal),
+# S06: certificate renewal is picked up by a rolling restart (restartOnRenewal),
 # Backup first, with activeRouting keeping traffic on the Active gateway.
 #   1. first certify run records the hash and restarts nothing
 #   2. renewal (GAN TLS secret deleted, cert-manager re-issues it) -> the next
@@ -15,10 +15,10 @@ STS=ignition-failover
 
 e2e_chart "$CHART"
 e2e_begin "${WATCH_URL:-}"
-ns=$(e2e_ns s6)
+ns=$(e2e_ns s06)
 e2e_require_memory "$ns"
 
-args=(s6 "$CHART" -n "$ns" -f "$(dirname "$0")/values/small.yaml"
+args=(s06 "$CHART" -n "$ns" -f "$(dirname "$0")/values/small.yaml"
   --set ignition.redundancy.enabled=true
   --set ignition.activeRouting.enabled=true
   --set certManager.restartOnRenewal.enabled=true)
@@ -61,7 +61,7 @@ sleep 10
 [ "$(uids)" = "$before" ] || die "first certify run restarted pods"
 
 nodeport=$(kubectl -n "$ns" get svc $STS-active -o jsonpath='{.spec.ports[?(@.name=="http")].nodePort}')
-"$(dirname "$0")/record.sh" 900 "$E2E_OUT/s6-restart.log" active="http://$NODE_IP:$nodeport/StatusPing" \
+"$(dirname "$0")/record.sh" 900 "$E2E_OUT/s06-restart.log" active="http://$NODE_IP:$nodeport/StatusPing" \
   via="http://$NODE_IP:$nodeport/system/gwinfo" &
 rec=$!
 
@@ -99,7 +99,7 @@ after=$(uids); sleep 10
 [ "$(uids)" = "$after" ] || die "certify run after the restart restarted pods again"
 
 awk '{split($3, v, "="); s = (v[2] ~ /\/Active$/) ? "served" : "not-served"; c[s]++}
-  END {for (k in c) printf "  %s %ds\n", k, c[k]}' "$E2E_OUT/s6-restart.log" | tee -a "$E2E_OUT/s6-summary.txt" >&2
-awk '{print $1, $3}' "$E2E_OUT/s6-restart.log" | awk '{s=$2} s!=p {print; p=s}' > "$E2E_OUT/s6-transitions.txt"
+  END {for (k in c) printf "  %s %ds\n", k, c[k]}' "$E2E_OUT/s06-restart.log" | tee -a "$E2E_OUT/s06-summary.txt" >&2
+awk '{print $1, $3}' "$E2E_OUT/s06-restart.log" | awk '{s=$2} s!=p {print; p=s}' > "$E2E_OUT/s06-transitions.txt"
 e2e_watch_check
-log "S6 passed"
+log "S06 passed"
