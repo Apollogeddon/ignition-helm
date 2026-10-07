@@ -55,6 +55,8 @@ helm upgrade <release> ignition-charts/ignition-scaleout -n <namespace> ...
 
 (Tested end to end for the failover chart; the scaleout steps are the same.)
 
+Turn on `backend.activeRouting.enabled` in a separate, later upgrade, once every pod has been replaced. Until the Master's pod is replaced it is only reachable under the old Service name, so the new Backup cannot sync with it; with `backend.activeRouting.enabled` a Backup must be in sync to be Ready, so the rollout would wait for ever (the Master keeps serving).
+
 Charts up to 3.1.0 ran the gateway as root by default, so on storage that does not apply `fsGroup` (e.g. local-path) their data volumes are owned by root and the upgraded gateway, which runs as `securityContext.runAsUser` (2003), cannot update them: the `preconfigure` init container fails with `Permission denied`. If your 3.x install did not set `securityContext.runAsUser`, also set `frontend.fixDataOwnership` and `backend.fixDataOwnership=true` for the upgrade (an init container chowns the volume as root; it needs the baseline Pod Security level), and set it back to `false` once the pods are running.
 
 ## Configuration
