@@ -9,7 +9,7 @@ This library is designed to be "batteries-included" but highly extensible. Below
 
 The charts use a specialised **Init Container** (`preconfigure`) to handle complex setup tasks before the Ignition Gateway starts.
 
-* **Redundancy Seeding**: Automatically configures the Backup node to pair with the Master, eliminating manual redundancy setup.
+* **Redundancy Settings**: Configures pod 0 as Master and pod 1 as Backup, and re-applies the chart's redundancy settings on **every** start. Turning `redundancy.enabled` on or off, or changing any `redundancy.*` value, restarts the gateways and takes effect without using the Gateway UI (turning it off makes the gateway Independent).
 * **Certificate Exchange**: If `cert-manager` is not present, it auto-generates self-signed certificates for the Gateway Network (GAN) and shares them between pods via Kubernetes Secrets.
 * **Auto-Restore**: Checks for a `.gwbk` file in mounted volumes or at a specified URL and restores it on first startup.
 
@@ -83,12 +83,18 @@ ignition:
 
 ### Logging
 
-Set the root logging level for the console output.
+The gateway log goes to the container log (`kubectl logs`, rotated by the kubelet) by default: `logging.wrapperLogToStdout` adds `wrapper.logfile=/dev/stdout` to the gateway args. Without it Ignition writes an unrotated `logs/wrapper.log` that can fill the logs volume and get the pod evicted.
 
 ```yaml
 ignition:
   logging:
-    level: "DEBUG" # INFO, WARN, ERROR
+    level: "INFO"            # root level: INFO, DEBUG, WARN, ERROR
+    loggers:                 # per-logger levels
+      gateway.SslManager: WARN
+    sqlite:                  # the gateway's log database (unset keys keep Ignition defaults)
+      entryLimit: 20000
+  emptyDirSizeLimit:
+    logs: 512Mi              # optional cap on the logs volume
 ```
 
 ## 4. High Availability (HA)
@@ -97,10 +103,25 @@ ignition:
 
 Kubernetes checks if the Gateway is alive and ready to receive traffic.
 
-* **Readiness**: Verifies the web server status via `/StatusPing` and checks GAN port availability.
-* **Liveness**: Checks if the process is running and responding.
+* **Readiness** (`health-check.sh -t 3 -r`): `/StatusPing` must report `RUNNING`, and the gateway must have finished commissioning. With `activeRouting`, a Backup must also be in sync with its Master.
+* **Liveness** (`health-check.sh -t 5`): `/StatusPing` must report `RUNNING`. A gateway stuck commissioning is not restarted in a loop.
+* **Startup** (optional, `startupProbe.enabled`): holds liveness off during slow starts, such as a Backup restoring a state transfer from its Master.
 
-**Tip:** The charts use a dedicated `/config/scripts/health-check.sh` script for more robust verification than standard port checks.
+The checks use `/StatusPing`, which works on Ignition 8.1 and 8.3. A probe `command` you set is used as-is.
+
+### Active Routing
+
+By default every Ready gateway sits behind the Service, and a cold Backup is Ready too, so users can land on a gateway that is not serving. With `activeRouting.enabled` (failover, or the scaleout backend) a small labeller marks the Active gateway and a `<name>-active` Service sends traffic only there. It takes over the configured Service type, nodePorts and annotations, and the chart Ingress points at it.
+
+```yaml
+ignition:
+  redundancy:
+    enabled: true
+  activeRouting:
+    enabled: true
+```
+
+Failover then takes a few seconds: about 4-5 s for a graceful stop of the Master and 2-3 s for a crash, measured on a test cluster. When upgrading from 4.0.0 or earlier, enable it in a separate upgrade (see [Upgrading](../upgrading/)).
 
 ### Pod Scheduling (Affinity)
 
@@ -119,7 +140,7 @@ To prevent downtime during cluster maintenance (like node upgrades), the charts 
 
 ## 5. Security
 
-* **Non-Root User**: Runs as UID `2003` by default.
+* **Non-Root User**: Runs as UID `2003` with `runAsNonRoot: true`, no privilege escalation and all capabilities dropped. The charts' pods meet the Kubernetes **restricted** Pod Security level.
 * **SealedSecrets**: Support for Bitnami SealedSecrets for managing sensitive values without checking plain-text passwords into Git.
 * **Network Isolation (NetworkPolicy)**: Optionally restrict traffic to the Gateway Network (GAN) so only authenticated Ignition pods can communicate on port `8060`.
 
@@ -205,7 +226,17 @@ frontend:
 
 ### Graceful Shutdown
 
-To ensure configuration integrity, the charts include a `preStop` lifecycle hook. This hook triggers a graceful shutdown command (`gwcmd.sh -p`) before the container is terminated, allowing Ignition to flush its internal database to disk.
+Ignition shuts down cleanly on `SIGTERM`, so the charts add no `preStop` hook. `gwcmd.sh -p` resets the gateway login password and must not be used as one.
+
+### Certificate Renewal
+
+cert-manager renews the Gateway Network certificates, but a running gateway only loads them when it starts. `certManager.restartOnRenewal.enabled` adds a CronJob that notices when the certificate secrets change and rolls the gateways, Backup first.
+
+```yaml
+certManager:
+  restartOnRenewal:
+    enabled: true
+```
 
 ## 7. Backup & Restore
 

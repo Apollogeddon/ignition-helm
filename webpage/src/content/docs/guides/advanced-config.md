@@ -98,11 +98,11 @@ ignition:
 
 ## 5. Graceful Shutdown
 
-Kubernetes can terminate pods abruptly. Ignition benefits from a clean shutdown to ensure the internal SQLite configuration database is flushed to disk correctly.
+When Kubernetes stops a pod it sends the gateway `SIGTERM`, and Ignition shuts down cleanly on its own, flushing its internal configuration database. The charts therefore add no `preStop` hook by default.
 
-The charts automatically include a `preStop` hook that executes `/config/scripts/shutdown.sh`. This script sends a shutdown signal to the gateway process, giving it time to exit cleanly before the container is killed.
+> **Warning**: do not use `gwcmd.sh -p` as a shutdown hook. Chart 4.1.0 did, and that command **resets the gateway login password** (on Ignition 8.1 and 8.3) every time a pod stops. 4.1.0 has been withdrawn.
 
-> **Note**: Ensure your `terminationGracePeriodSeconds` (default: 60) is long enough for your gateway to shut down completely.
+If you need your own hooks, set `ignition.lifecycle` (rendered as-is). Make sure `terminationGracePeriodSeconds` (60) is long enough for your gateway to shut down completely.
 
 ---
 
