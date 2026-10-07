@@ -132,6 +132,9 @@ e2e_ns() {
   done
   kubectl create namespace "$ns" >/dev/null
   kubectl label namespace "$ns" "$E2E_LABEL" >/dev/null
+  # E2E_PSA (e.g. restricted) enforces that Pod Security level in the test
+  # namespace, so pods that do not meet it are rejected
+  [ -z "${E2E_PSA:-}" ] || kubectl label namespace "$ns" "pod-security.kubernetes.io/enforce=$E2E_PSA" >/dev/null
   echo "$ns"
 }
 
