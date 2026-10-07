@@ -14,8 +14,19 @@ mkdir -p "$E2E_OUT"
 echo "NODE_IP=$NODE_IP INGRESS_PORT=$INGRESS_PORT"
 
 results=()
+# run <name[:variant]> [VAR=value...]: run test/e2e/<name>.sh with the
+# variables set; E2E_DRY_RUN=true only checks the script exists and that every
+# argument is VAR=value (test/scripts/run-scenarios_test.sh uses this)
 run() {
   local name=$1; shift
+  if [ "${E2E_DRY_RUN:-}" = true ]; then
+    local a ok=true
+    [ -f "test/e2e/${name%%:*}.sh" ] || ok=false
+    for a in "$@"; do [[ "$a" =~ ^[A-Z_][A-Z0-9_]*= ]] || ok=false; done
+    if $ok; then results+=("PASS $name"); else results+=("FAIL $name"); fi
+    echo "$name: $*"
+    return
+  fi
   echo "::group::$name"
   if env "$@" bash "test/e2e/${name%%:*}.sh"; then results+=("PASS $name"); else results+=("FAIL $name"); fi
   echo "::endgroup::"
@@ -30,7 +41,8 @@ for s in ${SCENARIOS}; do
     s02-upgrade:active) run "$s" UPGRADE_SET=ignition.activeRouting.enabled=true ;;
     s02-upgrade:scaleout) run "$s" CHART_KIND=scaleout ;;
     # 3.1.0 installed with its own applicationName, then activeRouting
-    s02-upgrade:wrapper) run "$s" FROM_VERSION=3.1.0 APP_NAME=my-gateway \n      UPGRADE_SET=ignition.activeRouting.enabled=true ;;
+    s02-upgrade:wrapper) run "$s" FROM_VERSION=3.1.0 APP_NAME=my-gateway \
+      UPGRADE_SET=ignition.activeRouting.enabled=true ;;
     *) run "$s" ;;
   esac
 done
