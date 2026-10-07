@@ -1,5 +1,17 @@
 # Changelog
 
+## [4.2.0](https://github.com/Apollogeddon/ignition-helm/compare/ignition-scaleout-4.1.0...ignition-scaleout-v4.2.0) (2026-10-07)
+
+
+### Features
+
+* **charts:** Add fixDataOwnership for upgrades from charts that ran the gateway as root ([a3d178b](https://github.com/Apollogeddon/ignition-helm/commit/a3d178b65286e8ebcb1058be3ef3680ef15069cf))
+
+
+### Bug Fixes
+
+* **charts:** Meet the restricted Pod Security level (runAsNonRoot and a hardened GAN rotation CronJob) ([3b0a992](https://github.com/Apollogeddon/ignition-helm/commit/3b0a99260648ada42a61819dfc2ebd1c56c67b9b))
+
 ## [4.1.0](https://github.com/Apollogeddon/ignition-helm/compare/ignition-scaleout-v4.0.0...ignition-scaleout-v4.1.0) (2026-03-22)
 
 
