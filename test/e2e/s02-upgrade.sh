@@ -1,33 +1,60 @@
 #!/usr/bin/env bash
-# S02: upgrade a redundant pair from a released chart version to the working
-# tree. The StatefulSet must replace the Backup (pod 1) before the Master
-# (pod 0), the pair must come back healthy, and the time user traffic is not
-# served by an Active gateway is recorded through the NodePort.
+# S02: upgrade from a released chart version to the working tree.
+#   failover (default): a redundant pair; the StatefulSet must replace the
+#     Backup (pod 1) before the Master (pod 0) and the pair must come back
+#     healthy.
+#   scaleout (CHART_KIND=scaleout): one frontend and a standalone backend (two
+#     gateways, within the staging budget); both StatefulSets must be adopted
+#     and the frontend must reconnect to the backend over the Gateway Network.
+# StatefulSets whose spec.serviceName changes (4.0.0 and earlier used the main
+# Service, later versions the -headless one) are deleted with --cascade=orphan
+# first, as the chart READMEs describe; their pods and PVCs keep running and the
+# upgraded StatefulSets adopt them. The time user traffic is not served by an
+# Active gateway is recorded through the NodePort.
 #
-# Env: NODE_IP, FROM_VERSION (default 4.0.0), CHART_REPO (default the published
-# repo), IMAGE_TAG (default chart appVersion), FROM_SET (extra --set for the
-# starting install), UPGRADE_SET (extra --set for the upgrade, e.g.
-# ignition.activeRouting.enabled=true), WATCH_URL (optional)
+# Env: NODE_IP, CHART_KIND (failover or scaleout), FROM_VERSION (default
+# 4.0.0), CHART_REPO (default the published repo), IMAGE_TAG (default chart
+# appVersion), APP_NAME (applicationName, e.g. my-gateway), FROM_SET
+# (extra --set for the starting install, e.g.
+# ignition.securityContext.runAsUser=2003), UPGRADE_SET (extra
+# --set for the upgrade, e.g. ignition.activeRouting.enabled=true), WATCH_URL
+# (optional)
 source "$(dirname "$0")/lib.sh"
 : "${NODE_IP:?}"
-CHART="$(dirname "$0")/../../charts/failover"
+CHART_KIND="${CHART_KIND:-failover}"
 FROM_VERSION="${FROM_VERSION:-4.0.0}"
 CHART_REPO="${CHART_REPO:-https://apollogeddon.github.io/ignition-helm}"
-STS=ignition-failover
+CHART="$(dirname "$0")/../../charts/$CHART_KIND"
+NAME="${APP_NAME:-ignition-$CHART_KIND}"
+tag=s02; [ "$CHART_KIND" = failover ] || tag="s02-$CHART_KIND"
+
+case "$CHART_KIND" in
+  failover)
+    values=(-f "$(dirname "$0")/values/small.yaml" --set ignition.redundancy.enabled=true
+      --set ignition.service.type=NodePort) ;;
+  scaleout)
+    values=(-f "$(dirname "$0")/values/small-scaleout.yaml" --set frontend.service.type=NodePort) ;;
+  *) die "CHART_KIND must be failover or scaleout" ;;
+esac
+if [ "$CHART_KIND" = failover ]; then
+  statefulsets=("$NAME"); front="$NAME"
+else
+  statefulsets=("$NAME-backend" "$NAME-frontend"); front="$NAME-frontend"
+fi
 
 e2e_chart "$CHART"
 e2e_begin "${WATCH_URL:-}"
-ns=$(e2e_ns s02)
+ns=$(e2e_ns "$tag")
 e2e_require_memory "$ns"
 
-common=(-n "$ns" -f "$(dirname "$0")/values/small.yaml" --set ignition.redundancy.enabled=true
-  --set ignition.service.type=NodePort)
+common=(-n "$ns" "${values[@]}")
+[ -z "${APP_NAME:-}" ] || common+=(--set "applicationName=$APP_NAME")
 [ -z "${IMAGE_TAG:-}" ] || common+=(--set "image.tag=$IMAGE_TAG")
 
-from=(s02 ignition-failover --repo "$CHART_REPO" --version "$FROM_VERSION" "${common[@]}")
+from=(s02 "ignition-$CHART_KIND" --repo "$CHART_REPO" --version "$FROM_VERSION" "${common[@]}")
 for s in ${FROM_SET:-}; do from+=(--set "$s"); done
 e2e_render_check "${from[@]}"
-log "installing $FROM_VERSION from $CHART_REPO"
+log "installing $CHART_KIND $FROM_VERSION from $CHART_REPO"
 e2e_install "${from[@]}"
 e2e_wait_ready "$ns" 900
 
@@ -36,67 +63,88 @@ gwinfo() { kubectl -n "$ns" exec "$1" -c gateway -- curl -s --max-time 3 http://
 wait_pair() {
   local deadline=$(( $(date +%s) + 900 ))
   while [ "$(date +%s)" -lt "$deadline" ]; do
-    [ "$(gwinfo $STS-0 || true)" = Master/Good/Active ] && [ "$(gwinfo $STS-1 || true)" = Backup/Good/Cold ] && return 0
+    [ "$(gwinfo "$NAME-0" || true)" = Master/Good/Active ] && [ "$(gwinfo "$NAME-1" || true)" = Backup/Good/Cold ] && return 0
     sleep 5
   done
-  die "pair not healthy: $STS-0 $(gwinfo $STS-0 || true), $STS-1 $(gwinfo $STS-1 || true)"
+  die "pair not healthy: $NAME-0 $(gwinfo "$NAME-0" || true), $NAME-1 $(gwinfo "$NAME-1" || true)"
 }
-wait_pair
-log "pair healthy on $FROM_VERSION"
-before=$(kubectl -n "$ns" get pod $STS-0 $STS-1 -o jsonpath='{.items[*].metadata.uid}')
+# the frontend's outgoing Gateway Network connection to the backend is Running
+# in its current pod's log
+frontend_connected() {
+  kubectl -n "$ns" logs "$front-0" -c gateway 2>/dev/null | grep -E "to Running" | grep -qF "$NAME-backend-0"
+}
+wait_frontend() {
+  local deadline=$(( $(date +%s) + 600 ))
+  while [ "$(date +%s)" -lt "$deadline" ]; do frontend_connected && return 0; sleep 10; done
+  die "the frontend did not reconnect to the backend over the Gateway Network"
+}
+pods() { kubectl -n "$ns" get pods -l "app.kubernetes.io/instance=s02" -o jsonpath='{range .items[*]}{.metadata.name}={.metadata.uid}{"\n"}{end}' | grep -E "^$NAME(-frontend|-backend)?-[0-9]+=" | sort; }
+
+if [ "$CHART_KIND" = failover ]; then wait_pair; else wait_frontend; fi
+log "healthy on $FROM_VERSION"
+before=$(pods)
 
 upgrade=(s02 "$CHART" "${common[@]}")
 for s in ${UPGRADE_SET:-}; do upgrade+=(--set "$s"); done
 e2e_render_check "${upgrade[@]}"
-svc=$STS; [[ " ${UPGRADE_SET:-} " != *" ignition.activeRouting.enabled=true "* ]] || svc=$STS-active
-nodeport=$(kubectl -n "$ns" get svc $STS -o jsonpath='{.spec.ports[?(@.name=="http")].nodePort}')
+svc=$front; [[ " ${UPGRADE_SET:-} " != *" ignition.activeRouting.enabled=true "* ]] || svc=$NAME-active
+nodeport=$(kubectl -n "$ns" get svc "$front" -o jsonpath='{.spec.ports[?(@.name=="http")].nodePort}')
 
-"$(dirname "$0")/record.sh" 1200 "$E2E_OUT/s02-upgrade.log" via="http://$NODE_IP:$nodeport/system/gwinfo" &
+"$(dirname "$0")/record.sh" 1200 "$E2E_OUT/$tag-upgrade.log" via="http://$NODE_IP:$nodeport/system/gwinfo" &
 rec=$!
 sleep 5
 start=$(date +%s)
-# spec.serviceName cannot be changed on a StatefulSet (4.0.0 and earlier use
-# the main Service, later versions the -headless one). Delete only the
-# StatefulSet object; its pods and PVCs keep running and the upgraded
-# StatefulSet adopts them, then rolls them Backup first.
-current=$(kubectl -n "$ns" get sts $STS -o jsonpath='{.spec.serviceName}')
-wanted=$("$HELM" template "${upgrade[@]}" | tr -d '\r' | awk '/^kind: StatefulSet/ {s = 1} s && /^  serviceName:/ {print $2; exit}')
-if [ "$current" != "$wanted" ]; then
-  log "serviceName changes ($current -> $wanted): deleting the StatefulSet with --cascade=orphan"
-  kubectl -n "$ns" delete sts $STS --cascade=orphan >/dev/null
-fi
+rendered=$("$HELM" template "${upgrade[@]}" | tr -d '\r')
+for sts in "${statefulsets[@]}"; do
+  current=$(kubectl -n "$ns" get sts "$sts" -o jsonpath='{.spec.serviceName}')
+  wanted=$(awk -v n="$sts" '/^kind: StatefulSet/ {s = 1; m = 0} s && $1 == "name:" && $2 == n {m = 1} m && /^  serviceName:/ {print $2; exit}' <<< "$rendered")
+  if [ -n "$wanted" ] && [ "$current" != "$wanted" ]; then
+    log "$sts serviceName changes ($current -> $wanted): deleting the StatefulSet with --cascade=orphan"
+    kubectl -n "$ns" delete sts "$sts" --cascade=orphan >/dev/null
+  fi
+done
 log "upgrading to the working tree ${UPGRADE_SET:+(${UPGRADE_SET})}"
 e2e_install "${upgrade[@]}"
 # the -active Service takes over the configured nodePorts only if they are
 # fixed; follow whichever Service now has a NodePort
-if [ "$svc" != "$STS" ]; then
+if [ "$svc" != "$front" ]; then
   kill "$rec" 2>/dev/null; wait "$rec" 2>/dev/null || true
   nodeport=$(kubectl -n "$ns" get svc "$svc" -o jsonpath='{.spec.ports[?(@.name=="http")].nodePort}')
-  "$(dirname "$0")/record.sh" 1200 "$E2E_OUT/s02-upgrade.log" via="http://$NODE_IP:$nodeport/system/gwinfo" &
+  "$(dirname "$0")/record.sh" 1200 "$E2E_OUT/$tag-upgrade.log" via="http://$NODE_IP:$nodeport/system/gwinfo" &
   rec=$!
 fi
-for _ in $(seq 240); do
-  [ "$(kubectl -n "$ns" get sts $STS -o jsonpath='{.status.currentRevision}')" = "$(kubectl -n "$ns" get sts $STS -o jsonpath='{.status.updateRevision}')" ] &&
-    [ "$(kubectl -n "$ns" get sts $STS -o jsonpath='{.status.readyReplicas}')" = 2 ] && break
-  sleep 5
+for sts in "${statefulsets[@]}"; do
+  for _ in $(seq 240); do
+    read -r cur upd ready total <<< "$(kubectl -n "$ns" get sts "$sts" \
+      -o jsonpath='{.status.currentRevision} {.status.updateRevision} {.status.readyReplicas} {.status.replicas}' || true)"
+    [ -n "$cur" ] && [ "$cur" = "$upd" ] && [ "${ready:-0}" = "${total:-x}" ] && break
+    sleep 5
+  done
 done
-wait_pair
-log "upgrade rolled out and pair healthy in $(( $(date +%s) - start ))s"
+if [ "$CHART_KIND" = failover ]; then wait_pair; else wait_frontend; fi
+log "upgrade rolled out and healthy in $(( $(date +%s) - start ))s"
 sleep 30
 kill "$rec" 2>/dev/null; wait "$rec" 2>/dev/null || true
 
-after=$(kubectl -n "$ns" get pod $STS-0 $STS-1 -o jsonpath='{.items[*].metadata.uid}')
-for u in $before; do case " $after " in *" $u "*) die "pod $u was not replaced by the upgrade" ;; esac; done
-t0=$(kubectl -n "$ns" get pod $STS-0 -o jsonpath='{.metadata.creationTimestamp}')
-t1=$(kubectl -n "$ns" get pod $STS-1 -o jsonpath='{.metadata.creationTimestamp}')
-[[ "$t1" < "$t0" ]] || die "Master (pod 0) was replaced before the Backup (pod 1)"
+after=$(pods)
+while IFS='=' read -r pod uid; do
+  [ -n "$uid" ] || continue
+  grep -qF "$uid" <<< "$after" && die "$pod was not replaced by the upgrade"
+done <<< "$before"
+order=""
+if [ "$CHART_KIND" = failover ]; then
+  t0=$(kubectl -n "$ns" get pod "$NAME-0" -o jsonpath='{.metadata.creationTimestamp}')
+  t1=$(kubectl -n "$ns" get pod "$NAME-1" -o jsonpath='{.metadata.creationTimestamp}')
+  [[ "$t1" < "$t0" ]] || die "Master (pod 0) was replaced before the Backup (pod 1)"
+  order="pod 1 replaced at $t1, pod 0 at $t0"
+fi
 
 {
-  echo "S02 $(date -u +%FT%TZ) from=$FROM_VERSION image=${IMAGE_TAG:-default} set=${UPGRADE_SET:-none}"
+  echo "S02 $(date -u +%FT%TZ) chart=$CHART_KIND from=$FROM_VERSION name=$NAME image=${IMAGE_TAG:-default} from-set=${FROM_SET:-none} set=${UPGRADE_SET:-none}"
   awk '{split($2, v, "="); if (v[2] ~ /\/Active$/) {ok++; run = 0} else {bad++; run++; if (run > max) max = run}}
-    END {printf "  served %ds, not served %ds, longest gap %ds\n", ok, bad, max}' "$E2E_OUT/s02-upgrade.log"
-  echo "  pod 1 replaced at $t1, pod 0 at $t0"
-} | tee -a "$E2E_OUT/s02-summary.txt" >&2
-awk '{s=$2} s!=p {print; p=s}' "$E2E_OUT/s02-upgrade.log" > "$E2E_OUT/s02-transitions.txt"
+    END {printf "  served %ds, not served %ds, longest gap %ds\n", ok, bad, max}' "$E2E_OUT/$tag-upgrade.log"
+  [ -z "$order" ] || echo "  $order"
+} | tee -a "$E2E_OUT/$tag-summary.txt" >&2
+awk '{s=$2} s!=p {print; p=s}' "$E2E_OUT/$tag-upgrade.log" > "$E2E_OUT/$tag-transitions.txt"
 e2e_watch_check
 log "S02 passed"
