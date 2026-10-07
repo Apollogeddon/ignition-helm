@@ -28,6 +28,9 @@ CHART_REPO="${CHART_REPO:-https://apollogeddon.github.io/ignition-helm}"
 CHART="$(dirname "$0")/../../charts/$CHART_KIND"
 NAME="${APP_NAME:-ignition-$CHART_KIND}"
 tag=s02; [ "$CHART_KIND" = failover ] || tag="s02-$CHART_KIND"
+# result files are per run (several S02 variants can share an E2E_OUT); the
+# namespace keeps the short tag
+run="$tag-${FROM_VERSION}-$(date -u +%H%M%S)"
 
 case "$CHART_KIND" in
   failover)
@@ -99,7 +102,7 @@ e2e_render_check "${upgrade[@]}"
 svc=$front; [[ " ${UPGRADE_SET:-} " != *" ignition.activeRouting.enabled=true "* ]] || svc=$NAME-active
 nodeport=$(kubectl -n "$ns" get svc "$front" -o jsonpath='{.spec.ports[?(@.name=="http")].nodePort}')
 
-"$(dirname "$0")/record.sh" 1200 "$E2E_OUT/$tag-upgrade.log" via="http://$NODE_IP:$nodeport/system/gwinfo" &
+"$(dirname "$0")/record.sh" 1200 "$E2E_OUT/$run-upgrade.log" via="http://$NODE_IP:$nodeport/system/gwinfo" &
 rec=$!
 sleep 5
 start=$(date +%s)
@@ -119,7 +122,7 @@ e2e_install "${upgrade[@]}"
 if [ "$svc" != "$front" ]; then
   kill "$rec" 2>/dev/null; wait "$rec" 2>/dev/null || true
   nodeport=$(kubectl -n "$ns" get svc "$svc" -o jsonpath='{.spec.ports[?(@.name=="http")].nodePort}')
-  "$(dirname "$0")/record.sh" 1200 "$E2E_OUT/$tag-upgrade.log" via="http://$NODE_IP:$nodeport/system/gwinfo" &
+  "$(dirname "$0")/record.sh" 1200 "$E2E_OUT/$run-upgrade.log" via="http://$NODE_IP:$nodeport/system/gwinfo" &
   rec=$!
 fi
 # rolled_out: wait for every StatefulSet to roll out, then for the pair or the
@@ -147,7 +150,7 @@ if [ -n "${THEN_SET:-}" ]; then
   if [[ " $THEN_SET " == *" ignition.activeRouting.enabled=true "* ]]; then
     kill "$rec" 2>/dev/null; wait "$rec" 2>/dev/null || true
     nodeport=$(kubectl -n "$ns" get svc "$NAME-active" -o jsonpath='{.spec.ports[?(@.name=="http")].nodePort}')
-    "$(dirname "$0")/record.sh" 1200 "$E2E_OUT/$tag-upgrade.log" via="http://$NODE_IP:$nodeport/system/gwinfo" &
+    "$(dirname "$0")/record.sh" 1200 "$E2E_OUT/$run-upgrade.log" via="http://$NODE_IP:$nodeport/system/gwinfo" &
     rec=$!
   fi
   sleep 10
@@ -173,9 +176,9 @@ fi
 {
   echo "S02 $(date -u +%FT%TZ) chart=$CHART_KIND from=$FROM_VERSION name=$NAME image=${IMAGE_TAG:-default} from-set=${FROM_SET:-none} set=${UPGRADE_SET:-none} then=${THEN_SET:-none}"
   awk '{split($2, v, "="); if (v[2] ~ /\/Active$/) {ok++; run = 0} else {bad++; run++; if (run > max) max = run}}
-    END {printf "  served %ds, not served %ds, longest gap %ds\n", ok, bad, max}' "$E2E_OUT/$tag-upgrade.log"
+    END {printf "  served %ds, not served %ds, longest gap %ds\n", ok, bad, max}' "$E2E_OUT/$run-upgrade.log"
   [ -z "$order" ] || echo "  $order"
-} | tee -a "$E2E_OUT/$tag-summary.txt" >&2
-awk '{s=$2} s!=p {print; p=s}' "$E2E_OUT/$tag-upgrade.log" > "$E2E_OUT/$tag-transitions.txt"
+} | tee -a "$E2E_OUT/$run-summary.txt" >&2
+awk '{s=$2} s!=p {print; p=s}' "$E2E_OUT/$run-upgrade.log" > "$E2E_OUT/$run-transitions.txt"
 e2e_watch_check
 log "S02 passed"
