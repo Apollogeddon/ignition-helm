@@ -47,7 +47,8 @@ log "frontend GATEWAY_NETWORK_0_HOST=$backend_host"
 # unexpanded "$(GATEWAY_SYSTEM_NAME)"
 running=$(grep -E "to Running" "$E2E_OUT/s4-frontend-gan.txt" | grep -F "$backend_host" | tail -1 || true)
 incoming=$(grep -E "Registering connection: $NAME-frontend-0|$NAME-frontend-0 connection status has been updated from .* to Running" "$E2E_OUT/s4-backend-gan.txt" | tail -1 || true)
-literal=$(grep -ciF '$(gateway_system_name)' "$E2E_OUT/s4-frontend.log" "$E2E_OUT/s4-backend.log" | awk -F: '{n += $NF} END {print n + 0}')
+# grep -c exits 1 when it counts nothing, which pipefail would turn into a failure
+literal=$({ grep -ciF '$(gateway_system_name)' "$E2E_OUT/s4-frontend.log" "$E2E_OUT/s4-backend.log" || true; } | awk -F: '{n += $NF} END {print n + 0}')
 log "frontend -> backend Running: ${running:+yes}; backend saw the frontend: ${incoming:+yes}; unexpanded system names: $literal"
 {
   echo "S4 $(date -u +%FT%TZ) image=${IMAGE_TAG:-default} backend=$backend_host"
