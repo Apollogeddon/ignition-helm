@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# S6: the newer chart options together on a real gateway: a postStart lifecycle
+# S7: the newer chart options together on a real gateway: a postStart lifecycle
 # hook, a custom readiness command, the startupProbe, per-logger levels with
 # SQLite log limits, and emptyDir size limits. The gateway must become Ready
 # and each option must be in effect inside the pod.
@@ -11,10 +11,10 @@ STS=ignition-failover
 
 e2e_chart "$CHART"
 e2e_begin "${WATCH_URL:-}"
-ns=$(e2e_ns s6)
+ns=$(e2e_ns s7)
 e2e_require_memory "$ns"
 
-values="$E2E_OUT/s6-values.yaml"
+values="$E2E_OUT/s7-values.yaml"
 cat > "$values" <<'EOF'
 ignition:
   lifecycle:
@@ -35,7 +35,7 @@ ignition:
     logs: 256Mi
     temp: 512Mi
 EOF
-args=(s6 "$CHART" -n "$ns" -f "$(dirname "$0")/values/small.yaml" -f "$values")
+args=(s7 "$CHART" -n "$ns" -f "$(dirname "$0")/values/small.yaml" -f "$values")
 [ -z "${IMAGE_TAG:-}" ] || args+=(--set "image.tag=$IMAGE_TAG")
 e2e_render_check "${args[@]}"
 log "installing with lifecycle, custom readiness, startupProbe, loggers and size limits"
@@ -57,7 +57,7 @@ restarts=$(spec '{.status.containerStatuses[0].restartCount}')
 [ "$restarts" = 0 ] || failed="$failed restarted-$restarts"
 state=$(in_pod 'curl -s --max-time 3 http://localhost:8088/StatusPing')
 
-echo "S6 $(date -u +%FT%TZ) image=${IMAGE_TAG:-default}: ${state}; failed:${failed:- none}" | tee -a "$E2E_OUT/s6-summary.txt" >&2
-[ -z "$failed" ] || die "S6:$failed"
+echo "S7 $(date -u +%FT%TZ) image=${IMAGE_TAG:-default}: ${state}; failed:${failed:- none}" | tee -a "$E2E_OUT/s7-summary.txt" >&2
+[ -z "$failed" ] || die "S7:$failed"
 e2e_watch_check
-log "S6 passed"
+log "S7 passed"
