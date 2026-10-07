@@ -33,7 +33,7 @@ Status: **Live** verified on a real deployment, **Unit** helm-unittest only, **R
 | 1 | Install a standalone gateway | Live | Live | |
 | 2 | Auto-commission from env (EULA, admin, edition) | Live | Live | |
 | 3 | Data kept on the PVC across restarts | Live | Live | |
-| 4 | Upgrade from the previous release | Not tested | Live (S2) | from 4.1.0: fixed by shipping `shutdown.sh` as a no-op and upgrading in two steps (OnDelete, then RollingUpdate); see the failover README |
+| 4 | Upgrade from the previous release | Not tested | Live (S2) | from 4.0.0: needs a one-time `--cascade=orphan` delete of the StatefulSet (`serviceName` changed in 4.1.0); fixed the stale redundancy peer address that otherwise left both gateways Active (fix 36) |
 | 5 | No password-resetting preStop | Live | Live | `gwcmd.sh -p` resets the login on 8.1 and 8.3 |
 | 6 | Custom lifecycle hooks | Live | Live (S7) | |
 | 7 | Rolling update across a redundant pair in a safe order | Not tested | Live (S6) | with activeRouting, readiness also waits for the Backup to be in sync before the Master is replaced |
@@ -64,6 +64,7 @@ Status: **Live** verified on a real deployment, **Unit** helm-unittest only, **R
 | 32 | Scaleout Services, PDBs, NetworkPolicies and ServiceMonitors select only their component | Unit | Unit | fixed: all used the same selector, so the frontend Service also sent traffic to backend gateways |
 | 33 | Probes run the chart's `health-check.sh` | Live | Live | fixed: the default command was the bare name, which resolves to the Ignition image's own `health-check.sh` on PATH |
 | 34 | GAN certificate key rotation policy explicit | Unit | Unit | CA `Never` (keeps signed certificates valid), leaf `Always` |
+| 36 | Redundancy peer address follows the chart on every start | Unit (script) | Live (S2) | fixed: `redundancy.xml` was only written on first start, so after the 4.0.0 upgrade both gateways kept peer names that no longer resolved and stayed Active |
 | 35 | Scaleout backend named after its pod on the Gateway Network | Unit | Live (S4) | fixed: the backend had no `GATEWAY_SYSTEM_NAME`, so `-n "$(GATEWAY_SYSTEM_NAME)"` stayed literal and every backend gateway had that name |
 
 ## E2E scenarios
@@ -140,14 +141,15 @@ Redundant pair with activeRouting and restartOnRenewal. After the GAN certificat
 
 Repeated the first run and added 8.1.53 with wrapperLogToStdout=false: wrapper.log reappears (27 KB at start-up) and `kubectl logs` drops to 28 lines.
 
-### S2 upgrade from 4.1.0
+### S2 upgrade from 4.0.0 (8.3.1)
 
-A plain upgrade from 4.1.0 loses the gateway login: each 4.1.0 pod runs its preStop `/config/scripts/shutdown.sh` (`gwcmd.sh -p`) as it is replaced, and the new pod comes back `NEEDS_COMMISSIONING` (authSetup). Readiness kept that Backup un-Ready, so the rollout stopped before the Master.
+4.1.0 has been unpublished (its preStop reset the gateway login), so S2 now starts from 4.0.0 with its own probes and runs a plain `helm upgrade`. Three runs:
 
-Removing `shutdown.sh` from the chart does not help: the scripts Secret is written with `stringData`, and a key removed from `stringData` stays in the Secret's `data`. The chart now ships `shutdown.sh` as a no-op. With the two-step upgrade (OnDelete so only the Secret changes, wait until the running pods see the no-op, then RollingUpdate):
+1. Rejected: `spec.serviceName` changed from `ignition-failover` to `ignition-failover-headless` in 4.1.0 and cannot be changed on a StatefulSet (4.0.0 to 4.1.0 was already broken).
+2. With `kubectl delete sts --cascade=orphan` first, the upgrade rolled out but both gateways stayed Active for 12+ minutes: `redundancy.xml` on their volumes still named the peers `ignition-failover-N.ignition-failover`, which no longer resolve, and the chart only wrote it on first start.
+3. With `seed-redundancy.sh` now correcting the peer host and port on every start: Backup replaced at 01:46:35, Master at 01:49:02, pair healthy 344 s after the upgrade, longest time without an Active gateway 3 s.
 
-- Backup replaced at 23:56:45, Master at 23:59:15; pair healthy 474 s after the upgrade started
-- longest time without an Active gateway 5 s (without activeRouting the plain Service also sends requests to the cold Backup, so the total "not served" count includes that)
+The orphan step is in both chart READMEs ("Upgrading from 4.0.0 or earlier").
 
 ### S3 machine ID (8.1.53)
 
