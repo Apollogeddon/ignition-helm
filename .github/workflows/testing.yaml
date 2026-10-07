@@ -28,6 +28,17 @@ jobs:
       - name: Set up chart-testing
         uses: helm/chart-testing-action@v2.8.0
 
+      # Before "Update dependencies": that step rewrites Chart.lock when a
+      # release bumps ignition-common, and chart-testing would then see every
+      # chart as changed (and the release job would be skipped)
+      - name: Run chart-testing (list-changed)
+        id: list-changed
+        run: |
+          changed=$(ct list-changed --target-branch ${{ github.event.repository.default_branch || 'main' }})
+          if [[ -n "$changed" ]]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Update dependencies
         run: sh ./.github/scripts/ci/update-dependencies.sh
 
@@ -41,17 +52,10 @@ jobs:
       - name: Run script tests
         run: for t in test/scripts/*_test.sh; do bash "$t" || exit 1; done
 
-      - name: Run chart-testing (list-changed)
-        id: list-changed
-        run: |
-          changed=$(ct list-changed --target-branch ${{ github.event.repository.default_branch || 'main' }})
-          if [[ -n "$changed" ]]; then
-            echo "changed=true" >> "$GITHUB_OUTPUT"
-          fi
-
       - name: Run chart-testing (lint)
         if: steps.list-changed.outputs.changed == 'true'
-        run: ct lint --target-branch ${{ github.event.repository.default_branch || 'main' }}
+        # release-please sets chart versions, and the charts list no maintainers
+        run: ct lint --target-branch ${{ github.event.repository.default_branch || 'main' }} --check-version-increment=false --validate-maintainers=false
 
       - name: Create kind cluster
         if: steps.list-changed.outputs.changed == 'true'
