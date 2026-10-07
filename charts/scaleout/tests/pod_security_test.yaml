@@ -1,0 +1,24 @@
+suite: Ignition Scaleout Pod Security
+templates:
+  - templates/frontend/frontend-statefulset.yaml
+  - templates/backend/backend-statefulset.yaml
+tests:
+  - it: should run the frontend and its init container as non-root by default
+    template: templates/frontend/frontend-statefulset.yaml
+    asserts:
+      - equal:
+          path: spec.template.spec.securityContext.runAsNonRoot
+          value: true
+      - equal:
+          path: spec.template.spec.initContainers[0].securityContext.runAsNonRoot
+          value: true
+
+  - it: should run the backend and its init container as non-root by default
+    template: templates/backend/backend-statefulset.yaml
+    asserts:
+      - equal:
+          path: spec.template.spec.securityContext.runAsNonRoot
+          value: true
+      - equal:
+          path: spec.template.spec.initContainers[0].securityContext.runAsNonRoot
+          value: true
