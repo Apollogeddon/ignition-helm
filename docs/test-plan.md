@@ -9,7 +9,7 @@ How the `ignition-failover` and `ignition-scaleout` charts are tested, what each
 | Unit | `charts/*/tests` (helm-unittest, run in CI) | Rendering of every option |
 | Staging e2e | `test/e2e` scripts against a shared single-node cluster | Real gateways on Ignition 8.1 and 8.3: health, redundancy, upgrades, ingress, failover timing |
 | Script | `test/scripts` (run in CI) | The shell scripts the chart ships (`health-check.sh`, `active-routing.sh`, `certify.sh`), run against stub `curl`/`kubectl` |
-| CI e2e | `.github/workflows/e2e.yaml`: disposable three-node kind cluster with cert-manager, Contour and Chaos Mesh (manual or weekly) | The staging scenarios plus what a shared single node can't do safely: network partitions (S10). kind's default CNI enforces NetworkPolicy, which `testing.yaml` already checks |
+| CI e2e | `.github/workflows/e2e.yaml`: disposable three-node kind cluster with cert-manager, Contour and Chaos Mesh (manual only; a full run takes about two hours) | The staging scenarios plus what a shared single node can't do safely: network partitions (S10). kind's default CNI enforces NetworkPolicy, which `testing.yaml` already checks |
 | Manual | Testing environment / vendor | Avi/AKO ingress behaviour; licence binding to the machine ID |
 
 ## Staging guardrails
