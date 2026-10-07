@@ -1,26 +1,26 @@
 #!/usr/bin/env bash
-# S1: redundant pair behind the chart Ingress. Records per-second availability
+# S01: redundant pair behind the chart Ingress. Records per-second availability
 # through the Ingress and the NodePort while the Master is deleted (graceful)
 # and then while its JVM is killed (crash).
 #
 # Env: NODE_IP (a node address), INGRESS_PORT (ingress controller HTTP NodePort),
 # INGRESS_CLASS (default contour), WATCH_URL (optional), IMAGE_TAG (default chart appVersion),
-# ACTIVE_ROUTING (true: enable ignition.activeRouting; results are named s1-active-*)
+# ACTIVE_ROUTING (true: enable ignition.activeRouting; results are named s01-active-*)
 source "$(dirname "$0")/lib.sh"
 : "${NODE_IP:?}" "${INGRESS_PORT:?}"
 INGRESS_CLASS="${INGRESS_CLASS:-contour}"
 CHART="$(dirname "$0")/../../charts/failover"
-HOST="s1.e2e.invalid"
+HOST="s01.e2e.invalid"
 OBSERVE="${OBSERVE:-180}"
 ACTIVE_ROUTING="${ACTIVE_ROUTING:-false}"
-tag=s1; [ "$ACTIVE_ROUTING" != true ] || tag=s1-active
+tag=s01; [ "$ACTIVE_ROUTING" != true ] || tag=s01-active
 
 e2e_chart "$CHART"
 e2e_begin "${WATCH_URL:-}"
-ns=$(e2e_ns s1)
+ns=$(e2e_ns s01)
 e2e_require_memory "$ns"
 
-args=(s1 "$CHART" -n "$ns" -f "$(dirname "$0")/values/small.yaml"
+args=(s01 "$CHART" -n "$ns" -f "$(dirname "$0")/values/small.yaml"
   --set ignition.redundancy.enabled=true
   --set ignition.ingress.enabled=true
   --set "ignition.ingress.className=$INGRESS_CLASS"
@@ -107,4 +107,4 @@ wait_pair
 echo "crash (force delete master $master):" >> "$E2E_OUT/$tag-summary.txt"
 observe crash kubectl -n "$ns" delete pod "$master" --grace-period=0 --force --wait=false
 wait_pair
-log "S1 done; results in $E2E_OUT"
+log "S01 done; results in $E2E_OUT"
