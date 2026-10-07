@@ -33,13 +33,13 @@ Status: **Live** verified on a real deployment, **Unit** helm-unittest only, **R
 | 1 | Install a standalone gateway | Live | Live | |
 | 2 | Auto-commission from env (EULA, admin, edition) | Live | Live | |
 | 3 | Data kept on the PVC across restarts | Live | Live | |
-| 4 | Upgrade from the previous release | Not tested | Gap (S2) | from 4.1.0 the old preStop (`gwcmd.sh -p`) runs as each 4.1.0 pod is replaced and resets the admin login; the new pod needs commissioning (authSetup). Readiness held it un-Ready and the rollout stopped before the Master. Needs an upgrade procedure |
+| 4 | Upgrade from the previous release | Not tested | Live (S2) | from 4.1.0: fixed by shipping `shutdown.sh` as a no-op and upgrading in two steps (OnDelete, then RollingUpdate); see the failover README |
 | 5 | No password-resetting preStop | Live | Live | `gwcmd.sh -p` resets the login on 8.1 and 8.3 |
-| 6 | Custom lifecycle hooks | Live | Unit | |
+| 6 | Custom lifecycle hooks | Live | Live (S7) | |
 | 7 | Rolling update across a redundant pair in a safe order | Not tested | Live (S6) | with activeRouting, readiness also waits for the Backup to be in sync before the Master is replaced |
 | 8 | Health check reflects gateway state | Live | Live | `/StatusPing`; `/main/system/StatusPing` is 404 on 8.3.1 and redirects to a 404 on 8.1 |
-| 9 | Configured probe commands honoured | Live | Unit | |
-| 10 | startupProbe | Live | Unit | |
+| 9 | Configured probe commands honoured | Live | Live (S7) | |
+| 10 | startupProbe | Live | Live (S7) | |
 | 11 | Uncommissioned gateway not reported healthy | Live (S8) | Live (S8) | fixed: readiness (`health-check.sh -r`) fails on `details: COMMISSIONING`; liveness does not, so no restart loop |
 | 12 | Master/Backup pairing over GAN TLS, sync Good | Not tested | Live | |
 | 13 | Backup takes over when the Master goes away | Not tested | Live | S1: graceful and crash (force delete); a hung Master needs a partition test (CI) |
@@ -49,15 +49,15 @@ Status: **Live** verified on a real deployment, **Unit** helm-unittest only, **R
 | 17 | PodDisruptionBudget protects the pair | Not tested | Live | |
 | 18 | Service (NodePort/ClusterIP/LB) serves traffic | Not tested | Live (NodePort) | LoadBalancer needs MetalLB (CI) |
 | 19 | Chart Ingress routes to the gateway | Not tested | Live | S1 via Contour with `ingress.className` |
-| 20 | Web TLS (`ssl.enabled`) | Not tested | Not tested | |
+| 20 | Web TLS (`ssl.enabled`) | Not tested | Live (S5) | |
 | 21 | NetworkPolicy and extraIngress enforced | Rendered | CI | `testing.yaml` checks cross-namespace denial on kind (kindnet enforces NetworkPolicy) |
 | 22 | Log files cannot grow without bound | Live (S9) | Live (S9) | fixed: `logging.wrapperLogToStdout` (default on) appends `wrapper.logfile=/dev/stdout`; no `wrapper.log`, gateway log in `kubectl logs` |
-| 23 | Per-logger levels, SQLite limits | Live | Unit | |
-| 24 | emptyDir size limits | Live | Unit | |
+| 23 | Per-logger levels, SQLite limits | Live | Live (S7) | |
+| 24 | emptyDir size limits | Live | Live (S7) | |
 | 25 | GAN certificates issued | Not tested | Live | |
 | 26 | GAN rotation CronJob | Not tested | Unit | superseded by restartOnRenewal (the init container re-reads certificates on every start) |
 | 27 | Renewed certificate picked up (restart) | Unit | Live (S6) | fixed with `certManager.restartOnRenewal`: rolling restart when the certificate secrets change |
-| 28 | Stable machine ID via extraVolumes | Not tested | Not tested | |
+| 28 | Stable machine ID via extraVolumes | Live (S3) | Not tested | licence binding still to be checked manually |
 | 29 | Scaleout frontend and backend run | Not tested | Live | |
 | 30 | Scaleout frontend connects to backend over GAN | Not tested | Not tested | |
 | 31 | External modules, ServiceMonitor, restore, local mounts, OnDelete, HPA | Not tested | Unit | |
@@ -139,10 +139,27 @@ Redundant pair with activeRouting and restartOnRenewal. After the GAN certificat
 
 Repeated the first run and added 8.1.53 with wrapperLogToStdout=false: wrapper.log reappears (27 KB at start-up) and `kubectl logs` drops to 28 lines.
 
-### S2 upgrade from 4.1.0 (stopped)
+### S2 upgrade from 4.1.0
 
-The 4.1.0 pair (probes off) was healthy. On upgrade the Backup was replaced first as expected, but came back `NEEDS_COMMISSIONING` ("Resources needing commissioning: authSetup"): the terminating 4.1.0 pod ran its preStop `gwcmd.sh -p`, which resets the gateway login. The readiness check kept the Backup un-Ready (still commissioning), so the rollout never reached the Master, which kept serving on 4.1.0. Any pod created by 4.1.0 is affected when it is replaced, whatever it is upgraded to.
+A plain upgrade from 4.1.0 loses the gateway login: each 4.1.0 pod runs its preStop `/config/scripts/shutdown.sh` (`gwcmd.sh -p`) as it is replaced, and the new pod comes back `NEEDS_COMMISSIONING` (authSetup). Readiness kept that Backup un-Ready, so the rollout stopped before the Master.
+
+Removing `shutdown.sh` from the chart does not help: the scripts Secret is written with `stringData`, and a key removed from `stringData` stays in the Secret's `data`. The chart now ships `shutdown.sh` as a no-op. With the two-step upgrade (OnDelete so only the Secret changes, wait until the running pods see the no-op, then RollingUpdate):
+
+- Backup replaced at 23:56:45, Master at 23:59:15; pair healthy 474 s after the upgrade started
+- longest time without an Active gateway 5 s (without activeRouting the plain Service also sends requests to the cold Backup, so the total "not served" count includes that)
+
+### S3 machine ID (8.1.53)
+
+The machine ID mounted from a ConfigMap was in place on first start and after the pod was replaced; the gateway was RUNNING both times. An earlier failure was another test run sharing the namespace.
+
+### S5 web TLS (8.3.1)
+
+The gateway served the certificate issued from the chart's CA (`CN=s5-web.e2e.invalid`) on 8043 and reported RUNNING.
+
+### S7 chart options (8.3.1)
+
+postStart hook, custom readiness command, startupProbe, per-logger levels, SQLite `entryLimit` and emptyDir size limits together: all in effect in the pod, `gateway.SslManager` no longer forced to DEBUG, Ready with no restarts.
 
 ### Not yet run
 
-S3 (failed on a Git Bash path rewrite in the script, since fixed), S5, S7, S4 (not written), S10 and the CI workflow (need the branch pushed).
+S4 (not written), S10 and the CI workflow (need the branch pushed).
