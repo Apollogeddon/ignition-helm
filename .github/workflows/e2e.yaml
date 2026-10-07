@@ -1,13 +1,12 @@
 name: E2E
 
+# Manual only: a full run takes about two hours
 on:
   workflow_dispatch:
     inputs:
       scenarios:
         description: Scenarios to run (test/e2e script names without .sh)
         default: s8-uncommissioned s9-wrapper-log s1-ingress-failover s6-restart-on-renewal s10-partition
-  schedule:
-    - cron: "0 17 * * 0"
 
 jobs:
   e2e:
