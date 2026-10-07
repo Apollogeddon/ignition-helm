@@ -51,6 +51,15 @@ helm install my-ignition ignition-charts/ignition-failover \
 * **Health Checks and Shutdown:** Probes check `/StatusPing` for `RUNNING`, which works on Ignition 8.1 and 8.3. Readiness (`health-check.sh -r`) also fails while the gateway is still commissioning; liveness does not, so a gateway stuck commissioning is not restarted in a loop. There is no default `preStop` hook: on SIGTERM the gateway shuts down gracefully, and `gwcmd.sh -p` (previously used here) resets the gateway login password.
 * **Zero-Downtime Cert Rotation:** Enable `certManager.rotation.enabled` to spin up smart Kubernetes CronJobs that securely rotate the Ignition instances' PKI trust fabric under-the-hood before certificate expiration.
 
+## Upgrading from 4.1.0
+
+Pods created by chart 4.1.0 run `/config/scripts/shutdown.sh` as their preStop hook, and in 4.1.0 that script calls `gwcmd.sh -p`, which resets the gateway login. This chart ships `shutdown.sh` as a no-op, but running pods only see it once the scripts Secret has refreshed in their volume, so upgrade in two steps:
+
+1. `helm upgrade ... --set ignition.updateStrategy.type=OnDelete` (only the Secret changes; no pod restarts)
+2. Wait until each pod's `/config/scripts/shutdown.sh` no longer calls `gwcmd` (usually 1-2 minutes)
+3. `helm upgrade ...` again with the default `RollingUpdate`; the Backup is replaced first
+
+
 ## Configuration
 
 
