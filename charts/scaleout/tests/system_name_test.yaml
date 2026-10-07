@@ -1,0 +1,26 @@
+suite: Ignition Scaleout Gateway System Name
+templates:
+  - templates/frontend/frontend-statefulset.yaml
+  - templates/backend/backend-statefulset.yaml
+tests:
+  - it: should define GATEWAY_SYSTEM_NAME for the frontend args
+    template: templates/frontend/frontend-statefulset.yaml
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: GATEWAY_SYSTEM_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+
+  - it: should define GATEWAY_SYSTEM_NAME for the backend args
+    template: templates/backend/backend-statefulset.yaml
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: GATEWAY_SYSTEM_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
