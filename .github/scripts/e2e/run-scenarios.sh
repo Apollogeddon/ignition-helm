@@ -28,6 +28,9 @@ for s in ${SCENARIOS}; do
       run "$s:active" ACTIVE_ROUTING=true ;;
     s01-ingress-failover:active) run "$s" ACTIVE_ROUTING=true ;;
     s02-upgrade:active) run "$s" UPGRADE_SET=ignition.activeRouting.enabled=true ;;
+    s02-upgrade:scaleout) run "$s" CHART_KIND=scaleout ;;
+    # 3.1.0 installed with its own applicationName, then activeRouting
+    s02-upgrade:wrapper) run "$s" FROM_VERSION=3.1.0 APP_NAME=my-gateway \n      UPGRADE_SET=ignition.activeRouting.enabled=true ;;
     *) run "$s" ;;
   esac
 done
