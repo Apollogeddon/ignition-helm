@@ -9,11 +9,18 @@ while [ "$(date +%s)" -lt "$end" ]; do
   for target in "$@"; do
     i=$((i + 1)); name=${target%%=*}; url=${target#*=}
     case "$url" in
-      */system/gwinfo) ( b=$(curl -sk --max-time 0.9 ${RECORD_CURL_ARGS:-} "$url" || true)
-           # no answer is "down"; a gateway without redundancy is "Independent"
-           s=$(tr ';' '\n' <<< "$b" | grep -E '^(RedundancyStatus|RedundantNodeActiveStatus)=' | sed 's/^[^=]*=//' | paste -sd/ -)
-           [ -n "$b" ] || s=down
-           echo "$name=${s:-Independent}" > "$tmp/$i" ) & ;;
+      # no answer is "down"; a reply that is not gwinfo (e.g. the ingress
+      # controller's 503 while a Service has no endpoints) is "error:<code>";
+      # gwinfo without redundancy fields is "Independent"
+      */system/gwinfo) ( r=$(curl -sk --max-time 0.9 ${RECORD_CURL_ARGS:-} -w '\n%{http_code}' "$url" || true)
+           code=${r##*$'\n'}; b=${r%$'\n'*}
+           if [ -z "$code" ] || [ "$code" = 000 ]; then s=down
+           elif [[ "$b" != *ContextStatus=* ]]; then s="error:$code"
+           else
+             s=$(tr ';' '\n' <<< "$b" | grep -E '^(RedundancyStatus|RedundantNodeActiveStatus)=' | sed 's/^[^=]*=//' | paste -sd/ -)
+             s=${s:-Independent}
+           fi
+           echo "$name=$s" > "$tmp/$i" ) & ;;
       *) ( echo "$name=$(curl -sk --max-time 0.9 ${RECORD_CURL_ARGS:-} -o /dev/null -w '%{http_code}' "$url")" > "$tmp/$i" ) & ;;
     esac
   done
