@@ -17,8 +17,9 @@
 # appVersion), APP_NAME (applicationName, e.g. my-gateway), FROM_SET
 # (extra --set for the starting install, e.g.
 # ignition.securityContext.runAsUser=2003), UPGRADE_SET (extra
-# --set for the upgrade, e.g. ignition.activeRouting.enabled=true), WATCH_URL
-# (optional)
+# --set for the upgrade, e.g. ignition.activeRouting.enabled=true), THEN_SET
+# (extra --set for a second upgrade once the first is healthy, e.g. enabling
+# activeRouting after leaving 4.0.0 or earlier), WATCH_URL (optional)
 source "$(dirname "$0")/lib.sh"
 : "${NODE_IP:?}"
 CHART_KIND="${CHART_KIND:-failover}"
@@ -121,16 +122,38 @@ if [ "$svc" != "$front" ]; then
   "$(dirname "$0")/record.sh" 1200 "$E2E_OUT/$tag-upgrade.log" via="http://$NODE_IP:$nodeport/system/gwinfo" &
   rec=$!
 fi
-for sts in "${statefulsets[@]}"; do
-  for _ in $(seq 240); do
-    read -r cur upd ready total <<< "$(kubectl -n "$ns" get sts "$sts" \
-      -o jsonpath='{.status.currentRevision} {.status.updateRevision} {.status.readyReplicas} {.status.replicas}' || true)"
-    [ -n "$cur" ] && [ "$cur" = "$upd" ] && [ "${ready:-0}" = "${total:-x}" ] && break
-    sleep 5
+# rolled_out: wait for every StatefulSet to roll out, then for the pair or the
+# frontend's Gateway Network connection
+rolled_out() {
+  local sts cur upd ready total
+  for sts in "${statefulsets[@]}"; do
+    for _ in $(seq 240); do
+      read -r cur upd ready total <<< "$(kubectl -n "$ns" get sts "$sts" \
+        -o jsonpath='{.status.currentRevision} {.status.updateRevision} {.status.readyReplicas} {.status.replicas}' || true)"
+      [ -n "$cur" ] && [ "$cur" = "$upd" ] && [ "${ready:-0}" = "${total:-x}" ] && break
+      sleep 5
+    done
   done
-done
-if [ "$CHART_KIND" = failover ]; then wait_pair; else wait_frontend; fi
+  if [ "$CHART_KIND" = failover ]; then wait_pair; else wait_frontend; fi
+}
+rolled_out
 log "upgrade rolled out and healthy in $(( $(date +%s) - start ))s"
+if [ -n "${THEN_SET:-}" ]; then
+  for s in $THEN_SET; do upgrade+=(--set "$s"); done
+  e2e_render_check "${upgrade[@]}"
+  start2=$(date +%s)
+  log "second upgrade (${THEN_SET})"
+  e2e_install "${upgrade[@]}"
+  if [[ " $THEN_SET " == *" ignition.activeRouting.enabled=true "* ]]; then
+    kill "$rec" 2>/dev/null; wait "$rec" 2>/dev/null || true
+    nodeport=$(kubectl -n "$ns" get svc "$NAME-active" -o jsonpath='{.spec.ports[?(@.name=="http")].nodePort}')
+    "$(dirname "$0")/record.sh" 1200 "$E2E_OUT/$tag-upgrade.log" via="http://$NODE_IP:$nodeport/system/gwinfo" &
+    rec=$!
+  fi
+  sleep 10
+  rolled_out
+  log "second upgrade rolled out and healthy in $(( $(date +%s) - start2 ))s"
+fi
 sleep 30
 kill "$rec" 2>/dev/null; wait "$rec" 2>/dev/null || true
 
@@ -148,7 +171,7 @@ if [ "$CHART_KIND" = failover ]; then
 fi
 
 {
-  echo "S02 $(date -u +%FT%TZ) chart=$CHART_KIND from=$FROM_VERSION name=$NAME image=${IMAGE_TAG:-default} from-set=${FROM_SET:-none} set=${UPGRADE_SET:-none}"
+  echo "S02 $(date -u +%FT%TZ) chart=$CHART_KIND from=$FROM_VERSION name=$NAME image=${IMAGE_TAG:-default} from-set=${FROM_SET:-none} set=${UPGRADE_SET:-none} then=${THEN_SET:-none}"
   awk '{split($2, v, "="); if (v[2] ~ /\/Active$/) {ok++; run = 0} else {bad++; run++; if (run > max) max = run}}
     END {printf "  served %ds, not served %ds, longest gap %ds\n", ok, bad, max}' "$E2E_OUT/$tag-upgrade.log"
   [ -z "$order" ] || echo "  $order"
