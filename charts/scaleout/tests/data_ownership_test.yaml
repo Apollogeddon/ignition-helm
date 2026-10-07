@@ -1,0 +1,21 @@
+suite: Ignition Scaleout Data Ownership Fix
+templates:
+  - templates/backend/backend-statefulset.yaml
+  - templates/frontend/frontend-statefulset.yaml
+tests:
+  - it: should fix the backend volume when asked
+    template: templates/backend/backend-statefulset.yaml
+    set:
+      backend:
+        fixDataOwnership: true
+    asserts:
+      - equal:
+          path: spec.template.spec.initContainers[0].name
+          value: fix-data-ownership
+
+  - it: should leave the frontend alone unless asked
+    template: templates/frontend/frontend-statefulset.yaml
+    asserts:
+      - equal:
+          path: spec.template.spec.initContainers[0].name
+          value: preconfigure

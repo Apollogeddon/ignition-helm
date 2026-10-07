@@ -55,6 +55,8 @@ helm upgrade <release> ignition-charts/ignition-scaleout -n <namespace> ...
 
 (Tested end to end for the failover chart; the scaleout steps are the same.)
 
+Charts up to 3.1.0 ran the gateway as root by default, so on storage that does not apply `fsGroup` (e.g. local-path) their data volumes are owned by root and the upgraded gateway, which runs as `securityContext.runAsUser` (2003), cannot update them: the `preconfigure` init container fails with `Permission denied`. If your 3.x install did not set `securityContext.runAsUser`, also set `frontend.fixDataOwnership` and `backend.fixDataOwnership=true` for the upgrade (an init container chowns the volume as root; it needs the baseline Pod Security level), and set it back to `false` once the pods are running.
+
 ## Configuration
 
 

@@ -62,6 +62,8 @@ helm upgrade <release> ignition-charts/ignition-failover -n <namespace> ...
 
 On start the gateways apply the chart's redundancy settings to their volume, including the peer address under the new Service name, so the pair reconnects once both pods have been replaced.
 
+Charts up to 3.1.0 ran the gateway as root by default, so on storage that does not apply `fsGroup` (e.g. local-path) their data volumes are owned by root and the upgraded gateway, which runs as `securityContext.runAsUser` (2003), cannot update them: the `preconfigure` init container fails with `Permission denied`. If your 3.x install did not set `securityContext.runAsUser`, also set `ignition.fixDataOwnership=true` for the upgrade (an init container chowns the volume as root; it needs the baseline Pod Security level), and set it back to `false` once the pods are running.
+
 ## Configuration
 
 
@@ -80,6 +82,7 @@ The following table lists the configurable parameters of the chart and their def
 | `ignition.service.nodePorts` | Optional static NodePorts (http, https, gan). | `{}` |
 | `ignition.activeRouting.enabled` | Route user traffic only to the Active gateway of a redundant pair: a labeller keeps `redundancy-active=true` on the Active pod, the `<name>-active` Service (which takes the configured service type, nodePorts and annotations) selects it, and the Ingress points at it. Readiness also requires a Backup to be in sync. | `false` |
 | `certManager.restartOnRenewal.enabled` | CronJob that starts a rolling restart (Backup first) when the GAN or web certificate secrets change, so renewed certificates are loaded. | `false` |
+| `ignition.fixDataOwnership` | Chown the data volume to the gateway user on start (an init container running as root). Only for upgrades from charts up to 3.1.0 installed with the default root user. | `false` |
 | `ignition.ingress.enabled` | Enable Ingress resource generation. | `false` |
 | `ignition.ingress.className` | IngressClass name, e.g. `contour`; empty uses the cluster default. | `""` |
 | `certManager.issuer.name` | Name of the Cert-Manager Issuer to use. | `cluster-issuer` |
