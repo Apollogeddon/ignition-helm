@@ -4,22 +4,16 @@
 # (pod 0), the pair must come back healthy, and the time user traffic is not
 # served by an Active gateway is recorded through the NodePort.
 #
-# Env: NODE_IP, FROM_VERSION (default 4.1.0), CHART_REPO (default the published
-# repo), IMAGE_TAG (default chart appVersion), UPGRADE_SET (extra --set for the
-# upgrade, e.g. ignition.activeRouting.enabled=true), FROM_SET (extra --set for
-# the starting install; by default 4.1.0's probes are turned off because they
-# check /main/system/StatusPing, which a commissioned 8.3 answers with 404, so
-# the pair never forms), UPGRADE_MODE (staged, the default: upgrade with
-# OnDelete first so the 4.1.0 preStop can no longer reset the login, then roll;
-# direct: a plain upgrade, which resets the login on 4.1.0 pods), WATCH_URL (optional)
+# Env: NODE_IP, FROM_VERSION (default 4.0.0), CHART_REPO (default the published
+# repo), IMAGE_TAG (default chart appVersion), FROM_SET (extra --set for the
+# starting install), UPGRADE_SET (extra --set for the upgrade, e.g.
+# ignition.activeRouting.enabled=true), WATCH_URL (optional)
 source "$(dirname "$0")/lib.sh"
 : "${NODE_IP:?}"
 CHART="$(dirname "$0")/../../charts/failover"
-FROM_VERSION="${FROM_VERSION:-4.1.0}"
+FROM_VERSION="${FROM_VERSION:-4.0.0}"
 CHART_REPO="${CHART_REPO:-https://apollogeddon.github.io/ignition-helm}"
 STS=ignition-failover
-UPGRADE_MODE="${UPGRADE_MODE:-staged}"
-FROM_SET="${FROM_SET-ignition.livenessProbe.enabled=false ignition.readinessProbe.enabled=false}"
 
 e2e_chart "$CHART"
 e2e_begin "${WATCH_URL:-}"
@@ -31,7 +25,7 @@ common=(-n "$ns" -f "$(dirname "$0")/values/small.yaml" --set ignition.redundanc
 [ -z "${IMAGE_TAG:-}" ] || common+=(--set "image.tag=$IMAGE_TAG")
 
 from=(s2 ignition-failover --repo "$CHART_REPO" --version "$FROM_VERSION" "${common[@]}")
-for s in $FROM_SET; do from+=(--set "$s"); done
+for s in ${FROM_SET:-}; do from+=(--set "$s"); done
 e2e_render_check "${from[@]}"
 log "installing $FROM_VERSION from $CHART_REPO"
 e2e_install "${from[@]}"
@@ -61,26 +55,6 @@ nodeport=$(kubectl -n "$ns" get svc $STS -o jsonpath='{.spec.ports[?(@.name=="ht
 rec=$!
 sleep 5
 start=$(date +%s)
-if [ "$UPGRADE_MODE" = staged ]; then
-  # 4.1.0 pods run /config/scripts/shutdown.sh (gwcmd.sh -p, which resets the
-  # gateway login) as their preStop hook. Upgrade with OnDelete first so only
-  # the scripts Secret changes (the chart now ships shutdown.sh as a no-op);
-  # once the running pods' volume has the no-op, the rollout is safe.
-  log "staged upgrade 1/2: OnDelete, waiting for the no-op shutdown.sh to reach the running pods"
-  e2e_install "${upgrade[@]}" --set ignition.updateStrategy.type=OnDelete
-  # count only pods positively confirmed to have the no-op (a failed exec
-  # during an API drop must not count as done)
-  for _ in $(seq 60); do
-    clean=0
-    for p in $STS-0 $STS-1; do
-      kubectl -n "$ns" exec "$p" -c gateway -- sh -c 'test -f /config/scripts/shutdown.sh && ! grep -v "^ *#" /config/scripts/shutdown.sh | grep -q gwcmd' 2>/dev/null && clean=$((clean + 1))
-    done
-    [ "$clean" -eq 2 ] && break
-    sleep 5
-  done
-  [ "$clean" -eq 2 ] || die "the running pods still have the old shutdown.sh after 5 minutes"
-  log "staged upgrade 2/2: RollingUpdate"
-fi
 log "upgrading to the working tree ${UPGRADE_SET:+(${UPGRADE_SET})}"
 e2e_install "${upgrade[@]}"
 # the -active Service takes over the configured nodePorts only if they are
@@ -108,7 +82,7 @@ t1=$(kubectl -n "$ns" get pod $STS-1 -o jsonpath='{.metadata.creationTimestamp}'
 [[ "$t1" < "$t0" ]] || die "Master (pod 0) was replaced before the Backup (pod 1)"
 
 {
-  echo "S2 $(date -u +%FT%TZ) from=$FROM_VERSION mode=$UPGRADE_MODE image=${IMAGE_TAG:-default} set=${UPGRADE_SET:-none}"
+  echo "S2 $(date -u +%FT%TZ) from=$FROM_VERSION image=${IMAGE_TAG:-default} set=${UPGRADE_SET:-none}"
   awk '{split($2, v, "="); if (v[2] ~ /\/Active$/) {ok++; run = 0} else {bad++; run++; if (run > max) max = run}}
     END {printf "  served %ds, not served %ds, longest gap %ds\n", ok, bad, max}' "$E2E_OUT/s2-upgrade.log"
   echo "  pod 1 replaced at $t1, pod 0 at $t0"
