@@ -64,6 +64,7 @@ Status: **Live** verified on a real deployment, **Unit** helm-unittest only, **R
 | 33 | Probes run the chart's `health-check.sh` | Live | Live | fixed: the default command was the bare name, which resolves to the Ignition image's own `health-check.sh` on PATH |
 | 34 | GAN certificate key rotation policy explicit | Unit | Unit | CA `Never` (keeps signed certificates valid), leaf `Always` |
 | 36 | Redundancy peer address follows the chart on every start | Unit (script) | Live (S2) | fixed: `redundancy.xml` was only written on first start, so after the 4.0.0 upgrade both gateways kept peer names that no longer resolved and stayed Active |
+| 37 | Redundancy role and settings follow values on existing installs (on, off, value changes) | Live (S3) | Live (S3) | fixed: `redundancy.xml` was only written on first start, so turning redundancy on or off, or changing a redundancy value, did nothing to an existing install (OMCS used an admin-UI job to work around it) |
 | 35 | Scaleout backend named after its pod on the Gateway Network | Unit | Live (S4) | fixed: the backend had no `GATEWAY_SYSTEM_NAME`, so `-n "$(GATEWAY_SYSTEM_NAME)"` stayed literal and every backend gateway had that name |
 
 ## E2E scenarios
@@ -74,7 +75,7 @@ Scripts in `test/e2e` (see its README). Staging runs them on the shared single-n
 | --- | --- | --- | --- | --- |
 | S1 | Ingress plus failover: per-second availability through the Ingress and NodePort while the Master is deleted, then force-deleted; with and without activeRouting | 8.3.1 | staging, CI | 13, 14, 15, 18, 19 |
 | S2 | Redundant upgrade from the released chart, with and without activeRouting | 8.3.1 | staging, CI | 4, 7 |
-| S3 | Redundancy toggle: standalone to pair, a redundancy value change, back to standalone, and re-enabled, with the role and settings applied on restart | 8.1.53, 8.3.1 | planned | |
+| S3 | Redundancy toggle: standalone to pair, a redundancy value change, back to standalone, and re-enabled, with the role and settings applied on restart | 8.1.53, 8.3.1 | staging, CI | 37 |
 | S4 | Scaleout GAN connection, checked from the gateway logs | 8.3.1 | staging, CI | 30, 35 |
 | S5 | Web TLS with a certificate issued from the chart's CA | 8.3.1 | staging, CI | 20 |
 | S6 | Restart on certificate renewal: Backup restarted before Master | 8.3.1 | staging, CI | 27 |
@@ -161,6 +162,20 @@ postStart hook, custom readiness command, startupProbe, per-logger levels, SQLit
 ### S4 scaleout Gateway Network (8.3.1)
 
 The frontend's outgoing connection to the backend went Faulted while the backend was still starting, then Running once it was up; the backend registered the incoming connection from `ignition-scaleout-frontend-0`. The first run showed the backend named `$(gateway_system_name)` on the Gateway Network (fix 35); after the fix it is `ignition-scaleout-backend-0` and S4 passes.
+
+### S3 redundancy toggle (8.1.53 and 8.3.1)
+
+`seed-redundancy.sh` now runs on every start and sets every redundancy key the chart renders (role, peer address, timeouts, recovery mode); with one replica it sets the role to Independent. A `checksum/redundancy` pod annotation restarts the gateways when redundancy values change. All checks passed on both versions:
+
+| Step | 8.1.53 | 8.3.1 |
+| --- | --- | --- |
+| 1. standalone | Independent (Ignition writes its own redundancy.xml as Independent) | same |
+| 2. redundancy on | pair formed; longest unserved 1 s; init log: role Independent to Master, peer host set, missing keys added | pair formed; 2 s |
+| 3. masterRecoveryMode=Manual | both pods restarted, both files Manual, pair healthy; 1 s | same; 3 s |
+| 4. redundancy off | pod 1 removed, pod 0 Master to Independent and still Independent a minute later; 56 s unserved (the only gateway restarts) | same; 48 s |
+| 5. redundancy on again (Backup volume kept) | pair formed; 1 s | pair formed; 3 s |
+
+The run ended on the staging watch guardrail: the dashboard NodePort did not answer in two short bursts (04:05:22-37 and 04:08:42-45, the second with an API connection drop on the test machine). The staging labeller made no routing change and no staging pod restarted, so these were most likely the test machine's network rather than staging.
 
 ### Not yet run
 
