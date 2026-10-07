@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.2.1](https://github.com/Apollogeddon/ignition-helm/compare/ignition-scaleout-v4.2.0...ignition-scaleout-v4.2.1) (2026-10-07)
+
+
+### Bug Fixes
+
+* **charts:** End values.yaml with a newline for yamllint ([e23de78](https://github.com/Apollogeddon/ignition-helm/commit/e23de7870de0a7689de6d6636b3846efe9770206))
+
 ## [4.2.0](https://github.com/Apollogeddon/ignition-helm/compare/ignition-scaleout-4.1.0...ignition-scaleout-v4.2.0) (2026-10-07)
 
 
