@@ -59,11 +59,12 @@ Status: **Live** verified on a real deployment, **Unit** helm-unittest only, **R
 | 27 | Renewed certificate picked up (restart) | Unit | Live (S6) | fixed with `certManager.restartOnRenewal`: rolling restart when the certificate secrets change |
 | 28 | Stable machine ID via extraVolumes | Live (S3) | Not tested | licence binding still to be checked manually |
 | 29 | Scaleout frontend and backend run | Not tested | Live | |
-| 30 | Scaleout frontend connects to backend over GAN | Not tested | Not tested | |
+| 30 | Scaleout frontend connects to backend over GAN | Not tested | Live (S4) | |
 | 31 | External modules, ServiceMonitor, restore, local mounts, OnDelete, HPA | Not tested | Unit | |
 | 32 | Scaleout Services, PDBs, NetworkPolicies and ServiceMonitors select only their component | Unit | Unit | fixed: all used the same selector, so the frontend Service also sent traffic to backend gateways |
 | 33 | Probes run the chart's `health-check.sh` | Live | Live | fixed: the default command was the bare name, which resolves to the Ignition image's own `health-check.sh` on PATH |
 | 34 | GAN certificate key rotation policy explicit | Unit | Unit | CA `Never` (keeps signed certificates valid), leaf `Always` |
+| 35 | Scaleout backend named after its pod on the Gateway Network | Unit | Live (S4) | fixed: the backend had no `GATEWAY_SYSTEM_NAME`, so `-n "$(GATEWAY_SYSTEM_NAME)"` stayed literal and every backend gateway had that name |
 
 ## E2E scenarios
 
@@ -74,7 +75,7 @@ Scripts in `test/e2e` (see its README). Staging runs them on the shared single-n
 | S1 | Ingress plus failover: per-second availability through the Ingress and NodePort while the Master is deleted, then force-deleted; with and without activeRouting | 8.3.1 | staging, CI | 13, 14, 15, 18, 19 |
 | S2 | Redundant upgrade from the released chart, with and without activeRouting | 8.3.1 | staging, CI | 4, 7 |
 | S3 | Machine ID from a ConfigMap via extraVolumes, kept across pod replacement | 8.1.53 | staging, CI | 28 |
-| S4 | Scaleout GAN connection | 8.3.1 | not written yet | 30 |
+| S4 | Scaleout GAN connection, checked from the gateway logs | 8.3.1 | staging, CI | 30, 35 |
 | S5 | Web TLS with a certificate issued from the chart's CA | 8.3.1 | staging, CI | 20 |
 | S6 | Restart on certificate renewal: Backup restarted before Master | 8.3.1 | staging, CI | 27 |
 | S7 | Lifecycle, custom readiness, startupProbe, loggers, SQLite and emptyDir limits together | 8.3.1 | staging, CI | 6, 9, 10, 23, 24 |
@@ -160,6 +161,10 @@ The gateway served the certificate issued from the chart's CA (`CN=s5-web.e2e.in
 
 postStart hook, custom readiness command, startupProbe, per-logger levels, SQLite `entryLimit` and emptyDir size limits together: all in effect in the pod, `gateway.SslManager` no longer forced to DEBUG, Ready with no restarts.
 
+### S4 scaleout Gateway Network (8.3.1)
+
+The frontend's outgoing connection to the backend went Faulted while the backend was still starting, then Running once it was up; the backend registered the incoming connection from `ignition-scaleout-frontend-0`. The first run showed the backend named `$(gateway_system_name)` on the Gateway Network (fix 35); after the fix it is `ignition-scaleout-backend-0` and S4 passes.
+
 ### Not yet run
 
-S4 (not written), S10 and the CI workflow (need the branch pushed).
+S10 and the CI workflow (need the branch pushed).
