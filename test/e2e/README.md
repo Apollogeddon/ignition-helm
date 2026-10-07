@@ -4,7 +4,7 @@ Scripts for running real gateways from these charts on a shared (e.g. single-nod
 
 - `lib.sh`: guardrails, sourced by each scenario
   - `e2e_begin [watch-url]` snapshots cluster-scoped resources, optionally polls a URL every second, and registers teardown plus verification on exit
-  - `e2e_ns <name>` creates `chart-e2e-<name>` labelled `e2e=ignition-helm`
+  - `e2e_ns <name>` creates `chart-e2e-<name>` labelled `e2e=ignition-helm`; with `E2E_PSA` (e.g. `restricted`) it also enforces that Pod Security level there
   - `e2e_require_memory <ns>` stops unless the node has `E2E_MIN_FREE_MI` (default 4096) MiB available and some node can still schedule `E2E_MIN_REQUEST_MI` (default 1024) MiB of requests
   - `e2e_render_check <helm template args>` refuses a render containing cluster-scoped kinds
   - `e2e_watch_check` stops the run once the watched URL has failed `E2E_WATCH_FAILURES` (default 3) times in a row; every failure is in `watch.log` with the step the test was on. Set `E2E_WATCH_CONTROL` (a URL, or `host:port` for a TCP connect, e.g. `192.168.7.123:50000`) to skip failures that happen while the control also fails (the test machine's own network)
