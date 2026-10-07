@@ -62,6 +62,8 @@ helm upgrade <release> ignition-charts/ignition-failover -n <namespace> ...
 
 On start the gateways apply the chart's redundancy settings to their volume, including the peer address under the new Service name, so the pair reconnects once both pods have been replaced.
 
+Turn on `ignition.activeRouting.enabled` in a separate, later upgrade, once every pod has been replaced. Until the Master's pod is replaced it is only reachable under the old Service name, so the new Backup cannot sync with it; with `ignition.activeRouting.enabled` a Backup must be in sync to be Ready, so the rollout would wait for ever (the Master keeps serving).
+
 Charts up to 3.1.0 ran the gateway as root by default, so on storage that does not apply `fsGroup` (e.g. local-path) their data volumes are owned by root and the upgraded gateway, which runs as `securityContext.runAsUser` (2003), cannot update them: the `preconfigure` init container fails with `Permission denied`. If your 3.x install did not set `securityContext.runAsUser`, also set `ignition.fixDataOwnership=true` for the upgrade (an init container chowns the volume as root; it needs the baseline Pod Security level), and set it back to `false` once the pods are running.
 
 ## Configuration
