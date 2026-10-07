@@ -51,6 +51,17 @@ helm install my-ignition ignition-charts/ignition-failover \
 * **Health Checks and Shutdown:** Probes check `/StatusPing` for `RUNNING`, which works on Ignition 8.1 and 8.3. Readiness (`health-check.sh -r`) also fails while the gateway is still commissioning; liveness does not, so a gateway stuck commissioning is not restarted in a loop. There is no default `preStop` hook: on SIGTERM the gateway shuts down gracefully, and `gwcmd.sh -p` (previously used here) resets the gateway login password.
 * **Zero-Downtime Cert Rotation:** Enable `certManager.rotation.enabled` to spin up smart Kubernetes CronJobs that securely rotate the Ignition instances' PKI trust fabric under-the-hood before certificate expiration.
 
+## Upgrading from 4.0.0 or earlier
+
+From 4.1.0 the StatefulSet is governed by the `<name>-headless` Service, and Kubernetes does not allow `serviceName` to change on an existing StatefulSet, so `helm upgrade` from 4.0.0 or earlier is rejected. Delete only the StatefulSet object first; its pods and volumes keep running and the upgraded StatefulSet adopts them, then replaces the Backup before the Master:
+
+```sh
+kubectl delete statefulset ignition-failover --cascade=orphan -n <namespace>
+helm upgrade <release> ignition-charts/ignition-failover -n <namespace> ...
+```
+
+On start the gateways update the redundancy peer address saved on their volume to the new Service name, so the pair reconnects once both pods have been replaced.
+
 ## Configuration
 
 

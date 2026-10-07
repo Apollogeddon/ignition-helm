@@ -44,6 +44,17 @@ helm install my-scaleout ignition-charts/ignition-scaleout \
 * **External Module Sideloading:** Define a PersistentVolumeClaim via `backend.externalModules.pvcName` (or frontend) to inject custom `.modl` plugins on startup.
 * **Zero-Downtime Cert Rotation:** Enable `certManager.rotation.enabled` to deploy CronJobs that transparently refresh the Gateway Network PKI trust matrix before certificates expire.
 
+## Upgrading from 4.0.0 or earlier
+
+From 4.1.0 the frontend and backend StatefulSets are governed by `<name>-frontend-headless` and `<name>-backend-headless`, and Kubernetes does not allow `serviceName` to change on an existing StatefulSet, so `helm upgrade` from 4.0.0 or earlier is rejected. Delete only the StatefulSet objects first; their pods and volumes keep running and the upgraded StatefulSets adopt them:
+
+```sh
+kubectl delete statefulset ignition-scaleout-frontend ignition-scaleout-backend --cascade=orphan -n <namespace>
+helm upgrade <release> ignition-charts/ignition-scaleout -n <namespace> ...
+```
+
+(Tested end to end for the failover chart; the scaleout steps are the same.)
+
 ## Configuration
 
 
