@@ -23,6 +23,10 @@ spec:
     metadata:
       labels:
         {{- include "ignition.selectorLabels" . | nindent 8 }}
+      annotations:
+        # restart the gateways when redundancy values change; seed-redundancy.sh
+        # applies them to the data volume on start
+        checksum/redundancy: {{ .Values.ignition.redundancy | toJson | sha256sum }}
     spec:
       serviceAccountName: {{ include "ignition.serviceAccountName" . }}
       terminationGracePeriodSeconds: 60
