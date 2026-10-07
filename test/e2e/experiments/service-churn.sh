@@ -7,28 +7,33 @@
 # 200) a test NodePort (a tiny web server in the test namespace) and, if
 # WATCH_NODEPORT is set, another NodePort on the node (e.g. the staging
 # dashboard, read-only GETs). The same targets are also sampled from this
-# machine once a second. Phases: BASELINE seconds quiet, CHURN Services created
-# and deleted in the test namespace, then BASELINE seconds quiet again.
+# machine once a second. Phases: BASELINE seconds quiet, CHURN cycles, then
+# BASELINE seconds quiet again. CHURN_MODE=services (default) creates and
+# deletes Services without endpoints; CHURN_MODE=endpoints starts and deletes an
+# extra pod behind the test Service, so its endpoints change the way they do
+# while a rolling upgrade replaces pods.
 # kube-proxy's log for the window is saved next to the results.
 #
 # Env: NODE_IP, WATCH_NODEPORT (optional, e.g. 30088), BASELINE (default 60),
-# CHURN (Service create/delete cycles, default 20)
+# CHURN (cycles, default 20), CHURN_MODE (services or endpoints)
 source "$(dirname "$0")/../lib.sh"
 : "${NODE_IP:?}"
 BASELINE="${BASELINE:-60}"
 CHURN="${CHURN:-20}"
+CHURN_MODE="${CHURN_MODE:-services}"
 export RECORD_INTERVAL_MS="${RECORD_INTERVAL_MS:-200}"
 
 e2e_begin "${WATCH_URL:-}"
 ns=$(e2e_ns churn)
 e2e_require_memory "$ns"
 
-log "starting a test web server behind a NodePort"
-e2e_retry kubectl -n "$ns" apply -f - >/dev/null <<'EOF'
+# web_pod <name>: a tiny web server pod behind the test Service
+web_pod() {
+  cat <<EOF
 apiVersion: v1
 kind: Pod
 metadata:
-  name: web
+  name: $1
   labels: {app: churn-web}
 spec:
   securityContext:
@@ -45,6 +50,11 @@ spec:
       securityContext:
         allowPrivilegeEscalation: false
         capabilities: {drop: ["ALL"]}
+EOF
+}
+
+log "starting a test web server behind a NodePort"
+{ web_pod web; cat <<'EOF'
 ---
 apiVersion: v1
 kind: Service
@@ -55,12 +65,14 @@ spec:
   selector: {app: churn-web}
   ports: [{port: 8080, targetPort: 8080}]
 EOF
+} | e2e_retry kubectl -n "$ns" apply -f - >/dev/null
 e2e_retry kubectl -n "$ns" wait pod/web --for=condition=Ready --timeout=5m >/dev/null
 port=$(kubectl -n "$ns" get svc web -o jsonpath='{.spec.ports[0].nodePort}')
 
 targets=(test="http://$NODE_IP:$port/")
 [ -z "${WATCH_NODEPORT:-}" ] || targets+=(dashboard="http://$NODE_IP:$WATCH_NODEPORT/StatusPing")
-churn_secs=$(( CHURN * 6 ))
+# cycles take longer than their sleeps (API round trips, pod start-up)
+if [ "$CHURN_MODE" = endpoints ]; then churn_secs=$(( CHURN * 25 )); else churn_secs=$(( CHURN * 12 )); fi
 total=$(( BASELINE * 2 + churn_secs + 30 ))
 from=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 
@@ -71,12 +83,22 @@ rec=$!
 log "baseline ${BASELINE}s"
 sleep "$BASELINE"
 t_churn=$(date -u +%H:%M:%S)
-log "churn: $CHURN Service create/delete cycles"
+log "churn: $CHURN $CHURN_MODE cycles"
 for i in $(seq "$CHURN"); do
-  e2e_retry kubectl -n "$ns" create service nodeport "churn-$i" --tcp=8081:8081 >/dev/null
-  sleep 3
-  e2e_retry kubectl -n "$ns" delete service "churn-$i" >/dev/null
-  sleep 3
+  if [ "$CHURN_MODE" = endpoints ]; then
+    # an extra backend for the test Service: added to its endpoints when Ready,
+    # removed when deleted (graceful, as during a rolling update)
+    web_pod "churn-$i" | e2e_retry kubectl -n "$ns" apply -f - >/dev/null
+    e2e_retry kubectl -n "$ns" wait "pod/churn-$i" --for=condition=Ready --timeout=2m >/dev/null
+    sleep 3
+    e2e_retry kubectl -n "$ns" delete pod "churn-$i" --wait=true >/dev/null
+    sleep 2
+  else
+    e2e_retry kubectl -n "$ns" create service nodeport "churn-$i" --tcp=8081:8081 >/dev/null
+    sleep 3
+    e2e_retry kubectl -n "$ns" delete service "churn-$i" >/dev/null
+    sleep 3
+  fi
 done
 t_quiet=$(date -u +%H:%M:%S)
 log "quiet ${BASELINE}s"
@@ -92,7 +114,7 @@ summary() {
   } END { for (k in n) printf "  %-22s %4d of %4d samples failed\n", k, f[k] + 0, n[k] }' "$1" | sort
 }
 {
-  echo "service churn $(date -u +%FT%TZ): churn ${t_churn}-${t_quiet}, ${CHURN} cycles, inside every ${RECORD_INTERVAL_MS}ms"
+  echo "service churn $(date -u +%FT%TZ): churn ${t_churn}-${t_quiet}, ${CHURN} ${CHURN_MODE} cycles, inside every ${RECORD_INTERVAL_MS}ms"
   echo " inside the cluster:"; summary "$E2E_OUT/churn-inside.log"
   echo " from the test machine:"; summary "$E2E_OUT/churn-outside.log"
   echo " kube-proxy rule syncs in the window: $(grep -c 'nftables\|Syncing\|sync' "$E2E_OUT/churn-kube-proxy.log" || true)"

@@ -39,4 +39,4 @@ CI runs these on a disposable kind cluster with `.github/workflows/e2e.yaml` (ma
 
 ## Experiments
 
-- `experiments/service-churn.sh`: creates and deletes Services in a test namespace while a probe pod samples a test NodePort (and optionally another NodePort on the node, `WATCH_NODEPORT`) every 200 ms, and the test machine samples them once a second; reports failed samples per phase and saves kube-proxy's log for the window. Checks whether Service changes make NodePorts drop. Needs `NODE_IP`.
+- `experiments/service-churn.sh`: creates and deletes Services in a test namespace while a probe pod samples a test NodePort (and optionally another NodePort on the node, `WATCH_NODEPORT`) every 200 ms, and the test machine samples them once a second; reports failed samples per phase and saves kube-proxy's log for the window. Checks whether Service changes make NodePorts drop; `CHURN_MODE=endpoints` instead adds and removes pods behind the test Service, as a rolling upgrade does. Needs `NODE_IP`.
