@@ -74,6 +74,7 @@ Scripts in `test/e2e` (see its README). Staging runs them on the shared single-n
 | --- | --- | --- | --- | --- |
 | S1 | Ingress plus failover: per-second availability through the Ingress and NodePort while the Master is deleted, then force-deleted; with and without activeRouting | 8.3.1 | staging, CI | 13, 14, 15, 18, 19 |
 | S2 | Redundant upgrade from the released chart, with and without activeRouting | 8.3.1 | staging, CI | 4, 7 |
+| S3 | Redundancy toggle: standalone to pair, a redundancy value change, back to standalone, and re-enabled, with the role and settings applied on restart | 8.1.53, 8.3.1 | planned | |
 | S4 | Scaleout GAN connection, checked from the gateway logs | 8.3.1 | staging, CI | 30, 35 |
 | S5 | Web TLS with a certificate issued from the chart's CA | 8.3.1 | staging, CI | 20 |
 | S6 | Restart on certificate renewal: Backup restarted before Master | 8.3.1 | staging, CI | 27 |
