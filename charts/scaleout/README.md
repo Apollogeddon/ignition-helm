@@ -35,14 +35,14 @@ To install the chart with the release name `my-scaleout`:
 ```bash
 helm install my-scaleout ignition-charts/ignition-scaleout \
   --set backend.secrets.GATEWAY_ADMIN_PASSWORD=mysecretpassword \
-  --set frontend.replicas=2
+  --set frontend.redundancy.replicas=2
 ```
 
 ## Lifecycle Management Insights
 
 * **SCADA Patch Pipeline:** Set `frontend.updateStrategy.type` or `backend.updateStrategy.type` to `OnDelete` to prevent automated Helm upgrades from unexpectedly terminating your running pods, allowing for strict, manual maintenance windows.
 * **External Module Sideloading:** Define a PersistentVolumeClaim via `backend.externalModules.pvcName` (or frontend) to inject custom `.modl` plugins on startup.
-* **Zero-Downtime Cert Rotation:** Enable `certManager.rotation.enabled` to deploy CronJobs that transparently refresh the Gateway Network PKI trust matrix before certificates expire.
+* **Certificate rotation and renewal:** `certManager.rotation.enabled` adds CronJobs that refresh the Gateway Network keystore on each gateway's volume. A running gateway only loads renewed certificates when it restarts, so pair it with `certManager.restartOnRenewal.enabled`, which rolls the gateways (Backup first) when the certificate secrets change.
 
 ## Upgrading from 4.0.0 or earlier
 
@@ -70,13 +70,35 @@ Charts up to 3.1.0 ran the gateway as root by default, so on storage that does n
 | `frontend.secrets.GATEWAY_ADMIN_PASSWORD` | **Required.** Admin password for Frontend gateways. | `admin` |
 | `frontend.secrets.IGNITION_GAN_KEYSTORE_PASSWORD` | Password for the Frontend GAN keystore. | `metro` |
 | `frontend.secrets.IGNITION_WEB_KEYSTORE_PASSWORD` | Password for the Frontend Web TLS keystore. | `ignition` |
-| `frontend.replicas` | Number of Frontend nodes to deploy. | `1` |
+| `frontend.redundancy.replicas` | Number of Frontend nodes to deploy. | `1` |
 | `backend.redundancy.enabled` | Enable Master/Backup redundancy for the Backend. | `false` |
 | `backend.persistence.size` | Storage size for Backend nodes. | `3Gi` |
-| `frontend.service.nodePorts` | Optional static NodePorts for Frontend. | `{}` |
-| `backend.service.nodePorts` | Optional static NodePorts for Backend. | `{}` |
-| `certManager.rotation.enabled` | Deploy CronJobs to auto-rotate GAN certificates without manual restart. | `false` |
+| `frontend.service.nodePorts` | Optional static NodePorts for Frontend. | unset |
+| `backend.service.nodePorts` | Optional static NodePorts for Backend. | unset |
+| `certManager.rotation.enabled` | CronJobs that refresh the Gateway Network keystore on each gateway's volume; renewed certificates load on the next restart (see `certManager.restartOnRenewal.enabled`). | `false` |
 | `frontend.updateStrategy.type` | Helm patch rollout methodology for Frontend layer. | `RollingUpdate` |
 | `backend.updateStrategy.type` | Helm patch rollout methodology for Backend layer. | `RollingUpdate` |
 | `frontend.externalModules.enabled` | Enable mounting an isolated Persistent Volume Claim for modules. | `false` |
 | `backend.externalModules.enabled` | Enable mounting an isolated Persistent Volume Claim for modules. | `false` |
+| `backend.activeRouting.enabled` | Route user traffic only to the Active backend gateway of a redundant pair: a labeller keeps `redundancy-active=true` on the Active pod and the `<name>-backend-active` Service (which takes the configured service type, nodePorts and annotations) selects it. A Backup must also be in sync to be Ready. | `false` |
+| `certManager.restartOnRenewal.enabled` | CronJob that starts a rolling restart (Backup first) when the Gateway Network or web certificate secrets change, so renewed certificates are loaded. | `false` |
+| `frontend.logging.wrapperLogToStdout` | Append `wrapper.logfile=/dev/stdout` to `args` so the gateway log goes to the container log instead of an unrotated `logs/wrapper.log`. | `true` |
+| `frontend.logging.loggers` | Per-logger levels, e.g. `{"gateway.SslManager": "DEBUG"}`. | `{}` |
+| `frontend.logging.sqlite` | SQLite log database maintenance (`entryLimit`, `maxEventsPerMaintenance`, `minTimeBetweenMaintenance`, `vacuumFrequency`). | `{}` (Ignition defaults) |
+| `frontend.readinessProbe` / `frontend.livenessProbe` | Probe settings. Readiness fails while the gateway is still commissioning. | `/config/scripts/health-check.sh -t 3 -r` / `-t 5` |
+| `frontend.startupProbe.enabled` | Add a startupProbe so slow starts are tolerated while liveness stays strict. | `false` |
+| `frontend.lifecycle` | Container lifecycle hooks, rendered as-is. | `{}` (none) |
+| `frontend.emptyDirSizeLimit` | Optional `sizeLimit` for the `logs`, `temp` and `dotIgnition` emptyDir volumes. | unset |
+| `frontend.ingress.className` | IngressClass name, e.g. `contour`; empty uses the cluster default. | `""` |
+| `frontend.networkPolicy.extraIngress` | Extra NetworkPolicy ingress rules, e.g. the ingress controller namespace or node CIDRs. | `[]` |
+| `frontend.fixDataOwnership` | Chown the data volume to the gateway user on start (an init container running as root). Only for upgrades from charts up to 3.1.0 installed with the default root user. | `false` |
+| `backend.logging.wrapperLogToStdout` | Append `wrapper.logfile=/dev/stdout` to `args` so the gateway log goes to the container log instead of an unrotated `logs/wrapper.log`. | `true` |
+| `backend.logging.loggers` | Per-logger levels, e.g. `{"gateway.SslManager": "DEBUG"}`. | `{}` |
+| `backend.logging.sqlite` | SQLite log database maintenance (`entryLimit`, `maxEventsPerMaintenance`, `minTimeBetweenMaintenance`, `vacuumFrequency`). | `{}` (Ignition defaults) |
+| `backend.readinessProbe` / `backend.livenessProbe` | Probe settings. Readiness fails while the gateway is still commissioning; with `backend.activeRouting` a Backup must also be in sync. | `/config/scripts/health-check.sh -t 3 -r` / `-t 5` |
+| `backend.startupProbe.enabled` | Add a startupProbe so slow starts are tolerated while liveness stays strict. | `false` |
+| `backend.lifecycle` | Container lifecycle hooks, rendered as-is. | `{}` (none) |
+| `backend.emptyDirSizeLimit` | Optional `sizeLimit` for the `logs`, `temp` and `dotIgnition` emptyDir volumes. | unset |
+| `backend.ingress.className` | IngressClass name, e.g. `contour`; empty uses the cluster default. | `""` |
+| `backend.networkPolicy.extraIngress` | Extra NetworkPolicy ingress rules, e.g. the ingress controller namespace or node CIDRs. | `[]` |
+| `backend.fixDataOwnership` | Chown the data volume to the gateway user on start (an init container running as root). Only for upgrades from charts up to 3.1.0 installed with the default root user. | `false` |
