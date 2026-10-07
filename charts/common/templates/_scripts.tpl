@@ -17,43 +17,77 @@ stringData:
     fi
   seed-redundancy.sh: |-
     #!/usr/bin/env bash
+    # Applies the chart's redundancy settings to the gateway's data volume on
+    # every start, so redundancy values - including turning redundancy on or
+    # off - take effect on existing installs, not only on the first start:
+    #   - pair, no redundancy.xml yet: seed it from the chart's template
+    #     (pod 0 Master, pod 1 Backup)
+    #   - pair, redundancy.xml exists: set every key the chart renders to the
+    #     chart's value (role, peer address, timeouts, recovery mode, ...)
+    #   - single replica with a redundancy.xml left from a pair: set the role
+    #     to Independent
+    #   - single replica that was never redundant: nothing
+    # Ignition's own sync state (systemstateuid, systemstaterevision) and keys
+    # the chart does not render are never changed.
     set -eo pipefail
     DATA_DIR="${DATA_DIR:-/data}"
     FILES_DIR="${FILES_DIR:-/config/files}"
+    file="${DATA_DIR}/redundancy.xml"
+    runtime_keys=" redundancy.systemstateuid redundancy.systemstaterevision "
 
-    if [ "${IGNITION_REPLICAS}" -eq "1" ]; then
-      echo "Running single replica, skipping redundancy setup."
+    # value <entry line>: the value of an <entry key="...">value</entry> line
+    value() {
+      if [ -n "$1" ]; then printf '%s' "$1" | sed 's/.*">\(.*\)<\/entry>.*/\1/'; else printf '(unset)'; fi
+    }
+
+    # set_entry <key> <entry line>: make the key's line in redundancy.xml match,
+    # replacing it or adding it before </properties>
+    set_entry() {
+      local key="$1" want="$2" have esc key_re
+      have=$(grep -F "key=\"${key}\"" "${file}" | tr -d '\r' || true)
+      [ "${have}" = "${want}" ] && return 0
+      echo "Updating ${key}: $(value "${have}") -> $(value "${want}")"
+      esc=$(printf '%s' "${want}" | sed 's/[&|\]/\&/g')
+      key_re=$(printf '%s' "${key}" | sed 's/[.]/\./g')
+      if [ -n "${have}" ]; then
+        sed -i "s|^.*key=\"${key_re}\".*\$|${esc}|" "${file}"
+      else
+        sed -i "s|</properties>|${esc}\n</properties>|" "${file}"
+      fi
+    }
+
+    if [ "${IGNITION_REPLICAS:-1}" -eq 1 ]; then
+      if [ -f "${file}" ]; then
+        set_entry redundancy.noderole '<entry key="redundancy.noderole">Independent</entry>'
+      else
+        echo "Single replica, no redundancy settings to apply."
+      fi
       exit 0
     fi
 
-    if ! [[ "${HOSTNAME}" =~ -([0-9])$ ]]; then
+    if ! [[ "${HOSTNAME}" =~ -([0-9]+)$ ]]; then
       echo "Unknown Redundancy Hostname Suffix: ${HOSTNAME}"
       exit 0
     fi
     case "${BASH_REMATCH[1]}" in
-      0) role=Primary; template="${FILES_DIR}/redundancy-primary.xml" ;;
+      0) role=Master; template="${FILES_DIR}/redundancy-primary.xml" ;;
       1) role=Backup; template="${FILES_DIR}/redundancy-backup.xml" ;;
       *) echo "Unknown Redundancy Hostname Suffix: ${HOSTNAME}"; exit 0 ;;
     esac
 
-    if [ ! -f "${DATA_DIR}/redundancy.xml" ]; then
+    if [ ! -f "${file}" ]; then
       echo "Initializing Redundancy as ${role}"
-      cp "${template}" "${DATA_DIR}/redundancy.xml"
+      tr -d '\r' < "${template}" > "${file}"
       exit 0
     fi
 
-    # Keep the peer address in step with the chart. It is built from the
-    # StatefulSet's Service, which changed in 4.1.0 (the main Service became
-    # <name>-headless); a data volume from an older chart would otherwise keep
-    # a peer name that no longer resolves and both gateways would go Active.
-    for key in redundancy.gan.host redundancy.gan.port; do
-      want=$(grep "key=\"${key}\"" "${template}" || true)
-      have=$(grep "key=\"${key}\"" "${DATA_DIR}/redundancy.xml" || true)
-      if [ -n "${want}" ] && [ -n "${have}" ] && [ "${want}" != "${have}" ]; then
-        echo "Updating ${key} in redundancy.xml: $(echo "${have}" | sed 's/^ *//') -> $(echo "${want}" | sed 's/^ *//')"
-        sed -i "s|^.*key=\"${key}\".*$|${want}|" "${DATA_DIR}/redundancy.xml"
-      fi
-    done
+    while IFS= read -r line; do
+      line="${line%$'\r'}"
+      [[ "${line}" =~ key=\"([^\"]+)\" ]] || continue
+      key="${BASH_REMATCH[1]}"
+      case "${runtime_keys}" in *" ${key} "*) continue ;; esac
+      set_entry "${key}" "${line}"
+    done < "${template}"
   prepare-gan-certificates.sh: |-
     #!/usr/bin/env bash
     set -eo pipefail

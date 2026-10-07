@@ -60,7 +60,7 @@ kubectl delete statefulset ignition-failover --cascade=orphan -n <namespace>
 helm upgrade <release> ignition-charts/ignition-failover -n <namespace> ...
 ```
 
-On start the gateways update the redundancy peer address saved on their volume to the new Service name, so the pair reconnects once both pods have been replaced.
+On start the gateways apply the chart's redundancy settings to their volume, including the peer address under the new Service name, so the pair reconnects once both pods have been replaced.
 
 ## Configuration
 
@@ -72,7 +72,7 @@ The following table lists the configurable parameters of the chart and their def
 | `ignition.secrets.GATEWAY_ADMIN_PASSWORD` | **Required.** Password for the `admin` user. | `admin` |
 | `ignition.secrets.IGNITION_GAN_KEYSTORE_PASSWORD` | Password for the Gateway Network keystore. | `metro` |
 | `ignition.secrets.IGNITION_WEB_KEYSTORE_PASSWORD` | Password for the Web Server TLS keystore. | `ignition` |
-| `ignition.redundancy.enabled` | Enable Master/Backup redundancy (2 replicas). | `false` |
+| `ignition.redundancy.enabled` | Enable Master/Backup redundancy (2 replicas). Changing it, or any other `ignition.redundancy.*` value, on an existing install restarts the gateways and applies the role (Master, Backup, or Independent when turned off) and settings to their data volumes on start. | `false` |
 | `ignition.image.tag` | Ignition version to deploy. | `8.3` |
 | `ignition.resources` | CPU/Memory requests and limits. | `Requests: 500m/1Gi` |
 | `ignition.persistence.size` | Size of the persistent volume claim. | `3Gi` |

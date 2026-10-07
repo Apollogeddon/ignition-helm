@@ -24,6 +24,10 @@ spec:
       labels:
         {{- include "ignition.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/component: backend
+      annotations:
+        # restart the gateways when redundancy values change; seed-redundancy.sh
+        # applies them to the data volume on start
+        checksum/redundancy: {{ .Values.backend.redundancy | toJson | sha256sum }}
     spec:
       serviceAccountName: {{ include "ignition.serviceAccountName" . }}
       securityContext:
