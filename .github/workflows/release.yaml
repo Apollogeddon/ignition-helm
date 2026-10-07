@@ -27,23 +27,23 @@ jobs:
           manifest-file: .github/.release.json
 
       - name: Configure Git
-        if: ${{ steps.release.outputs.releases_created }}
+        if: ${{ steps.release.outputs.releases_created == 'true' }}
         run: |
           git config user.name "$GITHUB_ACTOR"
           git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
 
       - name: Install Helm
-        if: ${{ steps.release.outputs.releases_created }}
+        if: ${{ steps.release.outputs.releases_created == 'true' }}
         uses: azure/setup-helm@v4
         with:
           version: v3.14.4
 
       - name: Update dependencies
-        if: ${{ steps.release.outputs.releases_created }}
+        if: ${{ steps.release.outputs.releases_created == 'true' }}
         run: sh ./.github/scripts/ci/update-dependencies.sh
 
       - name: Run chart-releaser
-        if: ${{ steps.release.outputs.releases_created }}
+        if: ${{ steps.release.outputs.releases_created == 'true' }}
         uses: helm/chart-releaser-action@v1.7.0
         with:
           charts_dir: charts
