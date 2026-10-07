@@ -38,13 +38,14 @@ for s in ${SCENARIOS}; do
       run "$s" ACTIVE_ROUTING=false
       run "$s:active" ACTIVE_ROUTING=true ;;
     s01-ingress-failover:active) run "$s" ACTIVE_ROUTING=true ;;
-    s02-upgrade:active) run "$s" UPGRADE_SET=ignition.activeRouting.enabled=true ;;
+    # from 4.0.0 and earlier, activeRouting goes on in a second upgrade (see the README)
+    s02-upgrade:active) run "$s" THEN_SET=ignition.activeRouting.enabled=true ;;
     s02-upgrade:scaleout) run "$s" CHART_KIND=scaleout ;;
     # 3.1.0 installed by a wrapper chart with its own applicationName and
     # user 2003, then activeRouting
     s02-upgrade:wrapper) run "$s" FROM_VERSION=3.1.0 APP_NAME=my-gateway \
       "FROM_SET=ignition.securityContext.runAsUser=2003 ignition.securityContext.runAsGroup=2003 ignition.securityContext.fsGroup=2003" \
-      UPGRADE_SET=ignition.activeRouting.enabled=true ;;
+      THEN_SET=ignition.activeRouting.enabled=true ;;
     # chart 3.1.0 with its default root user: the volume needs fixDataOwnership
     s02-upgrade:root) run "$s" FROM_VERSION=3.1.0 UPGRADE_SET=ignition.fixDataOwnership=true ;;
     *) run "$s" ;;
