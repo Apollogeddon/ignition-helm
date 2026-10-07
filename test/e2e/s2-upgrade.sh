@@ -55,6 +55,16 @@ nodeport=$(kubectl -n "$ns" get svc $STS -o jsonpath='{.spec.ports[?(@.name=="ht
 rec=$!
 sleep 5
 start=$(date +%s)
+# spec.serviceName cannot be changed on a StatefulSet (4.0.0 and earlier use
+# the main Service, later versions the -headless one). Delete only the
+# StatefulSet object; its pods and PVCs keep running and the upgraded
+# StatefulSet adopts them, then rolls them Backup first.
+current=$(kubectl -n "$ns" get sts $STS -o jsonpath='{.spec.serviceName}')
+wanted=$("$HELM" template "${upgrade[@]}" | tr -d '\r' | awk '/^kind: StatefulSet/ {s = 1} s && /^  serviceName:/ {print $2; exit}')
+if [ "$current" != "$wanted" ]; then
+  log "serviceName changes ($current -> $wanted): deleting the StatefulSet with --cascade=orphan"
+  kubectl -n "$ns" delete sts $STS --cascade=orphan >/dev/null
+fi
 log "upgrading to the working tree ${UPGRADE_SET:+(${UPGRADE_SET})}"
 e2e_install "${upgrade[@]}"
 # the -active Service takes over the configured nodePorts only if they are
