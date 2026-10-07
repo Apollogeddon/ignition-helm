@@ -84,6 +84,7 @@ spec:
 {{ include "ignition-common.volumeMounts" (dict "name" (include "ignition.name" .) "values" .Values.backend) | nindent 8 }}
         {{- include "ignition-common.containerProbes" (dict "values" .Values.backend) | trim | nindent 8 }}
       initContainers:
+{{- with include "ignition-common.initContainer.fixDataOwnership" (dict "image" .Values.image "values" .Values.backend "context" .) }}{{ . | trim | nindent 6 }}{{ end }}
 {{ include "ignition-common.initContainer.preconfigure" (dict "name" (include "ignition.name" .) "secretName" (printf "%s-backend-secrets" (include "ignition.name" .)) "image" .Values.image "values" .Values.backend "replicas" (ternary 2 1 .Values.backend.redundancy.enabled) "context" .) | nindent 6 }}
       volumes:
 {{ include "ignition-common.volumes" (dict "name" (include "ignition.name" .) "values" .Values.backend "ganTlsSecretName" (printf "%s-backend-gan-tls" (include "ignition.name" .)) "commonScriptsConfigMapName" (include "ignition-common.scriptsName" .)) | nindent 6 }}

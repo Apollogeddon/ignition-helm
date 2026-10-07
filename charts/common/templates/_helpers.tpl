@@ -514,6 +514,39 @@ Params:
   values: The component-specific values object
   replicas: Number of replicas (for redundancy initialization)
 */}}
+{{/*
+Init container that gives the data volume to the gateway user
+(<values>.fixDataOwnership). Charts up to 3.1.0 ran the gateway as root by
+default, so their data volumes are owned by root and the non-root gateway
+cannot update them after an upgrade. Storage that does not apply fsGroup
+(e.g. local-path) keeps that ownership. Runs as root with only the CHOWN,
+DAC_OVERRIDE and FOWNER capabilities, so the namespace must allow the
+baseline Pod Security level; turn it off again once the volumes are fixed.
+Params:
+  image: The image repo/tag reference
+  values: The component-specific values object
+  context: The global context (Dot)
+*/}}
+{{- define "ignition-common.initContainer.fixDataOwnership" -}}
+{{- if .values.fixDataOwnership }}
+{{- $owner := printf "%v:%v" .values.securityContext.runAsUser .values.securityContext.runAsGroup }}
+- name: fix-data-ownership
+  image: {{ .image.repository }}:{{ .image.tag | default .context.Chart.AppVersion }}
+  imagePullPolicy: {{ .image.pullPolicy }}
+  command: ["sh", "-c", "chown -R {{ $owner }} /data && echo 'data volume owned by {{ $owner }}'"]
+  securityContext:
+    runAsUser: 0
+    runAsNonRoot: false
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop: ["ALL"]
+      add: ["CHOWN", "DAC_OVERRIDE", "FOWNER"]
+  volumeMounts:
+  - mountPath: /data
+    name: data
+{{- end }}
+{{- end }}
+
 {{- define "ignition-common.initContainer.preconfigure" -}}
 {{- $secretName := .secretName | default (printf "%s-secrets" .name) -}}
 - name: preconfigure

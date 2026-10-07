@@ -80,6 +80,7 @@ spec:
 {{ include "ignition-common.volumeMounts" (dict "name" (include "ignition.name" .) "values" .Values.frontend) | nindent 8 }}
         {{- include "ignition-common.containerProbes" (dict "values" .Values.frontend) | trim | nindent 8 }}
       initContainers:
+{{- with include "ignition-common.initContainer.fixDataOwnership" (dict "image" .Values.image "values" .Values.frontend "context" .) }}{{ . | trim | nindent 6 }}{{ end }}
 {{ include "ignition-common.initContainer.preconfigure" (dict "name" (include "ignition.name" .) "secretName" (printf "%s-frontend-secrets" (include "ignition.name" .)) "image" .Values.image "values" .Values.frontend "replicas" 1 "context" .) | nindent 6 }}
       volumes:
       - name: data
