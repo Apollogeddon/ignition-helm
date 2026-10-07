@@ -10,7 +10,7 @@ How the `ignition-failover` and `ignition-scaleout` charts are tested, what each
 | Staging e2e | `test/e2e` scripts against a shared single-node cluster | Real gateways on Ignition 8.1 and 8.3: health, redundancy, upgrades, ingress, failover timing |
 | Script | `test/scripts` (run in CI) | The shell scripts the chart ships (`health-check.sh`, `active-routing.sh`, `certify.sh`), run against stub `curl`/`kubectl` |
 | CI e2e | `.github/workflows/e2e.yaml`: disposable three-node kind cluster with cert-manager, Contour and Chaos Mesh (manual only; a full run takes about two hours) | The staging scenarios plus what a shared single node can't do safely: network partitions (S10). kind's default CNI enforces NetworkPolicy, which `testing.yaml` already checks |
-| Manual | Testing environment / vendor | Avi/AKO ingress behaviour; licence binding to the machine ID |
+| Manual | Testing environment | Avi/AKO ingress behaviour |
 
 ## Staging guardrails
 
@@ -57,7 +57,6 @@ Status: **Live** verified on a real deployment, **Unit** helm-unittest only, **R
 | 25 | GAN certificates issued | Not tested | Live | |
 | 26 | GAN rotation CronJob | Not tested | Unit | superseded by restartOnRenewal (the init container re-reads certificates on every start) |
 | 27 | Renewed certificate picked up (restart) | Unit | Live (S6) | fixed with `certManager.restartOnRenewal`: rolling restart when the certificate secrets change |
-| 28 | Stable machine ID via extraVolumes | Live (S3) | Not tested | licence binding still to be checked manually |
 | 29 | Scaleout frontend and backend run | Not tested | Live | |
 | 30 | Scaleout frontend connects to backend over GAN | Not tested | Live (S4) | |
 | 31 | External modules, ServiceMonitor, restore, local mounts, OnDelete, HPA | Not tested | Unit | |
@@ -75,7 +74,6 @@ Scripts in `test/e2e` (see its README). Staging runs them on the shared single-n
 | --- | --- | --- | --- | --- |
 | S1 | Ingress plus failover: per-second availability through the Ingress and NodePort while the Master is deleted, then force-deleted; with and without activeRouting | 8.3.1 | staging, CI | 13, 14, 15, 18, 19 |
 | S2 | Redundant upgrade from the released chart, with and without activeRouting | 8.3.1 | staging, CI | 4, 7 |
-| S3 | Machine ID from a ConfigMap via extraVolumes, kept across pod replacement | 8.1.53 | staging, CI | 28 |
 | S4 | Scaleout GAN connection, checked from the gateway logs | 8.3.1 | staging, CI | 30, 35 |
 | S5 | Web TLS with a certificate issued from the chart's CA | 8.3.1 | staging, CI | 20 |
 | S6 | Restart on certificate renewal: Backup restarted before Master | 8.3.1 | staging, CI | 27 |
@@ -150,10 +148,6 @@ Repeated the first run and added 8.1.53 with wrapperLogToStdout=false: wrapper.l
 3. With `seed-redundancy.sh` now correcting the peer host and port on every start: Backup replaced at 01:46:35, Master at 01:49:02, pair healthy 344 s after the upgrade, longest time without an Active gateway 3 s.
 
 The orphan step is in both chart READMEs ("Upgrading from 4.0.0 or earlier").
-
-### S3 machine ID (8.1.53)
-
-The machine ID mounted from a ConfigMap was in place on first start and after the pod was replaced; the gateway was RUNNING both times. An earlier failure was another test run sharing the namespace.
 
 ### S5 web TLS (8.3.1)
 
