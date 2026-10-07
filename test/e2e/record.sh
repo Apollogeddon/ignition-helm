@@ -9,9 +9,11 @@ while [ "$(date +%s)" -lt "$end" ]; do
   for target in "$@"; do
     i=$((i + 1)); name=${target%%=*}; url=${target#*=}
     case "$url" in
-      */system/gwinfo) ( s=$(curl -sk --max-time 0.9 ${RECORD_CURL_ARGS:-} "$url" | tr ';' '\n' |
-             grep -E '^(RedundancyStatus|RedundantNodeActiveStatus)=' | sed 's/^[^=]*=//' | paste -sd/ -)
-           echo "$name=${s:-down}" > "$tmp/$i" ) & ;;
+      */system/gwinfo) ( b=$(curl -sk --max-time 0.9 ${RECORD_CURL_ARGS:-} "$url" || true)
+           # no answer is "down"; a gateway without redundancy is "Independent"
+           s=$(tr ';' '\n' <<< "$b" | grep -E '^(RedundancyStatus|RedundantNodeActiveStatus)=' | sed 's/^[^=]*=//' | paste -sd/ -)
+           [ -n "$b" ] || s=down
+           echo "$name=${s:-Independent}" > "$tmp/$i" ) & ;;
       *) ( echo "$name=$(curl -sk --max-time 0.9 ${RECORD_CURL_ARGS:-} -o /dev/null -w '%{http_code}' "$url")" > "$tmp/$i" ) & ;;
     esac
   done
