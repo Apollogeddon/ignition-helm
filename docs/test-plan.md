@@ -33,7 +33,7 @@ Status: **Live** verified on a real deployment, **Unit** helm-unittest only, **R
 | 1 | Install a standalone gateway | Live | Live | |
 | 2 | Auto-commission from env (EULA, admin, edition) | Live | Live | |
 | 3 | Data kept on the PVC across restarts | Live | Live | |
-| 4 | Upgrade from the previous release | Not tested | Live (S02) | from 4.0.0: needs a one-time `--cascade=orphan` delete of the StatefulSet (`serviceName` changed in 4.1.0); fixed the stale redundancy peer address that otherwise left both gateways Active (fix 36) |
+| 4 | Upgrade from the previous release | Not tested | Live (S02) | from 4.0.0 and 3.1.0 (failover) and 4.0.0 (scaleout): a one-time `--cascade=orphan` delete of the StatefulSets (`serviceName` changed in 4.1.0); `activeRouting` must go on in a later, separate upgrade (fix 40); 3.x installs left on the default root user also need `fixDataOwnership` once (fix 39). See the chart READMEs |
 | 5 | No password-resetting preStop | Live | Live | `gwcmd.sh -p` resets the login on 8.1 and 8.3 |
 | 6 | Custom lifecycle hooks | Live | Live (S07) | |
 | 7 | Rolling update across a redundant pair in a safe order | Not tested | Live (S06) | with activeRouting, readiness also waits for the Backup to be in sync before the Master is replaced |
@@ -44,7 +44,7 @@ Status: **Live** verified on a real deployment, **Unit** helm-unittest only, **R
 | 12 | Master/Backup pairing over GAN TLS, sync Good | Not tested | Live | |
 | 13 | Backup takes over when the Master goes away | Not tested | Live | S01: graceful and crash (force delete); a hung Master needs a partition test (CI) |
 | 14 | User traffic only reaches the active gateway | Unit | Live (S01 active) | fixed with `activeRouting`: 48 of 49 s served by the Active gateway (was 44%); off by default |
-| 15 | Failover downtime measured | Not tested | Live | S01 with activeRouting: 2-3 s unserved for graceful and crash failover; failback switches straight to the Master |
+| 15 | Failover downtime measured | Not tested | Live | S01 with activeRouting, measured from a probe pod in the cluster (every second): graceful 4-5 s unserved, crash 2-3 s; samples from the test machine are coarser and showed 2-3 s for both |
 | 16 | Split-brain recovery after a crash | Not tested | CI (S10) | activeRouting keeps traffic on the Master when both report Active; S10 partitions the pair (Chaos Mesh) |
 | 17 | PodDisruptionBudget protects the pair | Not tested | Live | |
 | 18 | Service (NodePort/ClusterIP/LB) serves traffic | Not tested | Live (NodePort) | LoadBalancer needs MetalLB (CI) |
@@ -65,6 +65,9 @@ Status: **Live** verified on a real deployment, **Unit** helm-unittest only, **R
 | 34 | GAN certificate key rotation policy explicit | Unit | Unit | CA `Never` (keeps signed certificates valid), leaf `Always` |
 | 36 | Redundancy peer address follows the chart on every start | Unit (script) | Live (S02) | fixed: `redundancy.xml` was only written on first start, so after the 4.0.0 upgrade both gateways kept peer names that no longer resolved and stayed Active |
 | 37 | Redundancy role and settings follow values on existing installs (on, off, value changes) | Live (S03) | Live (S03) | fixed: `redundancy.xml` was only written on first start, so turning redundancy on or off, or changing a redundancy value, did nothing to an existing install (a job driving the Gateway UI was the workaround) |
+| 38 | Charts meet the restricted Pod Security level | Live (S08) | Live (S01, S08) | fixed: `runAsNonRoot: true` by default (the gateways already ran as 2003) and a hardened GAN rotation CronJob; S01 and S08 ran in namespaces enforcing `restricted` |
+| 39 | Upgrade from a 3.x install that ran the gateway as root | n/a | Live (S02) | 3.1.0 ran everything as root by default, so its data volumes are root-owned and local-path does not apply `fsGroup`; the new non-root `preconfigure` failed with `Permission denied`. Opt-in `fixDataOwnership` chowns the volume once; installs that set `securityContext.runAsUser` (e.g. 2003) are not affected |
+| 40 | Upgrade from 4.0.0 or earlier with activeRouting | n/a | Live (S02) | enabling activeRouting in the same upgrade deadlocks: the old Master is only reachable under the old Service name, so the new Backup never syncs and never becomes Ready (the Master keeps serving). Enabling it in a second upgrade works; documented in both READMEs |
 | 35 | Scaleout backend named after its pod on the Gateway Network | Unit | Live (S04) | fixed: the backend had no `GATEWAY_SYSTEM_NAME`, so `-n "$(GATEWAY_SYSTEM_NAME)"` stayed literal and every backend gateway had that name |
 
 ## E2E scenarios
@@ -74,7 +77,7 @@ Scripts in `test/e2e` (see its README). Staging runs them on the shared single-n
 | ID | Scenario | Ignition | Where | Covers |
 | --- | --- | --- | --- | --- |
 | S01 | Ingress plus failover: per-second availability through the Ingress and NodePort while the Master is deleted, then force-deleted; with and without activeRouting | 8.3.1 | staging, CI | 13, 14, 15, 18, 19 |
-| S02 | Redundant upgrade from the released chart, with and without activeRouting | 8.3.1 | staging, CI | 4, 7 |
+| S02 | Upgrade from a released chart: failover from 4.0.0 or 3.1.0 (as user 2003 through a wrapper chart, or root-owned with `fixDataOwnership`), scaleout from 4.0.0; activeRouting in a second upgrade | 8.3.1 | staging, CI | 4, 7, 39, 40 |
 | S03 | Redundancy toggle: standalone to pair, a redundancy value change, back to standalone, and re-enabled, with the role and settings applied on restart | 8.1.53, 8.3.1 | staging, CI | 37 |
 | S04 | Scaleout GAN connection, checked from the gateway logs | 8.3.1 | staging, CI | 30, 35 |
 | S05 | Web TLS with a certificate issued from the chart's CA | 8.3.1 | staging, CI | 20 |
@@ -177,6 +180,49 @@ The frontend's outgoing connection to the backend went Faulted while the backend
 
 The run ended on the staging watch guardrail: the dashboard NodePort did not answer in two short bursts (04:05:22-37 and 04:08:42-45, the second with an API connection drop on the test machine). The staging labeller made no routing change and no staging pod restarted, so these were most likely the test machine's network rather than staging.
 
+### S01 with activeRouting and an in-cluster probe
+
+Sampled every second from a probe pod in the test namespace (through the -active Service, the NodePort and the ingress controller) as well as from the test machine, which only managed every 2-3 s:
+
+| Phase | In the cluster | From the test machine |
+| --- | --- | --- |
+| Steady | 65 of 65 s served by the Master | 33 of 33 samples |
+| Graceful delete of the Master | 4-5 s unserved | 2 s (`error:503` from the ingress controller while the -active Service was empty) |
+| Crash (force delete) | 2-3 s unserved | 2 s |
+
+The pair recovered after the crash. The same scenario passed again in a namespace enforcing `restricted` Pod Security (crash: 3 s unserved in the cluster).
+
+### S02 upgrades (8.3.1)
+
+| From | Steps | Result |
+| --- | --- | --- |
+| 3.1.0 as user 2003 with its own applicationName | orphan delete, upgrade, then activeRouting in a second upgrade | passed; each step about 350 s; handover gaps 2-6 s |
+| 3.1.0 as user 2003, activeRouting in the same upgrade | orphan delete, one upgrade | **deadlock** (fix 40): the new Backup reported Backup/Unknown/Active for 40 minutes because `my-gateway-0.my-gateway-headless` does not resolve for the old pod (its subdomain is still `my-gateway`); the Master kept serving |
+| 3.1.0 with its default root user | orphan delete, upgrade | without `fixDataOwnership` the Backup's `preconfigure` crash-looped (`cp: cannot create regular file '/data/local/metro-keystore': Permission denied`; all 1884 files were root-owned); with it, passed in 352 s, longest gap 3 s |
+| 4.0.0, then activeRouting | orphan delete, upgrade, second upgrade | passed; Backup replaced before the Master in both steps; gaps during the upgrade 3 s or less |
+| scaleout 4.0.0 (one frontend, standalone backend) | orphan delete of both StatefulSets, upgrade | passed; the frontend reconnected to the backend 194 s after the upgrade; 25 s unserved because the only frontend restarts |
+
+The gateways already on staging run as 2003 (their wrapper chart sets `securityContext`); 495 of 496 files on their volumes are owned by 2003, the other being the data directory itself, created by the provisioner.
+
+### S08 under restricted Pod Security
+
+8.3.1 and 8.1.53: never Ready, never restarted, readiness failing with "Gateway is still commissioning".
+
+### Service churn experiment
+
+Run because the staging dashboard missed checks during test upgrades. A probe pod sampled a test NodePort and the dashboard NodePort every 200 ms:
+
+| Mode | Cycles | In the cluster during churn | From the test machine |
+| --- | --- | --- | --- |
+| Services created and deleted (no endpoints) | 20 | 0 of 674 samples failed | 0 of 147 |
+| a pod added and removed behind the test Service | 20 | 0 of 2056 samples failed | 1 of 438 (both targets at once) |
+
+Service and endpoint changes do not make NodePorts drop. kube-proxy logged nothing while they happened.
+
+### Staging watch guardrail
+
+The watch now stops a run only after 3 failures in a row, and does not count failures while the control (a TCP connect to the node's Talos API port, which does not go through kube-proxy) also fails. Three times the test machine lost both the dashboard and the control for 25-55 s, each time within seconds of `helm upgrade` starting and together with the cluster API connection; all were logged as the test machine's network and the runs carried on. The one counted miss (a single sample during an S01 crash) did not repeat. Nothing points at staging itself.
+
 ### Not yet run
 
-S10 and the CI workflow (need the branch pushed).
+S10 and the CI workflow: they run on GitHub once `main` is pushed (start E2E manually from Actions).
