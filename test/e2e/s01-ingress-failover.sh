@@ -96,16 +96,16 @@ observe() {
   if [ "$IN_CLUSTER" = true ]; then
     e2e_probe_collect "$ns" "$name" "$E2E_OUT/$tag-$name-incluster.log"
     echo "  in-cluster:" | tee -a "$E2E_OUT/$tag-summary.txt" >&2
-    summarise "$E2E_OUT/$tag-$name-incluster.log"
+    summarise "$E2E_OUT/$tag-$name-incluster.log" service
   fi
   e2e_watch_check
 }
 
-# summarise <log>: per target, failed seconds and the longest outage. /StatusPing
+# summarise <log> [via label, default ingress]: per target, failed seconds and the longest outage. /StatusPing
 # answers 200 on a cold Backup too, so "served" counts seconds the ingress was
 # answered by an Active gateway; it also lists each role/state that answered.
 summarise() {
-  awk '{
+  awk -v label="${2:-ingress}" '{
     for (i = 2; i <= NF; i++) {
       split($i, kv, "="); k = kv[1]; v = kv[2]
       if (k == "via") {
@@ -116,7 +116,7 @@ summarise() {
     }
   } END {
     for (k in seen) printf "  %-9s failed %3ds, longest outage %3ds\n", k, bad[k] + 0, max[k] + 0
-    for (v in via) printf "  ingress answered by %-14s %3ds of %ds\n", v, via[v], NR
+    for (v in via) printf "  %s answered by %-14s %3ds of %ds\n", label, v, via[v], NR
   }' "$1" | tee -a "$E2E_OUT/$tag-summary.txt" >&2
 }
 
