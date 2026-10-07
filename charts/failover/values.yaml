@@ -36,6 +36,17 @@ certManager:
     enabled: false
     schedule: "0 7 * * *"
 
+  # -- Rolling restart after certificate renewal. The init container copies the
+  # GAN and web certificates into the gateway on every start, but a running
+  # gateway does not re-read them; this CronJob hashes the certificate secrets
+  # and restarts the StatefulSet (Backup first) when they change. Pair with
+  # activeRouting so the Master only restarts once the Backup is in sync.
+  restartOnRenewal:
+    enabled: false
+    schedule: "*/15 * * * *"
+    # -- Needs /bin/sh, sha256sum and kubectl
+    image: alpine/kubectl:1.34.1
+
 affinity:
   # -- Enable or disable pod anti-affinity
   enabled: false
@@ -55,6 +66,9 @@ ignition:
   # -- NetworkPolicy configuration
   networkPolicy:
     enabled: true
+    # -- Additional ingress rules (list of NetworkPolicyIngressRule), e.g. the
+    # ingress controller namespace or node CIDRs for NodePorts/load balancers
+    extraIngress: []
 
   # -- Defines the behavior during StatefulSet upgrades.
   # Options: RollingUpdate, OnDelete
@@ -79,6 +93,15 @@ ignition:
   logging:
     # -- Log level for the Ignition Gateway (INFO, DEBUG, WARN, ERROR)
     level: "INFO"
+    # -- Per-logger levels, e.g. {"gateway.SslManager": "DEBUG"}
+    loggers: {}
+    # -- SQLite log database maintenance; unset keys keep Ignition defaults:
+    # entryLimit, maxEventsPerMaintenance, minTimeBetweenMaintenance, vacuumFrequency
+    sqlite: {}
+    # -- Append wrapper.logfile=/dev/stdout to args so the gateway log goes to the
+    # container log (rotated by the kubelet) instead of an unrotated
+    # logs/wrapper.log on the logs emptyDir
+    wrapperLogToStdout: true
 
   # -- Web Server SSL/TLS Configuration
   ssl:
@@ -175,6 +198,8 @@ ignition:
   ingress:
     # -- Enable Ingress
     enabled: false
+    # -- IngressClass name (e.g. contour, nginx); empty uses the cluster default
+    className: ""
     # -- TLS configuration for Ingress
     tls: []
     # -- Host and path configuration for Ingress
@@ -212,6 +237,26 @@ ignition:
     httpReadTimeout: 60000
     backupFailoverTimeout: 10000
 
+  # -- Route user traffic only to the Active gateway of a redundant pair
+  # (needs redundancy.enabled). A labeller Deployment keeps the label
+  # redundancy-active=true on the Active gateway and a <name>-active Service
+  # selects it; that Service takes service.type/nodePorts/annotations, the main
+  # Service becomes ClusterIP, and the Ingress points at it. Readiness then
+  # also requires a Backup to be in sync, so rolling updates wait for it.
+  activeRouting:
+    enabled: false
+    # -- Labeller image; needs /bin/sh, curl and kubectl
+    image: alpine/kubectl:1.34.1
+    # -- Seconds between /system/gwinfo polls
+    intervalSeconds: 2
+    # -- Polls to keep the label on a gateway that stops answering
+    unknownHold: 3
+    resources:
+      requests: {cpu: 10m, memory: 32Mi}
+      limits: {cpu: 200m, memory: 128Mi}
+
+  # Probe commands use the chart's /config/scripts/health-check.sh by full path:
+  # the Ignition image has its own health-check.sh on PATH, which lacks -r.
   # -- Readiness Probe configuration
   readinessProbe:
     enabled: true
@@ -220,9 +265,10 @@ ignition:
     failureThreshold: 10
     timeoutSeconds: 3
     command:
-      - health-check.sh
+      - /config/scripts/health-check.sh
       - -t
       - "3"
+      - -r
 
   # -- Liveness Probe configuration
   livenessProbe:
@@ -232,6 +278,30 @@ ignition:
     failureThreshold: 3
     timeoutSeconds: 5
     command:
-      - health-check.sh
+      - /config/scripts/health-check.sh
       - -t
       - "5"
+
+  # -- Startup Probe configuration (off by default). While it runs, liveness and
+  # readiness are held off, so livenessProbe.failureThreshold can stay low and
+  # slow starts (e.g. a redundant state transfer restart) are still tolerated.
+  startupProbe:
+    enabled: false
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    failureThreshold: 30
+    timeoutSeconds: 5
+    command:
+      - /config/scripts/health-check.sh
+      - -t
+      - "5"
+
+  # -- Container lifecycle hooks (none by default: on SIGTERM the gateway shuts
+  # down gracefully on its own)
+  lifecycle: {}
+
+  # -- Optional sizeLimit for the gateway emptyDir volumes, e.g. "512Mi"
+  emptyDirSizeLimit:
+    logs: ""
+    temp: ""
+    dotIgnition: ""

@@ -1,0 +1,155 @@
+suite: Ignition Failover Active Routing
+templates:
+  - active-routing.yaml
+  - ignition-service.yaml
+  - ignition-ingress.yaml
+  - ignition-statefulset.yaml
+tests:
+  - it: should not render by default
+    template: active-routing.yaml
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should not render without redundancy
+    template: active-routing.yaml
+    set:
+      ignition:
+        activeRouting:
+          enabled: true
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should render the labeller and the -active Service with redundancy
+    template: active-routing.yaml
+    set:
+      ignition:
+        redundancy:
+          enabled: true
+        activeRouting:
+          enabled: true
+        service:
+          nodePorts:
+            http: 30188
+    asserts:
+      - hasDocuments:
+          count: 5
+      - documentIndex: 1
+        equal:
+          path: rules[1].resourceNames
+          value: ["ignition-failover-0", "ignition-failover-1"]
+      - documentIndex: 3
+        isKind:
+          of: Deployment
+      - documentIndex: 3
+        contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: POD_SELECTOR
+            value: app.kubernetes.io/name=ignition-failover,app.kubernetes.io/instance=RELEASE-NAME
+      - documentIndex: 4
+        equal:
+          path: metadata.name
+          value: ignition-failover-active
+      - documentIndex: 4
+        equal:
+          path: spec.selector["redundancy-active"]
+          value: "true"
+      - documentIndex: 4
+        equal:
+          path: spec.publishNotReadyAddresses
+          value: true
+      - documentIndex: 4
+        equal:
+          path: spec.type
+          value: NodePort
+      - documentIndex: 4
+        equal:
+          path: spec.ports[0].nodePort
+          value: 30188
+
+  - it: should make the main Service ClusterIP when active routing is on
+    template: ignition-service.yaml
+    documentIndex: 0
+    set:
+      ignition:
+        redundancy:
+          enabled: true
+        activeRouting:
+          enabled: true
+        service:
+          nodePorts:
+            http: 30188
+    asserts:
+      - equal:
+          path: spec.type
+          value: ClusterIP
+      - notExists:
+          path: spec.ports[0].nodePort
+
+  - it: should point the Ingress at the -active Service
+    template: ignition-ingress.yaml
+    set:
+      ignition:
+        redundancy:
+          enabled: true
+        activeRouting:
+          enabled: true
+        ingress:
+          enabled: true
+          hosts:
+            - host: a.local
+              paths:
+                - path: /
+                  pathType: Prefix
+    asserts:
+      - equal:
+          path: spec.rules[0].http.paths[0].backend.service.name
+          value: ignition-failover-active
+
+  - it: should require Backup sync in readiness when active routing is on
+    template: ignition-statefulset.yaml
+    set:
+      ignition:
+        redundancy:
+          enabled: true
+        activeRouting:
+          enabled: true
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: IGNITION_READY_REQUIRES_BACKUP_SYNC
+            value: "true"
+
+  - it: should not require Backup sync by default
+    template: ignition-statefulset.yaml
+    set:
+      ignition:
+        redundancy:
+          enabled: true
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: IGNITION_READY_REQUIRES_BACKUP_SYNC
+            value: "true"
+
+  - it: should mount the scripts Secret
+    template: active-routing.yaml
+    set:
+      ignition:
+        redundancy:
+          enabled: true
+        activeRouting:
+          enabled: true
+    asserts:
+      - documentIndex: 3
+        contains:
+          path: spec.template.spec.volumes
+          content:
+            name: scripts
+            secret:
+              secretName: ignition-failover-common-scripts
+              defaultMode: 0755

@@ -1,0 +1,36 @@
+suite: Ignition Failover emptyDir Size Limits
+templates:
+  - ignition-statefulset.yaml
+tests:
+  - it: should leave emptyDirs unbounded by default
+    asserts:
+      - contains:
+          path: spec.template.spec.volumes
+          content:
+            name: ignition-failover-logs
+            emptyDir: {}
+
+  - it: should set emptyDir sizeLimits from values
+    set:
+      ignition:
+        emptyDirSizeLimit:
+          logs: 256Mi
+          temp: 512Mi
+    asserts:
+      - contains:
+          path: spec.template.spec.volumes
+          content:
+            name: ignition-failover-logs
+            emptyDir:
+              sizeLimit: 256Mi
+      - contains:
+          path: spec.template.spec.volumes
+          content:
+            name: ignition-failover-temp
+            emptyDir:
+              sizeLimit: 512Mi
+      - contains:
+          path: spec.template.spec.volumes
+          content:
+            name: ignition-failover-dot-ignition
+            emptyDir: {}

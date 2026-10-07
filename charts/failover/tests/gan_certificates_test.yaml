@@ -38,3 +38,17 @@ tests:
         equal:
           path: metadata.name
           value: ignition-failover-gan
+
+  - it: should keep the CA key on renewal
+    asserts:
+      - documentIndex: 0
+        equal:
+          path: spec.privateKey.rotationPolicy
+          value: Never
+
+  - it: should rotate the GAN certificate key on renewal
+    asserts:
+      - documentIndex: 3
+        equal:
+          path: spec.privateKey.rotationPolicy
+          value: Always

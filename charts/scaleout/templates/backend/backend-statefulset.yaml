@@ -23,6 +23,11 @@ spec:
     metadata:
       labels:
         {{- include "ignition.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: backend
+      annotations:
+        # restart the gateways when redundancy values change; seed-redundancy.sh
+        # applies them to the data volume on start
+        checksum/redundancy: {{ .Values.backend.redundancy | toJson | sha256sum }}
     spec:
       serviceAccountName: {{ include "ignition.serviceAccountName" . }}
       securityContext:
@@ -45,14 +50,10 @@ spec:
             drop:
               - ALL
           readOnlyRootFilesystem: false
-        lifecycle:
-          preStop:
-            exec:
-              command: ["/config/scripts/shutdown.sh"]
         image: {{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}
         imagePullPolicy: {{ .Values.image.pullPolicy }}
         resources: {{ .Values.backend.resources | toYaml | nindent 10 }}
-        args: {{ .Values.backend.args | toYaml | nindent 8 }}
+        {{- include "ignition-common.args" (dict "values" .Values.backend) | nindent 8 }}
         ports:
         - name: http
           containerPort: {{ .Values.backend.service.ports.http }}
@@ -68,17 +69,20 @@ spec:
         env:
         - name: EAM_SETUP_INSTALLSELECTION
           value: {{ .Values.backend.eam.role | quote }}
+        # expands $(GATEWAY_SYSTEM_NAME) in args; without it the backend is named
+        # literally "$(GATEWAY_SYSTEM_NAME)" on the Gateway Network
+        - name: GATEWAY_SYSTEM_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        {{- if include "ignition-common.activeRoutingEnabled" (dict "values" .Values.backend) }}
+        - name: IGNITION_READY_REQUIRES_BACKUP_SYNC
+          value: "true"
+        {{- end }}
 
         volumeMounts:
 {{ include "ignition-common.volumeMounts" (dict "name" (include "ignition.name" .) "values" .Values.backend) | nindent 8 }}
-        {{- if .Values.backend.readinessProbe.enabled }}
-        readinessProbe:
-{{ include "ignition-common.probes" (dict "probe" (merge (dict "command" (list "/config/scripts/health-check.sh")) .Values.backend.readinessProbe)) | nindent 10 }}
-        {{- end }}
-        {{- if .Values.backend.livenessProbe.enabled }}
-        livenessProbe:
-{{ include "ignition-common.probes" (dict "probe" (merge (dict "command" (list "/config/scripts/health-check.sh")) .Values.backend.livenessProbe)) | nindent 10 }}
-        {{- end }}
+        {{- include "ignition-common.containerProbes" (dict "values" .Values.backend) | trim | nindent 8 }}
       initContainers:
 {{ include "ignition-common.initContainer.preconfigure" (dict "name" (include "ignition.name" .) "secretName" (printf "%s-backend-secrets" (include "ignition.name" .)) "image" .Values.image "values" .Values.backend "replicas" (ternary 2 1 .Values.backend.redundancy.enabled) "context" .) | nindent 6 }}
       volumes:
