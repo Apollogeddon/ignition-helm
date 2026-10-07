@@ -6,7 +6,7 @@ on:
     inputs:
       scenarios:
         description: Scenarios to run (test/e2e script names without .sh)
-        default: s7-uncommissioned s8-wrapper-log s1-ingress-failover s5-restart-on-renewal s9-partition
+        default: s8-uncommissioned s9-wrapper-log s1-ingress-failover s6-restart-on-renewal s10-partition
 
 jobs:
   e2e:
@@ -32,7 +32,7 @@ jobs:
 
       - name: Run scenarios
         env:
-          SCENARIOS: ${{ inputs.scenarios || 's7-uncommissioned s8-wrapper-log s1-ingress-failover s5-restart-on-renewal s9-partition' }}
+          SCENARIOS: ${{ inputs.scenarios || 's8-uncommissioned s9-wrapper-log s1-ingress-failover s6-restart-on-renewal s10-partition' }}
           E2E_OUT: ${{ github.workspace }}/e2e-out
         run: bash .github/scripts/e2e/run-scenarios.sh
 
