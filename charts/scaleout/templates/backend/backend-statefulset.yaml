@@ -65,6 +65,12 @@ spec:
         env:
         - name: EAM_SETUP_INSTALLSELECTION
           value: {{ .Values.backend.eam.role | quote }}
+        # expands $(GATEWAY_SYSTEM_NAME) in args; without it the backend is named
+        # literally "$(GATEWAY_SYSTEM_NAME)" on the Gateway Network
+        - name: GATEWAY_SYSTEM_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
         {{- if include "ignition-common.activeRoutingEnabled" (dict "values" .Values.backend) }}
         - name: IGNITION_READY_REQUIRES_BACKUP_SYNC
           value: "true"
