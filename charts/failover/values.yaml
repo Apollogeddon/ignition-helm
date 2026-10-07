@@ -63,6 +63,11 @@ ignition:
     fsGroup: 2003
     runAsNonRoot: true
 
+  # -- Chown the data volume to securityContext.runAsUser/runAsGroup on start
+  # (an init container running as root). Only for upgrades from charts up to
+  # 3.1.0, which ran the gateway as root by default; turn off again afterwards
+  fixDataOwnership: false
+
   # -- NetworkPolicy configuration
   networkPolicy:
     enabled: true

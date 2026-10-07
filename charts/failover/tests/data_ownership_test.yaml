@@ -1,0 +1,44 @@
+suite: Ignition Failover Data Ownership Fix
+templates:
+  - ignition-statefulset.yaml
+tests:
+  - it: should not add the ownership fix by default
+    asserts:
+      - notContains:
+          path: spec.template.spec.initContainers
+          content:
+            name: fix-data-ownership
+          any: true
+      - equal:
+          path: spec.template.spec.initContainers[0].name
+          value: preconfigure
+
+  - it: should chown the data volume to the gateway user before preconfigure
+    set:
+      ignition:
+        fixDataOwnership: true
+    asserts:
+      - equal:
+          path: spec.template.spec.initContainers[0].name
+          value: fix-data-ownership
+      - equal:
+          path: spec.template.spec.initContainers[0].securityContext.runAsUser
+          value: 0
+      - contains:
+          path: spec.template.spec.initContainers[0].command
+          content: chown -R 2003:2003 /data && echo 'data volume owned by 2003:2003'
+      - equal:
+          path: spec.template.spec.initContainers[1].name
+          value: preconfigure
+
+  - it: should chown to a custom gateway user
+    set:
+      ignition:
+        fixDataOwnership: true
+        securityContext:
+          runAsUser: 1000
+          runAsGroup: 1001
+    asserts:
+      - contains:
+          path: spec.template.spec.initContainers[0].command
+          content: chown -R 1000:1001 /data && echo 'data volume owned by 1000:1001'
