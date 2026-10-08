@@ -4,12 +4,14 @@ This repository uses GitHub Actions to automate testing, quality assurance, docu
 
 ## 🏗️ Orchestration: The Index Workflow
 
-The [`.index.yaml`](./workflows/.index.yaml) workflow is the primary entry point for changes to the `main` branch. It orchestrates the execution of other workflows in a specific order:
+The [`.index.yaml`](./workflows/.index.yaml) workflow is the primary entry point for changes to the charts. It runs on pushes to `main` and on pull requests that change the charts or the workflows they use, and orchestrates the other workflows in this order:
 
-1. **Updates**: Synchronizes `Chart.lock` files by running `helm dependency update`.
+1. **Updates**: Synchronizes `Chart.lock` files by running `helm dependency update`, and commits any change on `main`.
 2. **Testing & Quality**: Runs the testing and quality suites in parallel.
-3. **Release**: Triggered only after testing and quality checks pass.
+3. **Release**: On `main` only, after testing and quality checks pass.
 4. **Webpage**: Updates the documentation site after a successful release.
+
+A new push to a pull request cancels its previous run.
 
 ---
 
@@ -36,8 +38,10 @@ The [`testing.yaml`](./workflows/testing.yaml) workflow ensures the functional i
 
 The [`release.yaml`](./workflows/release.yaml) workflow automates versioning and publishing:
 
-- **Release Please**: Uses `googleapis/release-please-action` to parse conventional commits and automatically manage `CHANGELOG.md` updates and version bumps.
-- **Chart Releaser**: Uses `helm/chart-releaser-action` to package charts, create GitHub Releases, and update the Helm repository index on the `main` branch.
+- **Chart Releaser**: Packages every chart and creates a tag and GitHub Release, named `<chart>-<version>` with the chart attached, for each chart version that has no release yet. It then adds the new versions to the Helm repository index on the `main` branch. Each release's description is the newest section of the chart's `CHANGELOG.md`.
+- **Release Please**: Parses conventional commits and opens the release pull requests that bump each chart's version and `CHANGELOG.md`. It creates no releases of its own (`skip-github-release`), so each chart version gets exactly one tag and one release, and the workflow marks a merged release pull request as released once chart-releaser has released it.
+
+Every workflow installs Helm through [`.github/actions/setup-helm`](./actions/setup-helm/action.yml), which sets the Helm version in one place.
 
 ## 📖 Documentation
 
