@@ -38,8 +38,8 @@ The [`testing.yaml`](./workflows/testing.yaml) workflow ensures the functional i
 
 The [`release.yaml`](./workflows/release.yaml) workflow automates versioning and publishing:
 
-- **Chart Releaser**: Packages every chart and creates a tag and GitHub Release, named `<chart>-<version>` with the chart attached, for each chart version that has no release yet. It then adds the new versions to the Helm repository index on the `main` branch. Each release's description is the newest section of the chart's `CHANGELOG.md`.
-- **Release Please**: Parses conventional commits and opens the release pull requests that bump each chart's version and `CHANGELOG.md`. It creates no releases of its own (`skip-github-release`), so each chart version gets exactly one tag and one release, and the workflow marks a merged release pull request as released once chart-releaser has released it.
+- **Chart releases**: Packages every chart, and creates a tag and GitHub Release named `<chart>-<version>` with the chart attached for each chart version that has no release yet. `gh` creates each release as a draft, attaches the chart and then publishes it, as the repository's releases are immutable once published. chart-releaser then adds the new versions to the Helm repository index on the `main` branch. Each release's description is the newest section of the chart's `CHANGELOG.md`.
+- **Release Please**: Parses conventional commits and opens the release pull requests that bump each chart's version and `CHANGELOG.md`. It creates no releases of its own (`skip-github-release`), so each chart version gets exactly one tag and one release, and the workflow marks a merged release pull request as released once its chart versions are released.
 
 Every workflow installs Helm through [`.github/actions/setup-helm`](./actions/setup-helm/action.yml), which sets the Helm version in one place.
 
