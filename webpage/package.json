@@ -1,27 +1,27 @@
 {
-	"name": "ignition-helm-webpage",
-	"type": "module",
-	"scripts": {
-		"dev": "astro dev",
-		"start": "astro dev",
-		"build": "astro build",
-		"preview": "astro preview",
-		"astro": "astro",
-		"lint": "npm run biome",
-		"lint:fix": "npm run biome:fix",
-		"biome": "biome check .",
-		"biome:fix": "biome check --write --unsafe ."
-	},
-	"dependencies": {
-		"@fontsource/inter": "^5.2.8",
-		"astro": "^6.1.1",
-		"astro-mermaid": "^2.0.1",
-		"sharp": "^0.34.2"
-	},
-	"devDependencies": {
-		"@apollogeddon/forgejs": "3.1.0",
-		"@astrojs/mdx": "^5.0.3",
-		"@astrojs/sitemap": "^3.7.2",
-		"mermaid": "^11.13.0"
-	}
+  "name": "ignition-helm-webpage",
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "start": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro",
+    "lint": "npm run biome",
+    "lint:fix": "npm run biome:fix",
+    "biome": "biome check .",
+    "biome:fix": "biome check --write --unsafe ."
+  },
+  "dependencies": {
+    "@fontsource/inter": "^5.2.8",
+    "astro": "^6.1.1",
+    "astro-mermaid": "^2.0.1",
+    "sharp": "^0.34.2"
+  },
+  "devDependencies": {
+    "@apollogeddon/forgejs": "3.1.0",
+    "@astrojs/mdx": "^5.0.3",
+    "@astrojs/sitemap": "^3.7.2",
+    "mermaid": "^11.13.0"
+  }
 }
