@@ -1,3 +1,22 @@
 {
-	"cSpell.words": ["inductiveautomation", "kubeseal", "nindent"]
+  "cSpell.words": [
+    "biomejs",
+    "commitlint",
+    "gitleaks",
+    "inductiveautomation",
+    "kubeseal",
+    "lefthook",
+    "nindent",
+    "osv"
+  ],
+  "editor.codeActionsOnSave": {
+    "source.organizeImports.biome": "explicit",
+    "source.fixAll.biome": "explicit"
+  },
+  "[typescript]": {
+    "editor.defaultFormatter": "biomejs.biome"
+  },
+  "[json]": {
+    "editor.defaultFormatter": "biomejs.biome"
+  }
 }
