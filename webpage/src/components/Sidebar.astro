@@ -9,12 +9,14 @@ const pathname = new URL(Astro.request.url).pathname;
 const sections = [
 	{ label: "Guides", prefix: "guides/" },
 	{ label: "Charts", prefix: "charts/" },
-].map((section) => ({
-	...section,
-	items: docs
-		.filter((d) => d.id.startsWith(section.prefix))
-		.sort((a, b) => a.data.title.localeCompare(b.data.title)),
-}));
+]
+	.map((section) => ({
+		...section,
+		items: docs
+			.filter((d) => d.id.startsWith(section.prefix))
+			.sort((a, b) => a.data.title.localeCompare(b.data.title)),
+	}))
+	.filter((section) => section.items.length > 0);
 
 /**
  * Checks if a doc link is currently active
@@ -87,6 +89,4 @@ const isActive = (id: string) => {
     color: var(--sl-color-accent);
     background: var(--sl-color-accent-low);
   }
-
-  /* We could use client-side logic or active class here if needed */
 </style>
