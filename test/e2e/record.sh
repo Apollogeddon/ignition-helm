@@ -11,6 +11,8 @@ while [ "$(date +%s)" -lt "$end" ]; do
   if [ -n "$interval" ]; then t=$(date -u +%H:%M:%S.%3N); else t=$(date -u +%H:%M:%S); fi; i=0
   for target in "$@"; do
     i=$((i + 1)); name=${target%%=*}; url=${target#*=}
+    # RECORD_CURL_ARGS holds any number of curl arguments, so it is split on purpose
+    # shellcheck disable=SC2086
     case "$url" in
       # no answer is "down"; a reply that is not gwinfo (e.g. the ingress
       # controller's 503 while a Service has no endpoints) is "error:<code>";

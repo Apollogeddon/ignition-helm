@@ -48,6 +48,7 @@ log "frontend GATEWAY_NETWORK_0_HOST=$backend_host"
 running=$(grep -E "to Running" "$E2E_OUT/s04-frontend-gan.txt" | grep -F "$backend_host" | tail -1 || true)
 incoming=$(grep -E "Registering connection: $NAME-frontend-0|$NAME-frontend-0 connection status has been updated from .* to Running" "$E2E_OUT/s04-backend-gan.txt" | tail -1 || true)
 # grep -c exits 1 when it counts nothing, which pipefail would turn into a failure
+# shellcheck disable=SC2016 # searches the logs for the literal, unexpanded text
 literal=$({ grep -ciF '$(gateway_system_name)' "$E2E_OUT/s04-frontend.log" "$E2E_OUT/s04-backend.log" || true; } | awk -F: '{n += $NF} END {print n + 0}')
 log "frontend -> backend Running: ${running:+yes}; backend saw the frontend: ${incoming:+yes}; unexpanded system names: $literal"
 {
@@ -58,6 +59,7 @@ log "frontend -> backend Running: ${running:+yes}; backend saw the frontend: ${i
 } >> "$E2E_OUT/s04-summary.txt"
 [ -n "$running" ] || die "the frontend's connection to $backend_host never reached Running"
 [ -n "$incoming" ] || die "the backend did not register the frontend's connection"
+# shellcheck disable=SC2016 # the literal text a gateway shows when it is unexpanded
 [ "$literal" -eq 0 ] || die 'a gateway is named by an unexpanded $(GATEWAY_SYSTEM_NAME)'
 e2e_watch_check
 log "S04 passed"

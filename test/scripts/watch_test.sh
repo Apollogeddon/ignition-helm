@@ -57,4 +57,5 @@ check "failures while the control also fails are not counted" continue 7 "000 00
 check "logs the step and the control result" continue 5 "200 000 200" "000"
 check "failures with a healthy control abort" abort 7 "000 000 000 200" "200"
 
-[ "$fails" -eq 0 ] && echo "all passed" || { echo "$fails failed"; exit 1; }
+if [ "$fails" -ne 0 ]; then echo "$fails failed"; exit 1; fi
+echo "all passed"

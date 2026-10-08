@@ -4,12 +4,15 @@ This repository uses GitHub Actions to automate testing, quality assurance, docu
 
 ## 🏗️ Orchestration: The Index Workflow
 
-The [`.index.yaml`](./workflows/.index.yaml) workflow is the primary entry point for changes to the charts. It runs on pushes to `main` and on pull requests that change the charts or the workflows they use, and orchestrates the other workflows in this order:
+The [`.index.yaml`](./workflows/.index.yaml) workflow is the primary entry point. It runs on pushes to `main` that change the charts and on every pull request, and orchestrates the other workflows in this order:
 
-1. **Updates**: Synchronizes `Chart.lock` files by running `helm dependency update`, and commits any change on `main`.
-2. **Testing & Quality**: Runs the testing and quality suites in parallel.
-3. **Release**: On `main` only, after testing and quality checks pass.
-4. **Webpage**: Updates the documentation site after a successful release.
+1. **Changes**: On a pull request, works out whether the charts, or the scripts and workflows that test and release them, changed, and whether any shell script changed.
+2. **shellcheck**: Lints every shell script, when a script changed.
+3. **Updates**: Synchronizes `Chart.lock` files by running `helm dependency update`, and commits any change on `main`.
+4. **Testing & Quality**: Runs the testing and quality suites in parallel, when the charts changed.
+5. **Release**: On `main` only, after testing and quality checks pass.
+6. **Webpage**: On a pull request, the site's checks and build; on `main`, updates the site after a successful release.
+7. **Auto-merge**: Merges a Dependabot pull request through [forgejs](https://github.com/apollogeddon/forgejs)'s `merge.yml`, once every job above has passed or been skipped.
 
 A new push to a pull request cancels its previous run.
 

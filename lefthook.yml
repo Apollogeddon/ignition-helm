@@ -5,3 +5,12 @@ commit-msg:
   commands:
     commitlint:
       run: npx commitlint --edit {1}
+
+pre-commit:
+  commands:
+    shellcheck:
+      glob: "*.sh"
+      # CI runs shellcheck on every script, so the hook doesn't insist it's installed
+      run: |
+        if command -v shellcheck >/dev/null; then shellcheck {staged_files}
+        else echo "shellcheck isn't installed: skipping, CI checks the scripts"; fi

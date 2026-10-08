@@ -7,17 +7,6 @@ on:
     paths:
       - 'charts/**'
   pull_request:
-    paths:
-      - 'charts/**'
-      - '.github/actions/**'
-      - '.github/scripts/ci/**'
-      - '.github/kind/**'
-      - '.github/cr.yaml'
-      - '.github/release.json'
-      - '.github/workflows/.index.yaml'
-      - '.github/workflows/quality.yaml'
-      - '.github/workflows/release.yaml'
-      - '.github/workflows/testing.yaml'
   workflow_dispatch:
 
 concurrency:
@@ -33,7 +22,68 @@ permissions:
   packages: read
 
 jobs:
+  # What a pull request needs: the chart pipeline when the charts or what tests and
+  # releases them changed, and shellcheck when a script changed. The webpage and the
+  # Dependabot merge run on every pull request.
+  changes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      charts: ${{ steps.diff.outputs.charts }}
+      scripts: ${{ steps.diff.outputs.scripts }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Find what changed
+        id: diff
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE: ${{ github.event.pull_request.base.sha }}
+          CHART_INPUTS: '^(charts/|\.github/(actions|kind|scripts/ci)/|\.github/release\.json$|\.github/workflows/(\.index|quality|release|testing)\.yaml$)'
+          SCRIPT_INPUTS: '(\.sh$|^\.shellcheckrc$|^\.github/workflows/\.index\.yaml$)'
+        run: |
+          # a push or a manual run releases, so it runs the whole chart pipeline
+          if [ "$EVENT" != pull_request ] || ! git cat-file -e "$BASE^{commit}" 2>/dev/null; then
+            echo "charts=true" >> "$GITHUB_OUTPUT"
+            echo "scripts=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          files=$(git diff --name-only "$BASE" HEAD)
+          printf '%s\n' "$files"
+          if printf '%s\n' "$files" | grep -qE "$CHART_INPUTS"; then charts=true; else charts=false; fi
+          if printf '%s\n' "$files" | grep -qE "$SCRIPT_INPUTS"; then scripts=true; else scripts=false; fi
+          echo "charts=$charts" | tee -a "$GITHUB_OUTPUT"
+          echo "scripts=$scripts" | tee -a "$GITHUB_OUTPUT"
+
+  shellcheck:
+    needs: changes
+    if: needs.changes.outputs.scripts == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      # pinned, as the runner's shellcheck version changes what it reports
+      - name: Install shellcheck
+        env:
+          VERSION: v0.11.0
+        run: |
+          curl -sSfL "https://github.com/koalaman/shellcheck/releases/download/$VERSION/shellcheck-$VERSION.linux.x86_64.tar.xz" \
+            | tar -xJ -C "$RUNNER_TEMP" --strip-components=1 "shellcheck-$VERSION/shellcheck"
+          echo "$RUNNER_TEMP" >> "$GITHUB_PATH"
+      - name: shellcheck
+        run: git ls-files -z '*.sh' | xargs -0 shellcheck
+
   updates:
+    needs: changes
+    if: needs.changes.outputs.charts == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -83,6 +133,17 @@ jobs:
     uses: ./.github/workflows/release.yaml
     secrets: inherit
 
+  # on a pull request, the site's checks and build; on main, the site with the new index.yaml
   webpage:
     needs: release
+    if: ${{ !failure() && !cancelled() && (github.event_name == 'pull_request' || needs.release.result == 'success') }}
     uses: ./.github/workflows/webpage.yaml
+
+  # last, so a Dependabot pull request merges only once every check above has passed
+  auto-merge:
+    needs: [shellcheck, testing, quality, webpage]
+    if: ${{ !failure() && !cancelled() && github.event_name == 'pull_request' }}
+    uses: apollogeddon/forgejs/.github/workflows/merge.yml@main
+    permissions:
+      contents: write
+      pull-requests: write
