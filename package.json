@@ -8,6 +8,6 @@
   },
   "devDependencies": {
     "@apollogeddon/forgejs": "3.1.0",
-    "markdownlint-cli2": "0.22.1"
+    "markdownlint-cli2": "0.23.3"
   }
 }
