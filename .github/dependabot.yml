@@ -33,6 +33,11 @@ updates:
     # Repository tooling and the site don't ship in the charts, so no release.
     commit-message:
       prefix: "chore(deps)"
+    # astro-mermaid accepts mermaid 10 or 11 only, so a major mermaid update
+    # breaks the webpage's install until astro-mermaid supports it
+    ignore:
+      - dependency-name: "mermaid"
+        update-types: ["version-update:semver-major"]
     cooldown:
       default-days: 3
 
