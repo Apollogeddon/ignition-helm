@@ -62,3 +62,9 @@ helm install my-scaleout ignition-charts/ignition-scaleout \
 ## 🤝 Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
+
+Run `npm ci` once per clone to install the commit hook: commit messages follow [Conventional Commits](https://www.conventionalcommits.org/), which release-please uses to version the charts. Installing needs a GitHub token with `read:packages` in your user `~/.npmrc`, for `@apollogeddon/forgejs`.
+
+## 📄 License
+
+Released under the [MIT License](LICENSE).

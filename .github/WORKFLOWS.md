@@ -43,8 +43,10 @@ The [`release.yaml`](./workflows/release.yaml) workflow automates versioning and
 
 The [`webpage.yaml`](./workflows/webpage.yaml) workflow manages the [Astro](https://astro.build/)-based documentation site:
 
-- **Build**: Installs dependencies and builds the static site located in the `webpage/` directory.
-- **Deploy**: Publishes the build artifacts to **GitHub Pages**.
+- **Quality**: Calls [forgejs](https://github.com/apollogeddon/forgejs)'s `quality.yml`: Gitleaks over the whole repository, OSV-Scanner on the site's dependencies, Biome and the type check.
+- **Markdown**: Lints every Markdown file in the repository with `markdownlint-cli2`.
+- **Build**: Copies the chart repository's `index.yaml` into the site and builds the static site located in the `webpage/` directory, on pull requests too, so a broken site fails the pull request. Pushes and release calls build the tip of `main`, which has the `index.yaml` chart-releaser just pushed.
+- **Deploy**: Outside pull requests, publishes the build artifacts to **GitHub Pages**, which also serves the Helm repository.
 
 ---
 
