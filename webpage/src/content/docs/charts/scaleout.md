@@ -1,57 +1,54 @@
 ---
 title: ignition-scaleout
-description: A Helm chart for failover Ignition Gateway with scalable frontend client functionality
+description: Reference for the ignition-scaleout chart, which runs backend and scalable frontend Ignition gateways.
 ---
 
-A Helm chart for failover Ignition Gateway with scalable frontend client functionality. This chart deploys separate backend (controller) and frontend (agent) sets of Ignition Gateways to support high-scale architectures.
+`ignition-scaleout` deploys two sets of Ignition gateways: a backend (one gateway or a redundant pair, EAM controller) for devices, databases and tag history, and a frontend (any number of gateways, EAM agents) for user sessions. This page describes how they start up and lists the chart's values. For installation, see the [installation guide](../../guides/installation/).
 
-## Initialization Process
+## Startup
 
-The following diagram illustrates how the chart initializes the distributed architecture, establishing trust and connectivity between the Frontend and Backend layers.
+cert-manager issues each layer's Gateway Network certificate from a CA the chart creates. The frontend gateways are given the backend pods' addresses and open Gateway Network connections to them.
 
-> **Note:** The Backend StatefulSet includes two headless services (`-backend-primary` and `-backend-backup`) targeting specific nodes for direct diagnostics.
+The chart also creates two headless Services for the backend, `<name>-backend-primary` and `<name>-backend-backup`, that always target backend pod ordinals 0 and 1, so you can reach a specific gateway directly. `<name>` is `applicationName` (default `ignition-scaleout`).
 
 ```mermaid
 sequenceDiagram
+    participant Certs as cert-manager
     participant K8s as Kubernetes
-    participant Certs as Cert Manager
-    participant Backend as Backend (Controller)
-    participant Frontend as Frontend (Agent)
-    
-    par Backend Initialization
-        K8s->>Backend: Start Pod
-        Backend->>Certs: Request GAN Certs
-        Certs-->>Backend: Mount Secrets (TLS/CA)
-        Backend->>Backend: Initialize as Controller
-    and Frontend Initialization
-        K8s->>Frontend: Start Pod
-        Frontend->>Certs: Request GAN Certs
-        Certs-->>Frontend: Mount Secrets (TLS/CA)
-        Frontend->>Frontend: Initialize as Agent
+    participant Backend as Backend (controller)
+    participant Frontend as Frontend (agent)
+
+    Certs->>K8s: Issue GAN certificates and CA into Secrets
+    par Backend
+        K8s->>Backend: Start pod, mount Secrets
+        Backend->>Backend: Install GAN keystore, start as controller
+    and Frontend
+        K8s->>Frontend: Start pod, mount Secrets
+        Frontend->>Frontend: Install GAN keystore, start as agent
     end
-    
-    Frontend->>Backend: Open GAN Connection (Mutual TLS)
-    Backend-->>Frontend: Accept Connection
-    Frontend->>Frontend: Mount Proxy Tags & Projects
+    Frontend->>Backend: Open Gateway Network connection (mutual TLS)
+    Backend-->>Frontend: Accept connection
 ```
 
-> **Upgrading from 4.0.0 or earlier?** It needs a one-time step; see the [Upgrading guide](../../guides/upgrading/).
+> **Upgrading from 4.0.0 or earlier?** It needs a one-time step; see the [upgrading guide](../../guides/upgrading/).
 
-## Configuration
+## Values
 
-The following sections list the configurable parameters of the ignition-scaleout chart.
+The tables below list the chart's values and defaults, grouped by layer and area. [`values.yaml`](https://github.com/Apollogeddon/ignition-helm/blob/main/charts/scaleout/values.yaml) is the authoritative list.
 
-### General Settings
+### General
 
-Global settings applicable to the entire chart.
+Settings that apply to both layers. `affinity.type` is not set by default, which gives required (hard) anti-affinity when `affinity.enabled` is on; set it to `soft` for preferred.
 
 | Parameter | Type | Default |
 | --- | --- | --- |
 | `applicationName` | string | `"ignition-scaleout"` |
 | `image.repository` | string | `"inductiveautomation/ignition"` |
-| `image.tag` | string | `""` |
+| `image.tag` | string | `""` (the chart's `appVersion`, 8.3.1) |
 | `image.pullPolicy` | string | `"IfNotPresent"` |
+| `image.imagePullSecrets` | list | unset |
 | `affinity.enabled` | bool | `false` |
+| `affinity.type` | string | unset (hard) |
 | `affinity.topologyKey` | string | `"kubernetes.io/hostname"` |
 | `certManager.issuer.name` | string | `"cluster-issuer"` |
 | `certManager.issuer.kind` | string | `"ClusterIssuer"` |
@@ -62,11 +59,11 @@ Global settings applicable to the entire chart.
 | `serviceAccount.name` | string | `""` |
 | `serviceAccount.annotations` | object | `{}` |
 
-### Backend Configuration
+### Backend
 
-The Backend acts as the controller and primary data processor.
+The backend is the EAM controller and runs devices, databases and tag history.
 
-#### Ignition Settings (Backend)
+#### Gateway (backend)
 
 | Parameter | Type | Default |
 | --- | --- | --- |
@@ -100,14 +97,14 @@ GATEWAY_MODULES_ENABLED: alarm-notification,modbus-driver-v2,opc-ua,reporting,si
 - gateway.useProxyForwardedHeader=true
 ```
 
-#### Web Server SSL/TLS (Backend)
+#### Web server TLS (backend)
 
 | Parameter | Type | Default |
 | --- | --- | --- |
 | `backend.ssl.enabled` | bool | `false` |
 | `backend.ssl.secretName` | string | `""` |
 
-#### Security & Monitoring (Backend)
+#### Network policy and monitoring (backend)
 
 | Parameter | Type | Default |
 | --- | --- | --- |
@@ -115,8 +112,9 @@ GATEWAY_MODULES_ENABLED: alarm-notification,modbus-driver-v2,opc-ua,reporting,si
 | `backend.networkPolicy.extraIngress` | list | `[]` |
 | `backend.serviceMonitor.enabled` | bool | `false` |
 | `backend.serviceMonitor.interval` | string | `"30s"` |
+| `backend.serviceMonitor.path` | string | `"/data/metrics"` |
 
-#### Redundancy (Backend)
+#### Redundancy (backend)
 
 | Parameter | Type | Default |
 | --- | --- | --- |
@@ -142,7 +140,7 @@ httpReadTimeout: 60000
 backupFailoverTimeout: 10000
 ```
 
-#### Persistence (Backend)
+#### Persistence (backend)
 
 | Parameter | Type | Default |
 | --- | --- | --- |
@@ -152,10 +150,11 @@ backupFailoverTimeout: 10000
 | `backend.localMounts` | list | `[]` |
 | `backend.restore.enabled` | bool | `false` |
 | `backend.restore.url` | string | `""` |
+| `backend.restore.path` | string | unset |
 | `backend.emptyDirSizeLimit` | object | `{"logs":"","temp":"","dotIgnition":""}` |
 | `backend.fixDataOwnership` | bool | `false` |
 
-#### Networking (Backend)
+#### Networking (backend)
 
 | Parameter | Type | Default |
 | --- | --- | --- |
@@ -165,20 +164,24 @@ backupFailoverTimeout: 10000
 | `backend.service.sessionAffinity` | string | `"None"` |
 | `backend.ingress.enabled` | bool | `false` |
 | `backend.ingress.className` | string | `""` |
+| `backend.ingress.hosts` | list | unset |
 | `backend.ingress.tls` | list | `[]` |
 
-#### Resources & Security (Backend)
+#### Resources and security (backend)
 
 | Parameter | Type | Default |
 | --- | --- | --- |
 | `backend.resources.requests` | object | `{"memory":"1Gi","cpu":"500m"}` |
 | `backend.resources.limits.cpu` | string | `"1000m"` |
 | `backend.resources.limits.memory` | string | `"2Gi"` |
+| `backend.updateStrategy.type` | string | `"RollingUpdate"` |
+| `backend.externalModules.enabled` | bool | `false` |
+| `backend.externalModules.pvcName` | string | `""` |
 | `backend.securityContext` | object | `{"runAsUser":2003,"runAsGroup":2003,"fsGroup":2003,"runAsNonRoot":true}` |
 | `backend.secrets` | object | `{"GATEWAY_ADMIN_USERNAME":"admin","GATEWAY_ADMIN_PASSWORD":"admin","IGNITION_GAN_KEYSTORE_PASSWORD":"metro","IGNITION_WEB_KEYSTORE_PASSWORD":"ignition"}` |
 | `backend.sealedSecrets` | bool | `false` |
 
-#### Probes (Backend)
+#### Probes (backend)
 
 | Parameter | Type | Default |
 | --- | --- | --- |
@@ -216,11 +219,11 @@ command:
   - "-r"
 ```
 
-### Frontend Configuration
+### Frontend
 
-The Frontend acts as the agent, serving client sessions (Perspective, Vision).
+The frontend gateways are EAM agents and serve user sessions. They have no persistent volumes.
 
-#### Ignition Settings (Frontend)
+#### Gateway (frontend)
 
 | Parameter | Type | Default |
 | --- | --- | --- |
@@ -254,14 +257,14 @@ GATEWAY_MODULES_ENABLED: perspective,symbol-factory
 - gateway.useProxyForwardedHeader=true
 ```
 
-#### Web Server SSL/TLS (Frontend)
+#### Web server TLS (frontend)
 
 | Parameter | Type | Default |
 | --- | --- | --- |
 | `frontend.ssl.enabled` | bool | `false` |
 | `frontend.ssl.secretName` | string | `""` |
 
-#### Security & Monitoring (Frontend)
+#### Network policy and monitoring (frontend)
 
 | Parameter | Type | Default |
 | --- | --- | --- |
@@ -269,8 +272,9 @@ GATEWAY_MODULES_ENABLED: perspective,symbol-factory
 | `frontend.networkPolicy.extraIngress` | list | `[]` |
 | `frontend.serviceMonitor.enabled` | bool | `false` |
 | `frontend.serviceMonitor.interval` | string | `"30s"` |
+| `frontend.serviceMonitor.path` | string | `"/data/metrics"` |
 
-#### Scaling & HPA (Frontend)
+#### Scaling (frontend)
 
 | Parameter | Type | Default |
 | --- | --- | --- |
@@ -280,7 +284,7 @@ GATEWAY_MODULES_ENABLED: perspective,symbol-factory
 | `frontend.hpa.maxReplicas` | int | `10` |
 | `frontend.hpa.targetCPUUtilizationPercentage` | int | `80` |
 
-#### Networking (Frontend)
+#### Networking (frontend)
 
 | Parameter | Type | Default |
 | --- | --- | --- |
@@ -290,15 +294,19 @@ GATEWAY_MODULES_ENABLED: perspective,symbol-factory
 | `frontend.service.sessionAffinity` | string | `"None"` |
 | `frontend.ingress.enabled` | bool | `false` |
 | `frontend.ingress.className` | string | `""` |
+| `frontend.ingress.hosts` | list | unset |
 | `frontend.ingress.tls` | list | `[]` |
 
-#### Resources & Security (Frontend)
+#### Resources and security (frontend)
 
 | Parameter | Type | Default |
 | --- | --- | --- |
 | `frontend.resources.requests` | object | `{"memory":"1Gi","cpu":"500m"}` |
 | `frontend.resources.limits.cpu` | string | `"1000m"` |
 | `frontend.resources.limits.memory` | string | `"2Gi"` |
+| `frontend.updateStrategy.type` | string | `"RollingUpdate"` |
+| `frontend.externalModules.enabled` | bool | `false` |
+| `frontend.externalModules.pvcName` | string | `""` |
 | `frontend.localMounts` | list | `[]` |
 | `frontend.emptyDirSizeLimit` | object | `{"logs":"","temp":"","dotIgnition":""}` |
 | `frontend.fixDataOwnership` | bool | `false` |
@@ -306,7 +314,7 @@ GATEWAY_MODULES_ENABLED: perspective,symbol-factory
 | `frontend.secrets` | object | `{"GATEWAY_ADMIN_USERNAME":"admin","GATEWAY_ADMIN_PASSWORD":"admin","IGNITION_GAN_KEYSTORE_PASSWORD":"metro","IGNITION_WEB_KEYSTORE_PASSWORD":"ignition"}` |
 | `frontend.sealedSecrets` | bool | `false` |
 
-#### Probes (Frontend)
+#### Probes (frontend)
 
 | Parameter | Type | Default |
 | --- | --- | --- |

@@ -1,151 +1,132 @@
 ---
 title: Installation
-description: How to install the Ignition Helm Charts.
+description: Install the tools, prepare a cluster with cert-manager, and install the Ignition Helm charts.
 ---
 
-## Tools & Dependencies
+This guide takes you from an empty workstation to a running Ignition gateway: install `kubectl` and Helm, add cert-manager and an issuer to your cluster, then install a chart.
 
-Before installing the charts, you will need a few tools installed on your machine.
+## Requirements
+
+- A Kubernetes 1.23 or later cluster, with a storage class that can provision persistent volumes. For local development, Docker Desktop (with Kubernetes enabled) or kind work.
+- `kubectl` and Helm 3. The repository's CI workflows use Helm v3.22.0.
+- cert-manager and an issuer, described in [Prepare the cluster](#prepare-the-cluster). The charts create cert-manager `Certificate` and `Issuer` resources, so they do not install without it.
+
+## Install the tools
 
 ### Windows (PowerShell)
 
-> **Tip**: `winget` is the easiest way to get these tools on Windows 10/11.
-
-1. **Install Kubernetes CLI (kubectl)**
-
-    ```powershell
-    winget install Kubernetes.kubectl
-    ```
-
-2. **Install Helm (Package Manager)**
-
-    ```powershell
-    winget install Helm.Helm
-    ```
+```powershell
+winget install Kubernetes.kubectl
+winget install Helm.Helm
+```
 
 ### macOS
 
-> **Tip**: We recommend using [Homebrew](https://brew.sh/) to manage dependencies.
+With [Homebrew](https://brew.sh/):
 
-1. **Install Kubernetes CLI (kubectl)**
-
-    ```bash
-    brew install kubectl
-    ```
-
-2. **Install Helm (Package Manager)**
-
-    ```bash
-    brew install helm
-    ```
+```bash
+brew install kubectl
+brew install helm
+```
 
 ### Linux
 
-> **Note**: These commands assume a Debian/Ubuntu-based distribution. For others, please refer to the official [Kubernetes](https://kubernetes.io/docs/tasks/tools/) and [Helm](https://helm.sh/docs/intro/install/) documentation.
+These commands assume an x86-64 machine. For other platforms, see the [Kubernetes](https://kubernetes.io/docs/tasks/tools/) and [Helm](https://helm.sh/docs/intro/install/) installation guides.
 
-1. **Install Kubernetes CLI (kubectl)**
+```bash
+curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+```
 
-    ```bash
-    # Install kubectl
-    curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-    sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
-    ```
-
-2. **Install Helm (Package Manager)**
-
-    ```bash
-    curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
-    ```
-
-### Verify Installation
-
-Ensure the tools are installed correctly by checking their versions:
+### Check the tools
 
 ```bash
 kubectl version --client
 helm version
 ```
 
-## Cluster Setup
+## Prepare the cluster
 
-### 1. Kubernetes Cluster
+### Install cert-manager
 
-You will need a running Kubernetes cluster (Version 1.23+). If you don't have one, **Docker Desktop** (with Kubernetes enabled) or **Kind** are great options for local development.
+The charts use cert-manager to issue the Gateway Network certificates. Install it with Helm. CI tests the charts with cert-manager v1.18.2:
 
-### 2. Cert-Manager
+```bash
+helm repo add jetstack https://charts.jetstack.io
+helm upgrade --install cert-manager jetstack/cert-manager -n cert-manager --create-namespace \
+  --version v1.18.2 --set crds.enabled=true --wait
+```
 
-These charts rely on `cert-manager` for automatic SSL certificate generation (specifically for the Gateway Network).
+See the [cert-manager documentation](https://cert-manager.io/docs/installation/) for other installation methods.
 
-1. **Install Cert-Manager**
+### Create an issuer
 
-    Install it directly from the official manifest:
+Each chart creates a CA certificate for its Gateway Network, signed by the issuer named in `certManager.issuer.name` and `certManager.issuer.kind`. By default that is a `ClusterIssuer` named `cluster-issuer`. Without it, the Gateway Network certificates are not issued and the gateways do not start.
 
-    ```bash
-    kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.14.4/cert-manager.yaml
-    ```
+The issuer must be able to sign a CA certificate. A self-signed `ClusterIssuer` is the simplest choice, and is what CI uses. Save this as `issuer.yaml`:
 
-2. **Wait for Readiness**
+```yaml
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: cluster-issuer
+spec:
+  selfSigned: {}
+```
 
-    Wait for the pods to be ready in the `cert-manager` namespace:
+Apply it:
 
-    ```bash
-    kubectl get pods -n cert-manager
-    ```
+```bash
+kubectl apply -f issuer.yaml
+```
 
-### 3. Cluster Issuer
+To use an existing issuer instead, set `certManager.issuer.name`, and set `certManager.issuer.kind` to `Issuer` if it is a namespaced issuer in the release's namespace.
 
-The charts default to looking for a `ClusterIssuer` named `cluster-issuer`.
+## Install a chart
 
-> **Caution**: Without a valid ClusterIssuer, the Gateway Network certificates will not be generated, and redundancy/scaleout will fail to connect.
+### Add the repository
 
-For local development or internal networks, a **Self-Signed** issuer is the easiest way to get started.
-
-1. **Create Issuer Manifest**
-
-    Create a file named `issuer.yaml` with the following content:
-
-    ```yaml
-    apiVersion: cert-manager.io/v1
-    kind: ClusterIssuer
-    metadata:
-      name: cluster-issuer
-    spec:
-      selfSigned: {}
-    ```
-
-2. **Apply to Cluster**
-
-    ```bash
-    kubectl apply -f issuer.yaml
-    ```
-
-## Installing the Charts
-
-### Adding the Repository
-
-Add the Helm repository to your local client:
+Each chart version is published as a GitHub release, and the Helm repository index is served from this site:
 
 ```bash
 helm repo add ignition-charts https://apollogeddon.github.io/ignition-helm
 helm repo update
 ```
 
-### Installation Options
+To see the available versions:
 
-#### Failover (Standard Redundancy)
+```bash
+helm search repo ignition-charts --versions
+```
 
-This deploys a standard Master/Backup pair.
+### Failover
+
+Install a single gateway. Set your own admin password; the default is `admin`.
 
 ```bash
 helm install my-ignition ignition-charts/ignition-failover \
   --set ignition.secrets.GATEWAY_ADMIN_PASSWORD=mysecretpassword
 ```
 
-#### Scaleout (Frontend/Backend)
+Add `--set ignition.redundancy.enabled=true` for a Master/Backup pair.
 
-This deploys separate Frontend and Backend clusters.
+### Scaleout
+
+Install one backend and one frontend gateway:
 
 ```bash
 helm install my-scaleout ignition-charts/ignition-scaleout \
-  --set backend.secrets.GATEWAY_ADMIN_PASSWORD=mysecretpassword
+  --set backend.secrets.GATEWAY_ADMIN_PASSWORD=mysecretpassword \
+  --set frontend.secrets.GATEWAY_ADMIN_PASSWORD=mysecretpassword
 ```
+
+### Check the installation
+
+The gateways take a few minutes to start. Watch the pods until they are Ready:
+
+```bash
+kubectl get pods -w
+```
+
+The Services are `NodePort` by default. See the [chart reference](../../charts/failover/) for the Service, Ingress and other options.

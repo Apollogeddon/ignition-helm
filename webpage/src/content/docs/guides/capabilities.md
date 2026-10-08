@@ -1,37 +1,37 @@
 ---
-title: Features & Capabilities
-description: Explore the advanced capabilities of the Ignition Helm Charts.
+title: Features and capabilities
+description: What the Ignition Helm charts do, grouped by area, with example values.
 ---
 
-This library is designed to be "batteries-included" but highly extensible. Below are the core features categorised by their operational domain.
+This page describes what the charts do and how to configure each feature. The examples use the failover chart's `ignition.` prefix; in the scaleout chart, use `frontend.` or `backend.` instead.
 
-## 1. Automated Operations
+## Automated setup
 
-The charts use a specialised **Init Container** (`preconfigure`) to handle complex setup tasks before the Ignition Gateway starts.
+The `preconfigure` init container prepares each gateway before it starts:
 
-* **Redundancy Settings**: Configures pod 0 as Master and pod 1 as Backup, and re-applies the chart's redundancy settings on **every** start. Turning `redundancy.enabled` on or off, or changing any `redundancy.*` value, restarts the gateways and takes effect without using the Gateway UI (turning it off makes the gateway Independent).
-* **Certificate Exchange**: If `cert-manager` is not present, it auto-generates self-signed certificates for the Gateway Network (GAN) and shares them between pods via Kubernetes Secrets.
-* **Auto-Restore**: Checks for a `.gwbk` file in mounted volumes or at a specified URL and restores it on first startup.
+* **Data volume**: seeds the persistent volume from the image on first start.
+* **Redundancy settings**: configures pod 0 as Master and pod 1 as Backup, and re-applies the chart's redundancy settings on every start. Turning `redundancy.enabled` on or off, or changing any `redundancy.*` value, restarts the gateways and takes effect without using the Gateway web UI (turning it off makes the gateway Independent).
+* **Gateway Network certificates**: installs the certificate and CA that cert-manager issued into the gateway's keystore. The chart creates the CA `Certificate`, an `Issuer` that signs with it, and a `Certificate` per component, so cert-manager and an issuer for the CA are required.
+* **Gateway backup**: with `restore.enabled`, downloads a `.gwbk` file from `restore.url`, or copies it from `restore.path`, to `/data/restore.gwbk` on the data volume.
 
-## 2. Storage & Persistence
+## Storage and persistence
 
-Ignition requires persistence for `data/db` (config) and logs.
+### Persistent volumes
 
-### Persistent Volume Claims (PVC)
-
-By default, each pod gets a dedicated 3Gi volume.
+Each failover gateway, and each scaleout backend gateway, gets its own persistent volume, 3Gi by default. Scaleout frontend gateways have no persistent volume.
 
 ```yaml
-persistence:
-  size: 3Gi
-  accessModes: [ "ReadWriteOnce" ]
+ignition:
+  persistence:
+    size: 3Gi
+    accessModes: ["ReadWriteOnce"]
 ```
 
-### Advanced Mounting (`extraVolumes`)
+### Extra volumes
 
-Mount arbitrary Kubernetes volumes (ConfigMaps, Secrets, existing PVCs) into the container.
+Mount other Kubernetes volumes (ConfigMaps, Secrets, existing PersistentVolumeClaims) into the gateway container with `extraVolumes` and `extraVolumeMounts`.
 
-#### Example: Mounting a custom JDBC driver
+For example, to mount a custom JDBC driver:
 
 ```yaml
 ignition:
@@ -44,9 +44,9 @@ ignition:
       mountPath: /usr/local/bin/ignition/user-lib/jdbc
 ```
 
-### Local Development Mounts
+### Local development mounts
 
-For local dev (Kind/Docker Desktop), map a host folder directly into the container.
+For local development (kind or Docker Desktop), mount a host directory into the gateway's installation directory. `mountPath` is relative to `/usr/local/bin/ignition`.
 
 ```yaml
 ignition:
@@ -55,29 +55,34 @@ ignition:
       mountPath: "data/themes"
 ```
 
-## 3. Configuration & Logging
+## Configuration and logging
 
-### Environment Variables
+### Environment variables
 
-Configure the gateway using standard Ignition environment variables.
+`config` sets the gateway's environment variables, through a ConfigMap. Use it for the Ignition image's standard variables:
 
 ```yaml
 ignition:
   config:
     IGNITION_EDITION: "edge"
-    GATEWAY_ADMIN_USERNAME: "admin"
     GATEWAY_MODULES_ENABLED: "perspective,opc-ua"
 ```
 
-### JVM Arguments
+Put sensitive values, such as `GATEWAY_ADMIN_PASSWORD`, in `secrets` instead, which the chart renders as a Secret.
 
-Pass custom flags to the Java runtime.
+### Gateway arguments
+
+`args` is passed to the Ignition image's entrypoint. `-m` sets the maximum heap in MB, `-n` the gateway name, and anything after `--` is passed to the gateway as wrapper and JVM settings. Setting `args` replaces the whole default list, so keep `-n` and the default `--` entry:
 
 ```yaml
 ignition:
   args:
     - -m
-    - "2048" # Max Memory (MB)
+    - "2048"
+    - -n
+    - "$(GATEWAY_SYSTEM_NAME)"
+    - --
+    - gateway.useProxyForwardedHeader=true
     - -Dignition.allowunsignedmodules=true
 ```
 
@@ -97,11 +102,11 @@ ignition:
     logs: 512Mi              # optional cap on the logs volume
 ```
 
-## 4. High Availability (HA)
+## High availability
 
-### Probes (Health Checks)
+### Probes
 
-Kubernetes checks if the Gateway is alive and ready to receive traffic.
+Kubernetes uses the probes to decide whether a gateway is alive and ready for traffic.
 
 * **Readiness** (`health-check.sh -t 3 -r`): `/StatusPing` must report `RUNNING`, and the gateway must have finished commissioning. With `activeRouting`, a Backup must also be in sync with its Master.
 * **Liveness** (`health-check.sh -t 5`): `/StatusPing` must report `RUNNING`. A gateway stuck commissioning is not restarted in a loop.
@@ -109,9 +114,9 @@ Kubernetes checks if the Gateway is alive and ready to receive traffic.
 
 The checks use `/StatusPing`, which works on Ignition 8.1 and 8.3. A probe `command` you set is used as-is.
 
-### Active Routing
+### Active routing
 
-By default every Ready gateway sits behind the Service, and a cold Backup is Ready too, so users can land on a gateway that is not serving. With `activeRouting.enabled` (failover, or the scaleout backend) a small labeller marks the Active gateway and a `<name>-active` Service sends traffic only there. It takes over the configured Service type, nodePorts and annotations, and the chart Ingress points at it.
+By default every Ready gateway sits behind the Service, and a cold Backup is Ready too, so users can land on a gateway that is not serving. With `activeRouting.enabled` (failover, or the scaleout backend) a small labeller marks the active gateway and a `<name>-active` Service sends traffic only there. It takes over the configured Service type, node ports and annotations, and the chart Ingress points at it.
 
 ```yaml
 ignition:
@@ -123,9 +128,9 @@ ignition:
 
 Failover then takes a few seconds: about 4-5 s for a graceful stop of the Master and 2-3 s for a crash, measured on a test cluster. When upgrading from 4.0.0 or earlier, enable it in a separate upgrade (see [Upgrading](../upgrading/)).
 
-### Pod Scheduling (Affinity)
+### Pod anti-affinity
 
-Ensure high availability by forcing Master and Backup pods to run on different physical nodes.
+Keep the Master and Backup on different nodes with pod anti-affinity:
 
 ```yaml
 affinity:
@@ -134,15 +139,15 @@ affinity:
   topologyKey: "kubernetes.io/hostname"
 ```
 
-### Pod Disruption Budgets (PDB)
+### Pod disruption budgets
 
-To prevent downtime during cluster maintenance (like node upgrades), the charts automatically deploy a **Pod Disruption Budget**. This instructs Kubernetes to ensure at least one node in a redundant pair remains available at all times.
+To keep a gateway available during voluntary disruptions such as node drains, the charts create a PodDisruptionBudget with `minAvailable: 1` for a redundant pair (failover or scaleout backend), and for the scaleout frontend when it has more than one replica or an autoscaler.
 
-## 5. Security
+## Security
 
-* **Non-Root User**: Runs as UID `2003` with `runAsNonRoot: true`, no privilege escalation and all capabilities dropped. The charts' pods meet the Kubernetes **restricted** Pod Security level.
-* **SealedSecrets**: Support for Bitnami SealedSecrets for managing sensitive values without checking plain-text passwords into Git.
-* **Network Isolation (NetworkPolicy)**: Optionally restrict traffic to the Gateway Network (GAN) so only authenticated Ignition pods can communicate on port `8060`.
+* **Non-root user**: the gateways run as UID `2003` with `runAsNonRoot: true`, no privilege escalation and all capabilities dropped. The charts' pods meet the Kubernetes restricted Pod Security level (except the optional `fixDataOwnership` init container).
+* **SealedSecrets**: `sealedSecrets: true` renders the `secrets` map as a Bitnami SealedSecret, so you can keep encrypted values in Git.
+* **Network isolation**: a NetworkPolicy, on by default, allows Gateway Network traffic (port `8060`) only from the chart's own gateways.
 
 ```yaml
 ignition:
@@ -150,9 +155,9 @@ ignition:
     enabled: true
 ```
 
-### Example: Using SealedSecrets
+### Example: SealedSecrets
 
-If you have the `kubeseal` CLI and SealedSecrets controller installed:
+With the SealedSecrets controller in the cluster and the `kubeseal` CLI:
 
 1. Set `sealedSecrets: true` in your values.
 2. Provide the *encrypted* strings in the `secrets` map.
@@ -164,26 +169,27 @@ ignition:
     GATEWAY_ADMIN_PASSWORD: "AgBy38v4Sly6S..." # Encrypted via kubeseal
 ```
 
-### Ingress & Sticky Sessions
+### Ingress and sticky sessions
 
-Ignition Perspective and Vision sessions are stateful. When using an Ingress (like Nginx), you **must** enable sticky sessions (session affinity) to ensure clients stay connected to the same pod.
+Perspective and Vision sessions are stateful. When more than one gateway can serve a client, for example scaleout frontends behind an Ingress, enable sticky sessions so each client stays on the same pod. With ingress-nginx:
 
 ```yaml
-ignition:
+frontend:
   ingress:
     enabled: true
+    className: nginx
     annotations:
       nginx.ingress.kubernetes.io/affinity: "cookie"
       nginx.ingress.kubernetes.io/session-cookie-name: "route"
 ```
 
-### Custom Web Server SSL
+### Custom web server certificate
 
-You can provide your own PKCS#12 keystore for the Web Server (HTTPS) instead of the default self-signed one.
+You can give the gateway's web server (HTTPS) your own PKCS#12 keystore. The chart does not issue web server certificates; you provide the Secret, for example from your own cert-manager `Certificate`.
 
-1. Create a Kubernetes Secret containing your `keystore.p12` file.
-2. Ensure the keystore password matches the value set in `IGNITION_WEB_KEYSTORE_PASSWORD`.
-3. Enable SSL in your `values.yaml`:
+1. Create a Secret with your keystore under the key `keystore.p12`.
+2. Set `IGNITION_WEB_KEYSTORE_PASSWORD` in `secrets` to the keystore's password.
+3. Enable it in your values. `secretName` defaults to `<name>-web-tls`.
 
 ```yaml
 ignition:
@@ -192,16 +198,16 @@ ignition:
     secretName: "my-custom-keystore"
 ```
 
-## 6. Observability & Scaling
+## Observability and scaling
 
-### Prometheus Monitoring
+### Prometheus monitoring
 
-The charts support the **Prometheus Operator** via a `ServiceMonitor` resource. This allows automatic discovery of your gateways by Prometheus.
+The charts can create a Prometheus Operator `ServiceMonitor`, so Prometheus discovers the gateways.
 
-**Prerequisite**: You must expose a Prometheus-compatible endpoint on your gateway. Common methods include:
+The gateway does not expose Prometheus metrics by default, so you need to add an endpoint, for example:
 
-* **OpenTelemetry Java Agent**: The modern approach for Ignition 8.1+. Automatically instruments the JVM and Ignition metrics.
-* **WebDev Script**: A simple Python script within the WebDev module to format system tags for Prometheus.
+* **OpenTelemetry Java agent**: instruments the gateway's JVM.
+* **WebDev script**: a script in the WebDev module that formats tag values for Prometheus.
 
 ```yaml
 ignition:
@@ -211,9 +217,9 @@ ignition:
     path: "/data/metrics" # Update this to match your endpoint (e.g., /metrics)
 ```
 
-### Horizontal Pod Autoscaling (HPA)
+### Horizontal pod autoscaling
 
-In the **Scaleout** architecture, you can dynamically scale your **Frontend** nodes based on CPU or Memory utilization. This is ideal for handling variable user loads in Perspective sessions.
+In the scaleout chart, a HorizontalPodAutoscaler can scale the frontend gateways on CPU utilization (`targetCPUUtilizationPercentage`), memory utilization (`targetMemoryUtilizationPercentage`) or both, for variable Perspective load.
 
 ```yaml
 frontend:
@@ -224,13 +230,13 @@ frontend:
     targetCPUUtilizationPercentage: 80
 ```
 
-### Graceful Shutdown
+### Graceful shutdown
 
-Ignition shuts down cleanly on `SIGTERM`, so the charts add no `preStop` hook. `gwcmd.sh -p` resets the gateway login password and must not be used as one.
+Ignition shuts down cleanly on `SIGTERM`, so the charts add no `preStop` hook. Do not use `gwcmd.sh -p` as one: it resets the gateway login password.
 
-### Certificate Renewal
+### Certificate renewal
 
-cert-manager renews the Gateway Network certificates, but a running gateway only loads them when it starts. `certManager.restartOnRenewal.enabled` adds a CronJob that notices when the certificate secrets change and rolls the gateways, Backup first.
+cert-manager renews the Gateway Network certificates, but a running gateway only loads them when it starts. `certManager.restartOnRenewal.enabled` adds a CronJob that notices when the certificate secrets change and restarts the gateways, Backup first.
 
 ```yaml
 certManager:
@@ -238,11 +244,11 @@ certManager:
     enabled: true
 ```
 
-## 7. Backup & Restore
+## Backup and restore
 
-### Automated Restore
+### Restore on start
 
-Seed a new gateway from a backup file on startup.
+Fetch a gateway backup into the data volume before the gateway starts:
 
 ```yaml
 ignition:
@@ -251,12 +257,12 @@ ignition:
     url: "https://internal-server/backups/production.gwbk"
 ```
 
-### Manual Backup (CLI)
+### Manual backup
 
-To take a snapshot of a running gateway without logging into the GUI:
+To take a backup of a running gateway without the web UI:
 
 ```bash
-# Execute the backup command inside the pod
+# Run the backup inside the pod
 kubectl exec -it ignition-failover-0 -- /usr/local/bin/ignition/gwcmd.sh -b /usr/local/bin/ignition/data/backup.gwbk
 
 # Copy the file to your local machine

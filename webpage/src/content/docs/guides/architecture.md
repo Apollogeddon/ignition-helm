@@ -1,26 +1,25 @@
 ---
 title: Architecture
-description: Understanding the deployment models.
+description: The two deployment models, failover and scaleout, and how to choose between them.
 ---
 
-## Overview
+The charts offer two ways to run Ignition on Kubernetes. This page describes each one and helps you choose.
 
-This repository provides two primary architectures for deploying Ignition on Kubernetes.
+## Failover (Master/Backup)
 
-### 1. Failover (Master/Backup)
+The `ignition-failover` chart deploys one gateway, or a redundant pair, that serves both devices and users.
 
-The `ignition-failover` chart deploys a standard redundant pair of Ignition gateways.
+* **Replicas**: 1 by default; 2 with `ignition.redundancy.enabled`.
+* **State**: a StatefulSet, so each gateway has a stable network identity and its own persistent volume.
+* **Roles**: pod `0` is the Master and pod `1` the Backup.
+* **Direct access**: besides the main Service, the chart creates two headless Services that target one pod each:
+  * `<name>-primary` always points to pod `0`.
+  * `<name>-backup` always points to pod `1`.
 
-* **Replicas**: 2 (Fixed)
-* **State**: StatefulSet with stable network identities.
-* **Networking**:
-  * `0`: Master (Primary)
-  * `1`: Backup (Redundant)
-* **Direct Access**: In addition to the main load-balanced Service, the chart creates two **Headless Services** for direct pod targeting:
-  * `{{release-name}}-primary`: Always points to ordinal `0`.
-  * `{{release-name}}-backup`: Always points to ordinal `1`.
+  `<name>` is `applicationName` (default `ignition-failover`).
+* **Use case**: SCADA deployments that need high availability.
 
-* **Use Case**: Standard SCADA deployments requiring high availability.
+By default the main Service sends traffic to every Ready gateway, including a cold Backup. Set `ignition.activeRouting.enabled` to send it only to the active gateway.
 
 ```mermaid
 graph TD
@@ -33,14 +32,14 @@ graph TD
     end
 ```
 
-### 2. Scaleout (Frontend/Backend)
+## Scaleout (frontend/backend)
 
-The `ignition-scaleout` chart separates the workload into two distinct StatefulSets:
+The `ignition-scaleout` chart splits the workload into two StatefulSets:
 
-* **Backend**: Handles device connections, database logging, and tag history.
-* **Frontend**: Handles Perspective sessions and API requests.
+* **Backend**: device connections, database logging and tag history. One gateway, or a redundant pair with `backend.redundancy.enabled`.
+* **Frontend**: Perspective sessions and API requests. `frontend.redundancy.replicas` gateways, or a HorizontalPodAutoscaler.
 
-This architecture allows you to scale the Frontend layer independently of the Backend layer to handle massive user loads.
+You can scale the frontend independently of the backend as user load grows.
 
 ```mermaid
 graph TD
@@ -58,29 +57,27 @@ graph TD
     end
 ```
 
-## Selection Guide
+## Choosing an architecture
 
-Choosing the right architecture depends on your specific requirements for scale, latency, and management complexity.
+The right choice depends on your user load, how much you need to isolate device communication, and how much you want to operate. The user counts below are rough guidance, not limits the charts enforce; size your gateways for your own projects.
 
-### Decision Matrix
-
-| Feature | Failover (Master/Backup) | Scaleout (Frontend/Backend) |
+| | Failover (Master/Backup) | Scaleout (frontend/backend) |
 | :--- | :--- | :--- |
-| **Primary Goal** | High Availability (HA) | High Concurrency (User Load) |
-| **Max User Load** | ~500 Concurrent Sessions | 1,000+ Concurrent Sessions |
+| **Primary goal** | High availability | High concurrency (user load) |
+| **Typical user load** | Up to a few hundred concurrent sessions | Over a thousand concurrent sessions |
 | **Complexity** | Low | High |
-| **Device Load** | High | High (Isolated to Backend) |
-| **Maintenance** | Simple (2 nodes) | Complex (N+2 nodes) |
-| **Licencing** | 1 Redundant Pair | 1 Backend Pair + N Frontend Licences |
+| **Device load** | On the same gateways as users | Isolated on the backend |
+| **Gateways** | 1 or 2 | 1 or 2 backend, plus N frontend |
+| **Licensing** | One gateway or redundant pair | Backend gateway or pair, plus a license per frontend gateway |
 
-### When to choose Failover
+### Choose failover when
 
-* You are deploying a standard factory-floor SCADA system.
-* Your user count is moderate (under 500 concurrent).
-* Simplicity of maintenance and licencing is a priority.
+* You are deploying a factory-floor SCADA system.
+* Your user count is moderate.
+* Simple maintenance and licensing matter most.
 
-### When to choose Scaleout
+### Choose scaleout when
 
-* You are building an enterprise-wide dashboarding solution.
-* You expect thousands of users to access Perspective sessions.
-* You need to protect critical device communications (Backend) from heavy user query loads (Frontend).
+* You are building an enterprise-wide dashboarding system.
+* You expect thousands of users on Perspective sessions.
+* You need to protect device communication (backend) from heavy user load (frontend).

@@ -19,7 +19,8 @@ backend:
   service:
     type: ClusterIP
 
-  # Shared Secrets (Must be identical for Frontend and Backend to communicate via GAN)
+  # IGNITION_GAN_KEYSTORE_PASSWORD must match the frontend's: both layers'
+  # Gateway Network keystores are created with the frontend's value
   secrets:
     GATEWAY_ADMIN_PASSWORD: "admin"
     IGNITION_GAN_KEYSTORE_PASSWORD: "metro"
