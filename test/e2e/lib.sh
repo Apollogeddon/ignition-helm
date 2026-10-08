@@ -141,6 +141,7 @@ e2e_ns() {
 # e2e_free_mi <ns>: MemAvailable of the node, read from a short-lived pod
 e2e_free_mi() {
   local kb
+  # shellcheck disable=SC2016 # $2 is awk's field, inside the pod's command
   kb=$(kubectl -n "$1" run "e2e-meminfo-$RANDOM" --image="$E2E_PROBE_IMAGE" --restart=Never --rm -i --quiet \
     --overrides='{"spec":{"securityContext":{"runAsNonRoot":true,"runAsUser":65534,"seccompProfile":{"type":"RuntimeDefault"}},"containers":[{"name":"m","image":"'"$E2E_PROBE_IMAGE"'","command":["awk","/^MemAvailable:/ {print $2}","/proc/meminfo"],"securityContext":{"allowPrivilegeEscalation":false,"capabilities":{"drop":["ALL"]}}}]}}' \
     2>/dev/null | tr -dc '0-9')
@@ -247,7 +248,7 @@ e2e_watch_stop() {
 # the Ignition image has them and is already on the node.
 E2E_RECORD_IMAGE="${E2E_RECORD_IMAGE:-inductiveautomation/ignition:8.3.1}"
 e2e_probe_start() {
-  local ns=$1 name=$2 secs=$3 pod="e2e-probe-$2"; shift 3
+  local ns=$1 secs=$3 pod="e2e-probe-$2"; shift 3
   e2e_retry kubectl -n "$ns" create configmap "$pod" --from-file=record.sh="$(dirname "${BASH_SOURCE[0]}")/record.sh" \
     --dry-run=client -o yaml | e2e_retry kubectl apply -f - >/dev/null
   local args="" a

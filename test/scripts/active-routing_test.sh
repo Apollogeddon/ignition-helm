@@ -69,4 +69,5 @@ check "labels a standalone gateway" "gw-0 +" \
 check "does not label a gateway that is commissioning" "" \
   PODS=$'gw-0|10.0.0.1||' GW_10_0_0_1="$COMMISSIONING"
 
-[ "$fails" -eq 0 ] && echo "all passed" || { echo "$fails failed"; exit 1; }
+if [ "$fails" -ne 0 ]; then echo "$fails failed"; exit 1; fi
+echo "all passed"

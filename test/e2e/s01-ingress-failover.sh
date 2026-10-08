@@ -41,7 +41,7 @@ e2e_install "${args[@]}"
 e2e_wait_ready "$ns" 900
 e2e_watch_check
 
-pods=($(kubectl -n "$ns" get pods -l app.kubernetes.io/name=ignition-failover -o jsonpath='{.items[*].metadata.name}' | tr ' ' '\n' | grep -v -- '-rotate' | sort))
+mapfile -t pods < <(kubectl -n "$ns" get pods -l app.kubernetes.io/name=ignition-failover -o jsonpath='{.items[*].metadata.name}' | tr ' ' '\n' | grep -v -- '-rotate' | sort)
 [ "${#pods[@]}" -eq 2 ] || die "expected 2 gateway pods, found ${pods[*]}"
 gwinfo() { kubectl -n "$ns" exec "$1" -c "${CONTAINER:-ignition}" -- curl -s --max-time 3 http://localhost:8088/system/gwinfo 2>/dev/null |
   tr ';' '\n' | grep -E '^(RedundancyStatus|RedundantState|RedundantNodeActiveStatus)=' | sed 's/^[^=]*=//' | paste -sd/ -; }

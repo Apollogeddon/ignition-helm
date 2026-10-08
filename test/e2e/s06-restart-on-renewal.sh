@@ -73,7 +73,7 @@ for _ in $(seq 60); do
   [ -n "$new" ] && [ "$new" != "$old" ] && break
   sleep 2
 done
-[ -n "$new" ] && [ "$new" != "$old" ] || die "certificate was not re-issued"
+if [ -z "$new" ] || [ "$new" = "$old" ]; then die "certificate was not re-issued"; fi
 log "certificate re-issued"
 
 log "certify 2: $(certify)"
