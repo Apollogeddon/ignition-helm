@@ -1,22 +1,22 @@
 ---
-title: Licencing
-description: Managing Ignition licencing in Kubernetes.
+title: Licensing
+description: How to license Ignition gateways running in Kubernetes.
 ---
 
-One of the challenges with running Ignition in containers is that the **Machine ID**—which traditional licence keys are tied to—changes every time the container is recreated.
+This page explains why traditional Ignition licenses fit containers poorly and which licensing method to use with these charts. The charts do not manage licenses themselves; you activate them on each gateway as you would outside Kubernetes.
 
-For dynamic environments like Kubernetes, **Leased Licencing** is the recommended method.
+Traditional Ignition licenses are tied to the gateway's machine ID, and a container's machine ID can change whenever the pod is recreated. That makes them a poor fit for pods that Kubernetes reschedules.
 
-## Leased Licencing
+## Leased licensing
 
-Leased Licencing (using an 8-character Licence Key) is the preferred method for Kubernetes deployments. It does not rely on a static Machine ID; instead, it checks out a licence session from the Inductive Automation licence server (or an on-premise Licence Server).
+Leased licensing is the recommended method for Kubernetes. It does not depend on a fixed machine ID: the gateway checks out a lease from Inductive Automation's licensing server (or your own on-premises license server) instead.
 
-### Benefits for Kubernetes
+For Kubernetes this means:
 
-* **Resilience**: If a pod is rescheduled or recreated, it simply checks out a new session.
-* **Flexibility**: Easily scale Frontend nodes without worrying about individual Machine IDs.
-* **Automation**: No manual intervention is required to "re-activate" a licence after a pod restart.
+* **Resilience**: a rescheduled or recreated pod checks out a new lease.
+* **Flexibility**: you can add frontend gateways without tracking individual machine IDs.
+* **No manual reactivation**: a restarted pod does not need its license activated again.
 
-## Frontend Licensing (Scaleout)
+## Frontend licensing (scaleout)
 
-In a **Scaleout** architecture, Frontend nodes are often designed to be ephemeral. Using Leased Licencing allows these nodes to be horizontally scaled (via HPA) while automatically managing their licence state.
+In the scaleout architecture, frontend gateways have no persistent volume and can be added or removed at any time. Leased licensing lets you scale them, including with a HorizontalPodAutoscaler, while each gateway manages its own lease.

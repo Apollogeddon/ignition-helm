@@ -12,10 +12,15 @@ frontend:
       memory: "4Gi"
       cpu: "2000m"
   
-  # JVM Heap Size (should fit within memory limit)
+  # JVM Heap Size (should fit within memory limit). args replaces the whole
+  # default list, so keep the system name and the proxy header setting.
   args:
     - -m
     - "2048"
+    - -n
+    - "$(GATEWAY_SYSTEM_NAME)"
+    - --
+    - gateway.useProxyForwardedHeader=true
 
   secrets:
     GATEWAY_ADMIN_PASSWORD: "strong-password"
@@ -36,6 +41,10 @@ backend:
   args:
     - -m
     - "4096"
+    - -n
+    - "$(GATEWAY_SYSTEM_NAME)"
+    - --
+    - gateway.useProxyForwardedHeader=true
 
   secrets:
     GATEWAY_ADMIN_PASSWORD: "strong-password"
