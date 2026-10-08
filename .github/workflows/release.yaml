@@ -9,10 +9,10 @@ permissions:
   pull-requests: write
 
 jobs:
-  # chart-releaser creates each chart version's tag and release, with the packaged
-  # chart attached. release-please only opens the release pull requests that bump
-  # the versions and changelogs: it creates no releases of its own, and expects
-  # chart-releaser's tag names (<chart>-<version>) when it looks for the last release.
+  # This job creates each chart version's tag and release, with the packaged chart
+  # attached. release-please only opens the release pull requests that bump the
+  # versions and changelogs: it creates no releases of its own, and expects the
+  # <chart>-<version> tag names when it looks for the last release.
   version:
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -34,20 +34,32 @@ jobs:
         run: sh ./.github/scripts/ci/update-dependencies.sh
 
       # every chart, so a version that has no release yet is released even if no
-      # chart changed in this push; chart-releaser skips the ones already released
+      # chart changed in this push
       - name: Package the charts
         run: ./.github/scripts/ci/package-charts.sh
 
-      - name: Run chart-releaser
+      - name: Release the new chart versions
+        id: release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: ./.github/scripts/ci/release-charts.sh
+
+      # chart-releaser's own upload publishes a release before attaching the chart, which
+      # immutable releases refuse, so it only adds the new versions to index.yaml
+      - name: Install chart-releaser
+        if: steps.release.outputs.released == 'true'
         uses: helm/chart-releaser-action@v1.7.0
         with:
-          charts_dir: charts
-          config: .github/cr.yaml
-          pages_branch: main
-          skip_packaging: true
-          skip_existing: true
+          install_only: true
+
+      - name: Add the new versions to the chart index
+        if: steps.release.outputs.released == 'true'
         env:
-          CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+          CR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p .cr-index
+          cr index --owner "$GITHUB_REPOSITORY_OWNER" --git-repo "${GITHUB_REPOSITORY#*/}" \
+            --package-path .cr-new-packages --pages-branch main --push
 
       # release-please marks a merged release pull request as released when it creates
       # the release, and opens no new one while a merged one is still pending. As
