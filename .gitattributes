@@ -1,1 +1,4 @@
-*.sh text eol=lf
+# Biome, helm and the scripts expect LF; keep LF in the working tree on every platform
+* text=auto eol=lf
+*.png binary
+*.tgz binary
