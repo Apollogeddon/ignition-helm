@@ -16,14 +16,14 @@
 	},
 	"dependencies": {
 		"@fontsource/inter": "^5.2.8",
-		"astro": "^6.0.8",
+		"astro": "^6.1.1",
 		"astro-mermaid": "^2.0.1",
 		"sharp": "^0.34.2"
 	},
 	"devDependencies": {
-		"@astrojs/mdx": "^5.0.2",
-		"@astrojs/sitemap": "^3.7.1",
-		"@biomejs/biome": "^2.4.8",
+		"@astrojs/mdx": "^5.0.3",
+		"@astrojs/sitemap": "^3.7.2",
+		"@biomejs/biome": "^2.4.9",
 		"markdownlint-cli": "^0.48.0",
 		"mermaid": "^11.13.0"
 	}
