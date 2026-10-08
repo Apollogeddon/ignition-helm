@@ -65,4 +65,5 @@ check "missing secret is reported and skipped" 1 ""
 run SECRET_gw_tls='{"tls.crt":"Qw=="}'
 check "missing StatefulSet is reported and skipped" 1 ""
 
-[ "$fails" -eq 0 ] && echo "all passed" || { echo "$fails failed"; exit 1; }
+if [ "$fails" -ne 0 ]; then echo "$fails failed"; exit 1; fi
+echo "all passed"

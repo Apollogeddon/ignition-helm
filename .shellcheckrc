@@ -1,0 +1,3 @@
+# shellcheck follows each script's source lines relative to the script itself
+source-path=SCRIPTDIR
+external-sources=true
