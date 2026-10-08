@@ -1,0 +1,13 @@
+{
+  "config": {
+    "default": true,
+    "MD010": { "code_blocks": false },
+    "MD013": false,
+    "MD024": false,
+    "MD033": false,
+    "MD041": false
+  },
+  // skip everything git ignores (node_modules, dist, .terraform, ...)
+  "gitignore": true,
+  "ignores": ["**/CHANGELOG.md"]
+}

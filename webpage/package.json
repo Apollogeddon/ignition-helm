@@ -7,12 +7,10 @@
 		"build": "astro build",
 		"preview": "astro preview",
 		"astro": "astro",
-		"lint": "npm run biome && npm run markdownlint",
-		"lint:fix": "npm run biome:fix && npm run markdownlint:fix",
+		"lint": "npm run biome",
+		"lint:fix": "npm run biome:fix",
 		"biome": "biome check .",
-		"biome:fix": "biome check --write --unsafe .",
-		"markdownlint": "cd .. && markdownlint \"**/*.md\" \"**/*.mdx\" --config webpage/.markdownlint.json --ignore-path webpage/.markdownlintignore",
-		"markdownlint:fix": "cd .. && markdownlint --fix \"**/*.md\" \"**/*.mdx\" --config webpage/.markdownlint.json --ignore-path webpage/.markdownlintignore"
+		"biome:fix": "biome check --write --unsafe ."
 	},
 	"dependencies": {
 		"@fontsource/inter": "^5.2.8",
@@ -24,7 +22,6 @@
 		"@astrojs/mdx": "^5.0.3",
 		"@astrojs/sitemap": "^3.7.2",
 		"@biomejs/biome": "^2.4.9",
-		"markdownlint-cli": "^0.48.0",
 		"mermaid": "^11.13.0"
 	}
 }
