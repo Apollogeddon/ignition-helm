@@ -1,0 +1,7 @@
+# Lefthook Configuration
+# Refer to https://github.com/evilmartians/lefthook/blob/master/docs/configuration.md
+
+commit-msg:
+  commands:
+    commitlint:
+      run: npx commitlint --edit {1}
