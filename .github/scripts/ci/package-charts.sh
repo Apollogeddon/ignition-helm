@@ -1,8 +1,7 @@
 #!/bin/bash
-# Packages every chart into .cr-release-packages for chart-releaser, which then
-# releases only the versions that have no release yet. Each package carries the
-# newest section of the chart's CHANGELOG.md as RELEASE-NOTES.md, which
-# chart-releaser uses as the release description.
+# Packages every chart into .cr-release-packages, with each package's release notes
+# beside it (<chart>-<version>.md): the newest section of the chart's CHANGELOG.md,
+# or the chart's description when there is none.
 set -euo pipefail
 
 rm -rf .cr-release-packages
@@ -11,9 +10,13 @@ mkdir -p .cr-release-packages
 for dir in charts/*/; do
   dir="${dir%/}"
   [ -f "$dir/Chart.yaml" ] || continue
+  pkg=$(helm package "$dir" --destination .cr-release-packages | sed 's/^.*: //')
+  notes="${pkg%.tgz}.md"
   if [ -f "$dir/CHANGELOG.md" ]; then
-    awk '/^## /{n++} n==1' "$dir/CHANGELOG.md" >"$dir/RELEASE-NOTES.md"
+    awk '/^## /{n++} n==1' "$dir/CHANGELOG.md" >"$notes"
   fi
-  helm package "$dir" --destination .cr-release-packages
-  rm -f "$dir/RELEASE-NOTES.md"
+  if [ ! -s "$notes" ]; then
+    sed -n 's/^description: //p' "$dir/Chart.yaml" >"$notes"
+  fi
+  echo "Packaged $pkg"
 done
