@@ -138,3 +138,6 @@ dist
 # vitest
 junit-report.xml
 e2e-out/
+
+# npm registry config: CI generates it (setup-node registry-url/scope); locally use your user ~/.npmrc
+.npmrc
