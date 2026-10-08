@@ -144,3 +144,5 @@ e2e-out/
 
 # chart-releaser packages (.github/scripts/ci/package-charts.sh)
 .cr-release-packages/
+.cr-new-packages/
+.cr-index/
