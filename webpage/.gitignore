@@ -1,3 +1,6 @@
 node_modules/
 dist/
 .astro/
+
+# copied in from the repository root by .github/scripts/ci/deploy-webpage.sh
+public/index.yaml
