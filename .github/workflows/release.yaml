@@ -9,6 +9,10 @@ permissions:
   pull-requests: write
 
 jobs:
+  # chart-releaser creates each chart version's tag and release, with the packaged
+  # chart attached. release-please only opens the release pull requests that bump
+  # the versions and changelogs: it creates no releases of its own, and expects
+  # chart-releaser's tag names (<chart>-<version>) when it looks for the last release.
   version:
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -18,36 +22,49 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Release Please
-        id: release
-        uses: googleapis/release-please-action@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          config-file: .github/release.json
-          manifest-file: .github/.release.json
-
       - name: Configure Git
-        if: ${{ steps.release.outputs.releases_created == 'true' }}
         run: |
           git config user.name "$GITHUB_ACTOR"
           git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
 
       - name: Install Helm
-        if: ${{ steps.release.outputs.releases_created == 'true' }}
-        uses: azure/setup-helm@v4
-        with:
-          version: v3.14.4
+        uses: ./.github/actions/setup-helm
 
       - name: Update dependencies
-        if: ${{ steps.release.outputs.releases_created == 'true' }}
         run: sh ./.github/scripts/ci/update-dependencies.sh
 
+      # every chart, so a version that has no release yet is released even if no
+      # chart changed in this push; chart-releaser skips the ones already released
+      - name: Package the charts
+        run: ./.github/scripts/ci/package-charts.sh
+
       - name: Run chart-releaser
-        if: ${{ steps.release.outputs.releases_created == 'true' }}
         uses: helm/chart-releaser-action@v1.7.0
         with:
           charts_dir: charts
+          config: .github/cr.yaml
           pages_branch: main
+          skip_packaging: true
           skip_existing: true
         env:
           CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+
+      # release-please marks a merged release pull request as released when it creates
+      # the release, and opens no new one while a merged one is still pending. As
+      # chart-releaser created the releases, mark it here.
+      - name: Mark merged release pull requests as released
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr list --repo "$GITHUB_REPOSITORY" --state merged --label "autorelease: pending" \
+            --json number --jq '.[].number' | while read -r pr; do
+            gh pr edit "$pr" --repo "$GITHUB_REPOSITORY" \
+              --remove-label "autorelease: pending" --add-label "autorelease: tagged"
+          done
+
+      - name: Release Please
+        uses: googleapis/release-please-action@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          config-file: .github/release.json
+          manifest-file: .github/.release.json

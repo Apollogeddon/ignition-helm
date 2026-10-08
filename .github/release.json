@@ -16,6 +16,8 @@
       "release-type": "helm"
     }
   },
+  "skip-github-release": true,
+  "include-v-in-tag": false,
   "plugins": [
     {
       "type": "sentence-case"
