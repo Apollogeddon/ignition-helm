@@ -4,44 +4,100 @@ on:
   push:
     branches:
       - main
+  pull_request:
+    branches:
+      - main
   workflow_call:
   workflow_dispatch:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
-  group: "pages"
-  cancel-in-progress: false
+  group: webpage-${{ github.ref }}
+  # never cancel a run on main, or the site is left half deployed
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
-  build:
+  # forgejs's checks: Gitleaks over the repository, OSV-Scanner, Biome and the type check.
+  # The build and deploy stay here: the site also serves the chart repository's index.yaml.
+  quality:
+    uses: apollogeddon/forgejs/.github/workflows/quality.yml@main
+    permissions:
+      contents: read
+      packages: read
+      # Gitleaks comments on the pull request when it finds a secret
+      pull-requests: write
+    with:
+      working_directory: webpage
+      node_version: "22"
+
+  markdown:
+    name: Markdown
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      # the root tooling installs @apollogeddon/forgejs from GitHub Packages
+      packages: read
     steps:
       - name: Checkout
         uses: actions/checkout@v6
         with:
-          # the tip of main, not the commit that triggered the run: when called
-          # after release, chart-releaser has just pushed the updated index.yaml
-          ref: main
+          persist-credentials: false
 
       - name: Setup Node
         uses: actions/setup-node@v6
         with:
-          node-version: "22"
-          cache: 'npm'
-          cache-dependency-path: webpage/package-lock.json
+          node-version-file: webpage/.nvmrc
+          cache: "npm"
+          cache-dependency-path: package-lock.json
+          registry-url: "https://npm.pkg.github.com"
+          scope: "@apollogeddon"
 
       - name: Install dependencies
-        run: cd webpage && npm ci
+        run: npm ci --ignore-scripts
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Lint markdown
+        run: npx markdownlint-cli2 "**/*.{md,mdx}"
+
+  build:
+    needs: [quality, markdown]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          # a pull request builds its own code; otherwise the tip of main, not the commit that
+          # triggered the run: when called after release, chart-releaser has just pushed index.yaml
+          ref: ${{ github.event_name == 'pull_request' && github.ref || 'main' }}
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: webpage/.nvmrc
+          cache: "npm"
+          cache-dependency-path: webpage/package-lock.json
+          registry-url: "https://npm.pkg.github.com"
+          scope: "@apollogeddon"
+
+      - name: Install dependencies
+        run: cd webpage && npm ci --ignore-scripts
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build site
         run: sh ./.github/scripts/ci/deploy-webpage.sh
 
       - name: Upload artifact
+        if: github.event_name != 'pull_request'
         uses: actions/upload-pages-artifact@v4
         with:
           path: webpage/dist
@@ -49,8 +105,15 @@ jobs:
 
   deploy:
     needs: build
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    concurrency:
+      group: pages
+      cancel-in-progress: false
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
