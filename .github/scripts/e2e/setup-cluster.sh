@@ -4,23 +4,12 @@
 # default), Contour as the ingress controller, and Chaos Mesh for S10.
 set -euo pipefail
 
-CERT_MANAGER_VERSION="${CERT_MANAGER_VERSION:-v1.18.2}"
 CONTOUR_VERSION="${CONTOUR_VERSION:-release-1.32}"
 CHAOS_MESH_VERSION="${CHAOS_MESH_VERSION:-2.7.2}"
 
-helm repo add jetstack https://charts.jetstack.io --force-update >/dev/null
 helm repo add chaos-mesh https://charts.chaos-mesh.org --force-update >/dev/null
 
-helm upgrade --install cert-manager jetstack/cert-manager -n cert-manager --create-namespace \
-  --version "$CERT_MANAGER_VERSION" --set crds.enabled=true --wait
-kubectl apply -f - <<'YAML'
-apiVersion: cert-manager.io/v1
-kind: ClusterIssuer
-metadata:
-  name: cluster-issuer
-spec:
-  selfSigned: {}
-YAML
+"$(dirname "$0")/../ci/install-cert-manager.sh"
 
 kubectl apply -f "https://raw.githubusercontent.com/projectcontour/contour/${CONTOUR_VERSION}/examples/render/contour.yaml"
 kubectl -n projectcontour rollout status deployment/contour --timeout=5m
