@@ -40,7 +40,7 @@ jobs:
       packages: read
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           persist-credentials: false
 
@@ -70,7 +70,7 @@ jobs:
       packages: read
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           # a pull request builds its own code; otherwise the tip of main, not the commit that
           # triggered the run: when called after release, chart-releaser has just pushed index.yaml
@@ -96,7 +96,7 @@ jobs:
 
       - name: Upload artifact
         if: github.event_name != 'pull_request'
-        uses: actions/upload-pages-artifact@v4
+        uses: actions/upload-pages-artifact@v5
         with:
           path: webpage/dist
           retention-days: 1
@@ -118,4 +118,4 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
