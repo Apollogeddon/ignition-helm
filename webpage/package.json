@@ -19,9 +19,9 @@
 		"sharp": "^0.34.2"
 	},
 	"devDependencies": {
+		"@apollogeddon/forgejs": "3.1.0",
 		"@astrojs/mdx": "^5.0.3",
 		"@astrojs/sitemap": "^3.7.2",
-		"@biomejs/biome": "^2.4.9",
 		"mermaid": "^11.13.0"
 	}
 }
