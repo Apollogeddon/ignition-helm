@@ -58,3 +58,7 @@ helm install my-scaleout ignition-charts/ignition-scaleout \
   --set backend.secrets.GATEWAY_ADMIN_PASSWORD=mysecretpassword \
   --set frontend.secrets.GATEWAY_ADMIN_PASSWORD=mysecretpassword
 ```
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
