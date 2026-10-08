@@ -1,0 +1,2 @@
+# chart-releaser: describe each release with the notes package-charts.sh adds
+release-notes-file: RELEASE-NOTES.md
