@@ -68,7 +68,6 @@ Charts up to 3.1.0 ran the gateway as root by default, so on storage that does n
 
 ## Configuration
 
-
 The following table lists the configurable parameters of the chart and their default values. For a comprehensive list, consult the `values.yaml` file.
 
 | Parameter | Description | Default |

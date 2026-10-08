@@ -61,7 +61,6 @@ Charts up to 3.1.0 ran the gateway as root by default, so on storage that does n
 
 ## Configuration
 
-
 | Parameter | Description | Default |
 | --------- | ----------- | ------- |
 | `backend.secrets.GATEWAY_ADMIN_PASSWORD` | **Required.** Admin password for Backend gateways. | `admin` |
