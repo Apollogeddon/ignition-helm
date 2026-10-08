@@ -7,25 +7,23 @@ const pathname = new URL(Astro.request.url).pathname;
 
 // Optimized organization logic: single pass to group and sort
 const sections = [
-	{ label: "Guides", prefix: "guides/" },
-	{ label: "Charts", prefix: "charts/" },
+  { label: "Guides", prefix: "guides/" },
+  { label: "Charts", prefix: "charts/" },
 ]
-	.map((section) => ({
-		...section,
-		items: docs
-			.filter((d) => d.id.startsWith(section.prefix))
-			.sort((a, b) => a.data.title.localeCompare(b.data.title)),
-	}))
-	.filter((section) => section.items.length > 0);
+  .map((section) => ({
+    ...section,
+    items: docs.filter((d) => d.id.startsWith(section.prefix)).sort((a, b) => a.data.title.localeCompare(b.data.title)),
+  }))
+  .filter((section) => section.items.length > 0);
 
 /**
  * Checks if a doc link is currently active
  * Handles trailing slashes and base paths consistently
  */
 const isActive = (id: string) => {
-	const href = `${base}/docs/${id}/`.replace(/\/+/g, "/");
-	const current = pathname.replace(/\/+/g, "/");
-	return current === href || current === href.slice(0, -1);
+  const href = `${base}/docs/${id}/`.replace(/\/+/g, "/");
+  const current = pathname.replace(/\/+/g, "/");
+  return current === href || current === href.slice(0, -1);
 };
 ---
 

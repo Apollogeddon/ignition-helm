@@ -3,12 +3,11 @@ import Navbar from "../components/Navbar.astro";
 import "../styles/custom.css";
 
 interface Props {
-	title: string;
-	description?: string;
+  title: string;
+  description?: string;
 }
 
-const { title, description = "Ignition Helm Charts documentation" } =
-	Astro.props;
+const { title, description = "Ignition Helm Charts documentation" } = Astro.props;
 const base = import.meta.env.BASE_URL;
 ---
 

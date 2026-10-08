@@ -8,115 +8,99 @@
 */
 
 :root {
-	/* Font Stack */
-	--sl-font-system:
-		"Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-		Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+  /* Font Stack */
+  --sl-font-system:
+    "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans",
+    "Helvetica Neue", sans-serif;
 
-	/* Layout */
-	--sl-nav-height: 4rem;
-	--sl-sidebar-width: 18rem;
-	--sl-border-radius: 8px;
+  /* Layout */
+  --sl-nav-height: 4rem;
+  --sl-sidebar-width: 18rem;
+  --sl-border-radius: 8px;
 
-	/* Shared Palette (Standard) */
-	--sl-color-accent-secondary: #ff9e6a;
+  /* Shared Palette (Standard) */
+  --sl-color-accent-secondary: #ff9e6a;
 }
 
 /* Dark Mode Variables (Default) */
 :root,
 :root[data-theme="dark"] {
-	color-scheme: dark;
+  color-scheme: dark;
 
-	/* Core Backgrounds */
-	--sl-color-bg: #09090b;
-	--sl-color-bg-nav: rgba(9, 9, 11, 0.8);
-	--sl-color-bg-sidebar: #09090b;
-	--sl-color-hairline: #27272a;
+  /* Core Backgrounds */
+  --sl-color-bg: #09090b;
+  --sl-color-bg-nav: rgba(9, 9, 11, 0.8);
+  --sl-color-bg-sidebar: #09090b;
+  --sl-color-hairline: #27272a;
 
-	/* Accent */
-	--sl-color-accent-low: #1a0d05;
-	--sl-color-accent: #f36c21;
-	--sl-color-accent-rgb: 243, 108, 33;
-	--sl-color-accent-high: #ffefe6;
+  /* Accent */
+  --sl-color-accent-low: #1a0d05;
+  --sl-color-accent: #f36c21;
+  --sl-color-accent-rgb: 243, 108, 33;
+  --sl-color-accent-high: #ffefe6;
 
-	/* Semantic Text Colors */
-	--sl-color-white: #ffffff;
-	--sl-color-text: #f3f4f6;
-	--sl-color-text-muted: #9ca3af;
-	--sl-color-text-invert: #09090b;
-	--sl-color-heading: #ffffff;
+  /* Semantic Text Colors */
+  --sl-color-white: #ffffff;
+  --sl-color-text: #f3f4f6;
+  --sl-color-text-muted: #9ca3af;
+  --sl-color-text-invert: #09090b;
+  --sl-color-heading: #ffffff;
 
-	/* Gray Scale - Dark Optimized */
-	--sl-color-gray-1: #f3f4f6;
-	--sl-color-gray-2: #e5e7eb;
-	--sl-color-gray-3: #d1d5db;
-	--sl-color-gray-4: #9ca3af;
-	--sl-color-gray-5: #4b5563;
-	--sl-color-gray-6: #1f2937;
-	--sl-color-black: #09090b;
+  /* Gray Scale - Dark Optimized */
+  --sl-color-gray-1: #f3f4f6;
+  --sl-color-gray-2: #e5e7eb;
+  --sl-color-gray-3: #d1d5db;
+  --sl-color-gray-4: #9ca3af;
+  --sl-color-gray-5: #4b5563;
+  --sl-color-gray-6: #1f2937;
+  --sl-color-black: #09090b;
 
-	--bg-mesh:
-		radial-gradient(
-			at 0% 0%,
-			rgba(var(--sl-color-accent-rgb), 0.08) 0px,
-			transparent 50%
-		),
-		radial-gradient(
-			at 100% 100%,
-			rgba(var(--sl-color-accent-rgb), 0.05) 0px,
-			transparent 50%
-		);
+  --bg-mesh:
+    radial-gradient(at 0% 0%, rgba(var(--sl-color-accent-rgb), 0.08) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(var(--sl-color-accent-rgb), 0.05) 0px, transparent 50%);
 }
 
 /* Light Mode Overrides */
 :root[data-theme="light"] {
-	color-scheme: light;
-	--sl-color-bg: #ffffff;
-	--sl-color-bg-nav: rgba(255, 255, 255, 0.8);
-	--sl-color-bg-sidebar: #ffffff;
-	--sl-color-hairline: #e5e7eb;
+  color-scheme: light;
+  --sl-color-bg: #ffffff;
+  --sl-color-bg-nav: rgba(255, 255, 255, 0.8);
+  --sl-color-bg-sidebar: #ffffff;
+  --sl-color-hairline: #e5e7eb;
 
-	--sl-color-accent-low: #fff7ed;
-	--sl-color-accent: #ea580c;
-	--sl-color-accent-rgb: 234, 88, 12;
-	--sl-color-accent-high: #7c2d12;
+  --sl-color-accent-low: #fff7ed;
+  --sl-color-accent: #ea580c;
+  --sl-color-accent-rgb: 234, 88, 12;
+  --sl-color-accent-high: #7c2d12;
 
-	--sl-color-text: #111827;
-	--sl-color-text-muted: #4b5563;
-	--sl-color-text-invert: #ffffff;
-	--sl-color-heading: #111827;
+  --sl-color-text: #111827;
+  --sl-color-text-muted: #4b5563;
+  --sl-color-text-invert: #ffffff;
+  --sl-color-heading: #111827;
 
-	--sl-color-gray-1: #111827;
-	--sl-color-gray-2: #1f2937;
-	--sl-color-gray-3: #374151;
-	--sl-color-gray-4: #6b7280;
-	--sl-color-gray-5: #d1d5db;
-	--sl-color-gray-6: #f3f4f6;
-	--sl-color-black: #ffffff;
+  --sl-color-gray-1: #111827;
+  --sl-color-gray-2: #1f2937;
+  --sl-color-gray-3: #374151;
+  --sl-color-gray-4: #6b7280;
+  --sl-color-gray-5: #d1d5db;
+  --sl-color-gray-6: #f3f4f6;
+  --sl-color-black: #ffffff;
 
-	--bg-mesh:
-		radial-gradient(
-			at 0% 0%,
-			rgba(var(--sl-color-accent-rgb), 0.04) 0px,
-			transparent 50%
-		),
-		radial-gradient(
-			at 100% 100%,
-			rgba(var(--sl-color-accent-rgb), 0.03) 0px,
-			transparent 50%
-		);
+  --bg-mesh:
+    radial-gradient(at 0% 0%, rgba(var(--sl-color-accent-rgb), 0.04) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(var(--sl-color-accent-rgb), 0.03) 0px, transparent 50%);
 }
 
 /* Typography Polish */
 body {
-	font-family: var(--sl-font-system);
-	-webkit-font-smoothing: antialiased;
-	background-color: var(--sl-color-bg);
-	background-image: var(--bg-mesh);
-	background-attachment: fixed;
-	color: var(--sl-color-text);
-	margin: 0;
-	line-height: 1.5;
+  font-family: var(--sl-font-system);
+  -webkit-font-smoothing: antialiased;
+  background-color: var(--sl-color-bg);
+  background-image: var(--bg-mesh);
+  background-attachment: fixed;
+  color: var(--sl-color-text);
+  margin: 0;
+  line-height: 1.5;
 }
 
 h1,
@@ -125,80 +109,76 @@ h3,
 h4,
 h5,
 h6 {
-	font-weight: 700;
-	letter-spacing: -0.025em;
-	color: var(--sl-color-heading);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  color: var(--sl-color-heading);
 }
 
 /* Utility Classes */
 .text-gradient {
-	background: linear-gradient(
-		to right,
-		var(--sl-color-accent),
-		var(--sl-color-accent-secondary)
-	);
-	background-clip: text;
-	-webkit-background-clip: text;
-	-webkit-text-fill-color: transparent;
+  background: linear-gradient(to right, var(--sl-color-accent), var(--sl-color-accent-secondary));
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .custom-footer {
-	padding: 4rem 1rem;
-	border-top: 1px solid var(--sl-color-hairline);
-	text-align: center;
-	background: rgba(0, 0, 0, 0.2);
-	margin-top: 4rem;
+  padding: 4rem 1rem;
+  border-top: 1px solid var(--sl-color-hairline);
+  text-align: center;
+  background: rgba(0, 0, 0, 0.2);
+  margin-top: 4rem;
 }
 
 .footer-content p {
-	margin: 0.5rem 0;
-	font-size: 0.875rem;
-	color: var(--sl-color-gray-4);
+  margin: 0.5rem 0;
+  font-size: 0.875rem;
+  color: var(--sl-color-gray-4);
 }
 
 :root[data-theme="light"] .custom-footer {
-	background: var(--sl-color-gray-6);
+  background: var(--sl-color-gray-6);
 }
 
 /* Glass Utility */
 .glass {
-	background: rgba(255, 255, 255, 0.03);
-	backdrop-filter: blur(12px);
-	-webkit-backdrop-filter: blur(12px);
-	border: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 :root[data-theme="light"] .glass {
-	background: rgba(255, 255, 255, 0.7);
-	border: 1px solid rgba(0, 0, 0, 0.05);
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(0, 0, 0, 0.05);
 }
 
 /* Card Styling */
 .card {
-	border: 1px solid var(--sl-color-hairline);
-	background: rgba(255, 255, 255, 0.02);
-	border-radius: 12px;
-	transition: all 0.3s ease;
+  border: 1px solid var(--sl-color-hairline);
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 12px;
+  transition: all 0.3s ease;
 }
 
 :root[data-theme="light"] .card {
-	background: #ffffff;
-	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
 .card:hover {
-	transform: translateY(-4px);
-	border-color: var(--sl-color-accent);
-	box-shadow: 0 12px 24px -8px rgba(var(--sl-color-accent-rgb), 0.15);
+  transform: translateY(-4px);
+  border-color: var(--sl-color-accent);
+  box-shadow: 0 12px 24px -8px rgba(var(--sl-color-accent-rgb), 0.15);
 }
 
 /* Sidebar Active State */
 [aria-current="page"],
 .sidebar-link.active {
-	background-color: var(--sl-color-accent-low);
-	border-left: 3px solid var(--sl-color-accent);
-	color: var(--sl-color-accent);
-	font-weight: 600;
+  background-color: var(--sl-color-accent-low);
+  border-left: 3px solid var(--sl-color-accent);
+  color: var(--sl-color-accent);
+  font-weight: 600;
 }
 
 /* 
@@ -208,75 +188,75 @@ h6 {
 .prose h2,
 .prose h3,
 .prose h4 {
-	color: var(--sl-color-text);
-	font-weight: 700;
+  color: var(--sl-color-text);
+  font-weight: 700;
 }
 
 .prose h2 {
-	font-size: 1.75rem;
-	margin-top: 3.5rem;
-	margin-bottom: 1.5rem;
-	border-bottom: 1px solid var(--sl-color-hairline);
-	padding-bottom: 0.5rem;
+  font-size: 1.75rem;
+  margin-top: 3.5rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid var(--sl-color-hairline);
+  padding-bottom: 0.5rem;
 }
 
 .prose h3 {
-	font-size: 1.25rem;
-	margin-top: 2.5rem;
-	margin-bottom: 1rem;
+  font-size: 1.25rem;
+  margin-top: 2.5rem;
+  margin-bottom: 1rem;
 }
 
 .prose p {
-	margin-bottom: 1.5rem;
-	line-height: 1.7;
-	color: var(--sl-color-text);
+  margin-bottom: 1.5rem;
+  line-height: 1.7;
+  color: var(--sl-color-text);
 }
 
 .prose ul,
 .prose ol {
-	margin-bottom: 1.5rem;
-	padding-left: 1.5rem;
-	color: var(--sl-color-text);
+  margin-bottom: 1.5rem;
+  padding-left: 1.5rem;
+  color: var(--sl-color-text);
 }
 
 .prose li {
-	margin-bottom: 0.5rem;
+  margin-bottom: 0.5rem;
 }
 
 .prose code:not(pre code) {
-	background: var(--sl-color-accent-low);
-	color: var(--sl-color-accent);
-	padding: 0.2rem 0.4rem;
-	border-radius: 4px;
-	font-size: 0.9em;
-	border: 1px solid rgba(var(--sl-color-accent-rgb), 0.2);
+  background: var(--sl-color-accent-low);
+  color: var(--sl-color-accent);
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+  font-size: 0.9em;
+  border: 1px solid rgba(var(--sl-color-accent-rgb), 0.2);
 }
 
 .prose table {
-	width: 100%;
-	border-collapse: collapse;
-	margin-bottom: 2rem;
-	font-size: 0.95rem;
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 2rem;
+  font-size: 0.95rem;
 }
 
 .prose th,
 .prose td {
-	padding: 0.75rem;
-	border: 1px solid var(--sl-color-hairline);
-	text-align: left;
-	color: var(--sl-color-text);
+  padding: 0.75rem;
+  border: 1px solid var(--sl-color-hairline);
+  text-align: left;
+  color: var(--sl-color-text);
 }
 
 .prose th {
-	background: var(--sl-color-gray-6);
-	font-weight: 700;
+  background: var(--sl-color-gray-6);
+  font-weight: 700;
 }
 
 .prose blockquote {
-	margin: 2rem 0;
-	padding: 1rem 1.5rem;
-	border-left: 4px solid var(--sl-color-accent);
-	background: var(--sl-color-accent-low);
-	color: var(--sl-color-text);
-	font-style: italic;
+  margin: 2rem 0;
+  padding: 1rem 1.5rem;
+  border-left: 4px solid var(--sl-color-accent);
+  background: var(--sl-color-accent-low);
+  color: var(--sl-color-text);
+  font-style: italic;
 }
