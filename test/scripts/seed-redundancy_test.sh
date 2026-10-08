@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# ok() evals each check later, so its single-quoted expressions are deliberate
+# shellcheck disable=SC2016
 # Runs the chart's seed-redundancy.sh against a temporary data directory.
 # Usage: test/scripts/seed-redundancy_test.sh
 set -uo pipefail
@@ -84,4 +86,5 @@ volume Master "" Automatic; printf '%s\n' '<properties>' '<entry key="redundancy
 run ignition-failover-0 2
 ok "carriage returns in the template are not treated as changes" '! grep -q Updating "$work/out"'
 
-[ "$fails" -eq 0 ] && echo "all passed" || { echo "$fails failed"; exit 1; }
+if [ "$fails" -ne 0 ]; then echo "$fails failed"; exit 1; fi
+echo "all passed"

@@ -51,4 +51,5 @@ check 0 "master ready without a peer" PING='{"state":"RUNNING"}' GWINFO="$MASTER
 check 1 "no gwinfo answer is not ready" PING='{"state":"RUNNING"}' GWINFO= "$SYNC" -- -r
 check 0 "liveness ignores backup sync" PING='{"state":"RUNNING"}' GWINFO="$STALE_BACKUP" "$SYNC" --
 
-[ "$fails" -eq 0 ] && echo "all passed" || { echo "$fails failed"; exit 1; }
+if [ "$fails" -ne 0 ]; then echo "$fails failed"; exit 1; fi
+echo "all passed"

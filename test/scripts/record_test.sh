@@ -50,4 +50,5 @@ env PATH="$work/bin:$PATH" CODE_web=200 bash "$root/test/e2e/record.sh" 2 "$work
 got=$(head -1 "$work/out" | sed 's/^[^ ]* p=//')
 if [ "$got" = 200 ]; then echo "ok   plain URL records the status"; else echo "FAIL plain URL records the status (got '$got')"; fails=$((fails + 1)); fi
 
-[ "$fails" -eq 0 ] && echo "all passed" || { echo "$fails failed"; exit 1; }
+if [ "$fails" -ne 0 ]; then echo "$fails failed"; exit 1; fi
+echo "all passed"
