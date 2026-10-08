@@ -1,37 +1,52 @@
 version: 2
+
 updates:
-  # Maintain dependencies for GitHub Actions
+  - package-ecosystem: "helm"
+    directories:
+      - "/charts/common"
+      - "/charts/failover"
+      - "/charts/scaleout"
+    # Weekly and grouped: one pull request, so one CI run, for the week's updates.
+    schedule:
+      interval: "weekly"
+    groups:
+      dependencies:
+        patterns: ["*"]
+    # Chart dependencies ship in the charts, so an update is a fix release.
+    commit-message:
+      prefix: "fix(deps)"
+    # Wait 3 days after a version is published before proposing it, so a
+    # compromised release has time to be caught/yanked upstream first.
+    cooldown:
+      default-days: 3
+
+  - package-ecosystem: "npm"
+    directories:
+      - "/"
+      - "/webpage"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    groups:
+      dependencies:
+        patterns: ["*"]
+    # Repository tooling and the site don't ship in the charts, so no release.
+    commit-message:
+      prefix: "chore(deps)"
+    cooldown:
+      default-days: 3
+
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
     groups:
       actions:
-        patterns:
-          - "*"
-
-  # Maintain dependencies for Helm Charts
-  - package-ecosystem: "helm"
-    directory: "/charts/common"
-    schedule:
-      interval: "weekly"
-
-  - package-ecosystem: "helm"
-    directory: "/charts/failover"
-    schedule:
-      interval: "weekly"
-
-  - package-ecosystem: "helm"
-    directory: "/charts/scaleout"
-    schedule:
-      interval: "weekly"
-
-  # Maintain dependencies for the Astro site
-  - package-ecosystem: "npm"
-    directory: "/webpage"
-    schedule:
-      interval: "weekly"
-    groups:
-      webpage:
-        patterns:
-          - "*"
+        patterns: ["*"]
+    commit-message:
+      prefix: "chore(ci)"
+    # CI deliberately tracks forgejs's reusable workflows at @main.
+    ignore:
+      - dependency-name: "apollogeddon/forgejs"
+    cooldown:
+      default-days: 3
