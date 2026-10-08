@@ -1,0 +1,9 @@
+name: Set up Helm
+description: Installs the Helm version every workflow in this repository uses
+
+runs:
+  using: composite
+  steps:
+    - uses: azure/setup-helm@v4
+      with:
+        version: v3.22.0

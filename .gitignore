@@ -141,3 +141,6 @@ e2e-out/
 
 # npm registry config: CI generates it (setup-node registry-url/scope); locally use your user ~/.npmrc
 .npmrc
+
+# chart-releaser packages (.github/scripts/ci/package-charts.sh)
+.cr-release-packages/
