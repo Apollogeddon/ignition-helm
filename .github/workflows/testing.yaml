@@ -64,9 +64,11 @@ jobs:
         if: steps.list-changed.outputs.changed == 'true'
         run: ./.github/scripts/ci/install-cert-manager.sh
 
+      # a library chart cannot be installed on its own; failover and scaleout
+      # install it as their dependency
       - name: Run chart-testing (install)
         if: steps.list-changed.outputs.changed == 'true'
-        run: ct install --target-branch ${{ github.event.repository.default_branch || 'main' }} --upgrade
+        run: ct install --target-branch ${{ github.event.repository.default_branch || 'main' }} --upgrade --excluded-charts common
 
       - name: Test Failover Deployment
         if: steps.list-changed.outputs.changed == 'true'
