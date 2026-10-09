@@ -1,0 +1,23 @@
+suite: Ignition Scaleout GAN Certificate Rotation CronJob
+templates:
+  - frontend/cronjobs.yaml
+  - backend/cronjobs.yaml
+tests:
+  - it: should not render by default
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should mount the scripts from the Secret they are rendered as
+    set:
+      certManager:
+        rotation:
+          enabled: true
+    asserts:
+      - contains:
+          path: spec.jobTemplate.spec.template.spec.volumes
+          content:
+            name: config-scripts
+            secret:
+              secretName: ignition-scaleout-common-scripts
+              defaultMode: 0755
