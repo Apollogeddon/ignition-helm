@@ -12,7 +12,7 @@ The `preconfigure` init container prepares each gateway before it starts:
 * **Data volume**: seeds the persistent volume from the image on first start.
 * **Redundancy settings**: configures pod 0 as Master and pod 1 as Backup, and re-applies the chart's redundancy settings on every start. Turning `redundancy.enabled` on or off, or changing any `redundancy.*` value, restarts the gateways and takes effect without using the Gateway web UI (turning it off makes the gateway Independent).
 * **Gateway Network certificates**: installs the certificate and CA that cert-manager issued into the gateway's keystore. The chart creates the CA `Certificate`, an `Issuer` that signs with it, and a `Certificate` per component, so cert-manager and an issuer for the CA are required.
-* **Gateway backup**: with `restore.enabled`, downloads a `.gwbk` file from `restore.url`, or copies it from `restore.path`, to `/data/restore.gwbk` on the data volume.
+* **Gateway backup**: with `restore.enabled`, restores a `.gwbk` file from `restore.url`, or a mounted `restore.path`, on the gateway's first start.
 
 ## Storage and persistence
 
@@ -246,9 +246,9 @@ certManager:
 
 ## Backup and restore
 
-### Restore on start
+### Restore on first start
 
-Fetch a gateway backup into the data volume before the gateway starts:
+Restore a gateway backup when the gateway first starts. The init container stages the backup on the data volume once, and the gateway starts with `-r` on it. Ignition restores it on the gateway's first start only, so later restarts keep any changes made since. To restore again, start from an empty data volume.
 
 ```yaml
 ignition:

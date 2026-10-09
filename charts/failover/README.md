@@ -99,7 +99,7 @@ The most commonly changed values are below. See [`values.yaml`](values.yaml) for
 | `ignition.ingress.enabled` | Create an Ingress. | `false` |
 | `ignition.ingress.className` | IngressClass name, for example `contour`; empty uses the cluster default. | `""` |
 | `ignition.ssl.enabled` | Serve HTTPS with your own PKCS#12 keystore from the `ignition.ssl.secretName` Secret (default `<name>-web-tls`). | `false` |
-| `ignition.restore.enabled` | Before the gateway starts, download a gateway backup (`.gwbk`) from `ignition.restore.url`, or copy it from `ignition.restore.path`, to `/data/restore.gwbk` on the data volume. | `false` |
+| `ignition.restore.enabled` | Restore a gateway backup (`.gwbk`) from `ignition.restore.url`, or a mounted `ignition.restore.path`, on the gateway's first start. The backup is staged on the data volume once and the gateway starts with `-r`; later restarts keep the gateway's own changes. To restore again, start from an empty data volume. | `false` |
 | `ignition.networkPolicy.enabled` | Create a NetworkPolicy that limits Gateway Network traffic to the chart's gateways. | `true` |
 | `ignition.networkPolicy.extraIngress` | Extra NetworkPolicy ingress rules, for example the ingress controller's namespace or node CIDRs. | `[]` |
 | `ignition.serviceMonitor.enabled` | Create a Prometheus Operator ServiceMonitor. | `false` |
