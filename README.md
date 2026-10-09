@@ -5,7 +5,7 @@
   </a>
   <h3 align="center">Ignition Helm Charts</h3>
   <p align="center">
-    Helm charts for running Inductive Automation's Ignition gateways on Kubernetes.
+    Helm charts for running Ignition on Kubernetes, as a redundant Master/Backup pair or as separate frontend and backend gateways.
     <br />
     <a href="https://apollogeddon.github.io/ignition-helm"><strong>Read the docs</strong></a>
     <br />
@@ -35,7 +35,7 @@ This repository holds Helm charts that deploy Ignition gateways on Kubernetes, e
 - **Operations**: Prometheus `ServiceMonitor`, health probes based on `/StatusPing`, optional routing to the active gateway only, and certificate rotation.
 - **Scaling**: HorizontalPodAutoscaler support for the scaleout frontend.
 
-## Prerequisites
+## Requirements
 
 - Kubernetes 1.23 or later, with a storage class that can provision persistent volumes.
 - Helm 3. The CI workflows use Helm v3.22.0.
