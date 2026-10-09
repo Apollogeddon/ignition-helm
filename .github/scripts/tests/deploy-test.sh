@@ -36,11 +36,16 @@ die() {
   exit 1
 }
 
-# begin <namespace> / end: one namespace per install, removed with its volumes
-begin() { ns=$1; kubectl create namespace "$ns" >/dev/null; }
+# begin <namespace> / end: one namespace per install, removed with its volumes,
+# plus "<namespace>-other" for the NetworkPolicy checks' outside pod
+begin() {
+  ns=$1
+  kubectl create namespace "$ns" >/dev/null
+  kubectl create namespace "$ns-other" >/dev/null
+}
 end() {
   helm uninstall "$chart" -n "$ns" --wait >/dev/null || true
-  kubectl delete namespace "$ns" --wait=true >/dev/null
+  kubectl delete namespace "$ns" "$ns-other" --wait=true >/dev/null
   ns=""
 }
 
@@ -64,14 +69,11 @@ curl_from() {
 # check_network_policy <service>: the same request must work from the release's
 # namespace, so a failure from the other namespace can only be the policy
 check_network_policy() {
-  local url="http://$1.$ns.svc.cluster.local:8088/StatusPing" other="$ns-other"
+  local url="http://$1.$ns.svc.cluster.local:8088/StatusPing"
   curl_from "$ns" "allowed-$1" "$url" || die "a pod in $ns cannot reach $1"
-  kubectl create namespace "$other" >/dev/null
-  if curl_from "$other" "denied-$1" "$url"; then
-    kubectl delete namespace "$other" --wait=false >/dev/null
+  if curl_from "$ns-other" "denied-$1" "$url"; then
     die "a pod in another namespace reached $1 through the NetworkPolicy"
   fi
-  kubectl delete namespace "$other" --wait=false >/dev/null
 }
 
 check_failover() {
