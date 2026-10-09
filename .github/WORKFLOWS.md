@@ -30,11 +30,10 @@ The [`testing.yaml`](./workflows/testing.yaml) workflow ensures the functional i
 
 - **Unit tests**: `helm-unittest` checks the templates against the tests in `charts/*/tests`.
 - **Script tests**: runs `test/scripts/*_test.sh` against the shell scripts the charts ship.
-- **Linting**: `chart-testing` (`ct lint`) checks the charts' structure.
+- **Linting**: `chart-testing` (`ct lint`) checks the charts' structure, with each chart's default values and its `ci/deploy-values.yaml`.
 - **Integration tests**:
   - Creates a kind cluster and installs cert-manager with a self-signed `cluster-issuer` (`.github/scripts/ci/install-cert-manager.sh`).
-  - Runs `ct install --upgrade` to install and upgrade the changed charts.
-  - Runs deployment checks for the failover and scaleout charts (`.github/scripts/tests/`).
+  - Runs `.github/scripts/tests/deploy-test.sh` for each changed chart (both, when the common chart changes). It installs the chart with its `ci/deploy-values.yaml` and checks the running gateways: RUNNING without restarts, the NetworkPolicy blocking another namespace, the scaleout frontend reaching its backend, and the chart options in effect. It then installs the `main` branch's chart and upgrades it to this one.
 
 The [`e2e.yaml`](./workflows/e2e.yaml) workflow, run manually, runs the end-to-end scenarios in [`test/e2e`](../test/e2e/README.md) on a disposable kind cluster.
 

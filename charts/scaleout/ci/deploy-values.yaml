@@ -1,0 +1,14 @@
+# Values for the deployment test (.github/scripts/tests/deploy-test.sh) and for
+# chart-testing's lint: options that only show on a running gateway.
+frontend:
+  networkPolicy:
+    enabled: true
+  hpa:
+    enabled: true
+    minReplicas: 1
+backend:
+  networkPolicy:
+    enabled: true
+  hpa:
+    enabled: true
+    minReplicas: 1

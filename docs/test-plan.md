@@ -9,7 +9,7 @@ How the `ignition-failover` and `ignition-scaleout` charts are tested, what each
 | Unit | `charts/*/tests` (helm-unittest, run in CI) | Rendering of every option |
 | Staging e2e | `test/e2e` scripts against a shared single-node cluster | Real gateways on Ignition 8.1 and 8.3: health, redundancy, upgrades, ingress, failover timing |
 | Script | `test/scripts` (run in CI) | The shell scripts the chart ships (`health-check.sh`, `active-routing.sh`, `certify.sh`), run against stub `curl`/`kubectl` |
-| CI e2e | `.github/workflows/e2e.yaml`: disposable three-node kind cluster with cert-manager, Contour and Chaos Mesh (manual only; a full run takes about two hours) | The staging scenarios plus what a shared single node can't do safely: network partitions (S10). kind's default CNI enforces NetworkPolicy, which `testing.yaml` already checks |
+| CI e2e | `.github/workflows/e2e.yaml`: disposable three-node kind cluster with cert-manager, Contour and Chaos Mesh (manual only; a full run takes about two hours) | The staging scenarios plus what a shared single node can't do safely: network partitions (S09). kind's default CNI enforces NetworkPolicy, which `testing.yaml` already checks |
 | Manual | Testing environment | Avi/AKO ingress behaviour |
 
 ## Staging guardrails
@@ -35,25 +35,25 @@ Status: **Live** verified on a real deployment, **Unit** helm-unittest only, **R
 | 3 | Data kept on the PVC across restarts | Live | Live | |
 | 4 | Upgrade from the previous release | Not tested | Live (S02) | from 4.0.0 and 3.1.0 (failover) and 4.0.0 (scaleout): a one-time `--cascade=orphan` delete of the StatefulSets (`serviceName` changed in 4.1.0); `activeRouting` must go on in a later, separate upgrade (fix 40); 3.x installs left on the default root user also need `fixDataOwnership` once (fix 39). See the chart READMEs |
 | 5 | No password-resetting preStop | Live | Live | `gwcmd.sh -p` resets the login on 8.1 and 8.3 |
-| 6 | Custom lifecycle hooks | Live | Live (S07) | |
+| 6 | Custom lifecycle hooks | Live | Live (CI deploy test) | |
 | 7 | Rolling update across a redundant pair in a safe order | Not tested | Live (S06) | with activeRouting, readiness also waits for the Backup to be in sync before the Master is replaced |
 | 8 | Health check reflects gateway state | Live | Live | `/StatusPing`; `/main/system/StatusPing` is 404 on 8.3.1 and redirects to a 404 on 8.1 |
-| 9 | Configured probe commands honoured | Live | Live (S07) | |
-| 10 | startupProbe | Live | Live (S07) | |
-| 11 | Uncommissioned gateway not reported healthy | Live (S08) | Live (S08) | fixed: readiness (`health-check.sh -r`) fails on `details: COMMISSIONING`; liveness does not, so no restart loop |
+| 9 | Configured probe commands honoured | Live | Live (CI deploy test) | |
+| 10 | startupProbe | Live | Live (CI deploy test) | |
+| 11 | Uncommissioned gateway not reported healthy | Live (S07) | Live (S07) | fixed: readiness (`health-check.sh -r`) fails on `details: COMMISSIONING`; liveness does not, so no restart loop |
 | 12 | Master/Backup pairing over GAN TLS, sync Good | Not tested | Live | |
 | 13 | Backup takes over when the Master goes away | Not tested | Live | S01: graceful and crash (force delete); a hung Master needs a partition test (CI) |
 | 14 | User traffic only reaches the active gateway | Unit | Live (S01 active) | fixed with `activeRouting`: 48 of 49 s served by the Active gateway (was 44%); off by default |
 | 15 | Failover downtime measured | Not tested | Live | S01 with activeRouting, measured from a probe pod in the cluster (every second): graceful 4-5 s unserved, crash 2-3 s; samples from the test machine are coarser and showed 2-3 s for both |
-| 16 | Split-brain recovery after a crash | Not tested | CI (S10) | activeRouting keeps traffic on the Master when both report Active; S10 partitions the pair (Chaos Mesh) |
+| 16 | Split-brain recovery after a crash | Not tested | CI (S09) | activeRouting keeps traffic on the Master when both report Active; S09 partitions the pair (Chaos Mesh) |
 | 17 | PodDisruptionBudget protects the pair | Not tested | Live | |
 | 18 | Service (NodePort/ClusterIP/LB) serves traffic | Not tested | Live (NodePort) | LoadBalancer needs MetalLB (CI) |
 | 19 | Chart Ingress routes to the gateway | Not tested | Live | S01 via Contour with `ingress.className` |
 | 20 | Web TLS (`ssl.enabled`) | Not tested | Live (S05) | |
 | 21 | NetworkPolicy and extraIngress enforced | Rendered | CI | `testing.yaml` checks cross-namespace denial on kind (kindnet enforces NetworkPolicy) |
-| 22 | Log files cannot grow without bound | Live (S09) | Live (S09) | fixed: `logging.wrapperLogToStdout` (default on) appends `wrapper.logfile=/dev/stdout`; no `wrapper.log`, gateway log in `kubectl logs` |
-| 23 | Per-logger levels, SQLite limits | Live | Live (S07) | |
-| 24 | emptyDir size limits | Live | Live (S07) | |
+| 22 | Log files cannot grow without bound | Live (S08) | Live (S08) | fixed: `logging.wrapperLogToStdout` (default on) appends `wrapper.logfile=/dev/stdout`; no `wrapper.log`, gateway log in `kubectl logs` |
+| 23 | Per-logger levels, SQLite limits | Live | Live (CI deploy test) | |
+| 24 | emptyDir size limits | Live | Live (CI deploy test) | |
 | 25 | GAN certificates issued | Not tested | Live | |
 | 26 | GAN rotation CronJob | Not tested | Unit | superseded by restartOnRenewal (the init container re-reads certificates on every start) |
 | 27 | Renewed certificate picked up (restart) | Unit | Live (S06) | fixed with `certManager.restartOnRenewal`: rolling restart when the certificate secrets change |
@@ -65,7 +65,7 @@ Status: **Live** verified on a real deployment, **Unit** helm-unittest only, **R
 | 34 | GAN certificate key rotation policy explicit | Unit | Unit | CA `Never` (keeps signed certificates valid), leaf `Always` |
 | 36 | Redundancy peer address follows the chart on every start | Unit (script) | Live (S02) | fixed: `redundancy.xml` was only written on first start, so after the 4.0.0 upgrade both gateways kept peer names that no longer resolved and stayed Active |
 | 37 | Redundancy role and settings follow values on existing installs (on, off, value changes) | Live (S03) | Live (S03) | fixed: `redundancy.xml` was only written on first start, so turning redundancy on or off, or changing a redundancy value, did nothing to an existing install (a job driving the Gateway UI was the workaround) |
-| 38 | Charts meet the restricted Pod Security level | Live (S08) | Live (S01, S08) | fixed: `runAsNonRoot: true` by default (the gateways already ran as 2003) and a hardened GAN rotation CronJob; S01 and S08 ran in namespaces enforcing `restricted` |
+| 38 | Charts meet the restricted Pod Security level | Live (S07) | Live (S01, S07) | fixed: `runAsNonRoot: true` by default (the gateways already ran as 2003) and a hardened GAN rotation CronJob; S01 and S07 ran in namespaces enforcing `restricted` |
 | 39 | Upgrade from a 3.x install that ran the gateway as root | n/a | Live (S02) | 3.1.0 ran everything as root by default, so its data volumes are root-owned and local-path does not apply `fsGroup`; the new non-root `preconfigure` failed with `Permission denied`. Opt-in `fixDataOwnership` chowns the volume once; installs that set `securityContext.runAsUser` (e.g. 2003) are not affected |
 | 40 | Upgrade from 4.0.0 or earlier with activeRouting | n/a | Live (S02) | enabling activeRouting in the same upgrade deadlocks: the old Master is only reachable under the old Service name, so the new Backup never syncs and never becomes Ready (the Master keeps serving). Enabling it in a second upgrade works; documented in both READMEs |
 | 35 | Scaleout backend named after its pod on the Gateway Network | Unit | Live (S04) | fixed: the backend had no `GATEWAY_SYSTEM_NAME`, so `-n "$(GATEWAY_SYSTEM_NAME)"` stayed literal and every backend gateway had that name |
@@ -82,10 +82,9 @@ Scripts in `test/e2e` (see its README). Staging runs them on the shared single-n
 | S04 | Scaleout GAN connection, checked from the gateway logs | 8.3.1 | staging, CI | 30, 35 |
 | S05 | Web TLS with a certificate issued from the chart's CA | 8.3.1 | staging, CI | 20 |
 | S06 | Restart on certificate renewal: Backup restarted before Master | 8.3.1 | staging, CI | 27 |
-| S07 | Lifecycle, custom readiness, startupProbe, loggers, SQLite and emptyDir limits together | 8.3.1 | staging, CI | 6, 9, 10, 23, 24 |
-| S08 | Uncommissioned gateway never Ready and never restarted | 8.3.1, 8.1.53 | staging, CI | 11 |
-| S09 | Wrapper log goes to the container log | 8.3.1, 8.1.53 | staging, CI | 22 |
-| S10 | Split-brain (Master/Backup partition) and hung Master (Chaos Mesh) | 8.3.1 | CI only | 13, 15, 16 |
+| S07 | Uncommissioned gateway never Ready and never restarted | 8.3.1, 8.1.53 | staging, CI | 11 |
+| S08 | Wrapper log goes to the container log | 8.3.1, 8.1.53 | staging, CI | 22 |
+| S09 | Split-brain (Master/Backup partition) and hung Master (Chaos Mesh) | 8.3.1 | CI only | 13, 15, 16 |
 
 ## Results
 
@@ -115,13 +114,13 @@ Other observations:
 
 Without activeRouting those seconds were "answered" by a cold Backup that could not serve; with it they are honest failures, and every answered request came from the Active gateway.
 
-### S08 uncommissioned gateway
+### S07 uncommissioned gateway
 
 Both versions return `{"state":"RUNNING","details":"COMMISSIONING"}` from `/StatusPing` while the EULA is not accepted. With the fix the pod was never Ready over 240 s and was never restarted, and its readiness failures read "Gateway is still commissioning" on 8.3.1 and 8.1.53.
 
-The first S08 run looked like a pass for the wrong reason: the probe ran the image's own `health-check.sh`, which rejects `-r`. That led to fix 33, and S08 now also checks the failure reason.
+The first S07 run looked like a pass for the wrong reason: the probe ran the image's own `health-check.sh`, which rejects `-r`. That led to fix 33, and S07 now also checks the failure reason.
 
-### S09 wrapper log
+### S08 wrapper log
 
 | Version | wrapperLogToStdout | logs/wrapper.log | kubectl logs (10 min) |
 | --- | --- | --- | --- |
@@ -140,7 +139,7 @@ The logs emptyDir then only holds `system_logs.idb` (~70-105 KB).
 
 Redundant pair with activeRouting and restartOnRenewal. After the GAN certificate was re-issued, certify started a rolling restart: Backup replaced at 12:18:41, Master at 12:21:09 (after the Backup was Ready and in sync), 328 s in all. Through the -active NodePort 208 s were served by the Active gateway and 2 s were not. A further certify run found the certificates unchanged and restarted nothing.
 
-### S09 (second run)
+### S08 (second run)
 
 Repeated the first run and added 8.1.53 with wrapperLogToStdout=false: wrapper.log reappears (27 KB at start-up) and `kubectl logs` drops to 28 lines.
 
@@ -157,10 +156,6 @@ The orphan step is in both chart READMEs ("Upgrading from 4.0.0 or earlier").
 ### S05 web TLS (8.3.1)
 
 The gateway served the certificate issued from the chart's CA (`CN=s05-web.e2e.invalid`) on 8043 and reported RUNNING.
-
-### S07 chart options (8.3.1)
-
-postStart hook, custom readiness command, startupProbe, per-logger levels, SQLite `entryLimit` and emptyDir size limits together: all in effect in the pod, `gateway.SslManager` no longer forced to DEBUG, Ready with no restarts.
 
 ### S04 scaleout Gateway Network (8.3.1)
 
@@ -204,7 +199,7 @@ The pair recovered after the crash. The same scenario passed again in a namespac
 
 The gateways already on staging run as 2003 (their wrapper chart sets `securityContext`); 495 of 496 files on their volumes are owned by 2003, the other being the data directory itself, created by the provisioner.
 
-### S08 under restricted Pod Security
+### S07 under restricted Pod Security
 
 8.3.1 and 8.1.53: never Ready, never restarted, readiness failing with "Gateway is still commissioning".
 
@@ -225,4 +220,4 @@ The watch now stops a run only after 3 failures in a row, and does not count fai
 
 ### Not yet run
 
-S10 and the CI workflow: they run on GitHub once `main` is pushed (start E2E manually from Actions).
+S09 and the CI workflow: they run on GitHub once `main` is pushed (start E2E manually from Actions).
