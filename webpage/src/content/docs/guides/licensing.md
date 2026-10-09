@@ -1,5 +1,6 @@
 ---
 title: Licensing
+order: 6
 description: How to license Ignition gateways running in Kubernetes.
 ---
 

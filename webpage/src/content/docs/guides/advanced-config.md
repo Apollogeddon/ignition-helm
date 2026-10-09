@@ -1,5 +1,6 @@
 ---
 title: Advanced configuration
+order: 4
 description: Configuration patterns for production Ignition deployments.
 ---
 

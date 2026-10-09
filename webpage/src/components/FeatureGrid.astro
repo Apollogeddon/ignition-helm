@@ -3,13 +3,13 @@ const features = [
   {
     title: "Two architectures",
     description:
-      "Deploy a Master/Backup redundant pair, or separate frontend and backend gateways in a scaleout architecture.",
+      "Deploy a Master/Backup redundant pair, or split frontend and backend gateways into a scaleout architecture.",
     icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>`,
   },
   {
     title: "Managed certificates",
     description:
-      "cert-manager issues the Gateway Network certificates, and a NetworkPolicy limits Gateway Network traffic to the chart's gateways.",
+      "cert-manager issues the Gateway Network certificates, and CronJobs refresh the gateways' keystores when they renew.",
     icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></svg>`,
   },
   {
@@ -24,8 +24,9 @@ const features = [
     icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>`,
   },
   {
-    title: "Independent scaling",
-    description: "Scale the scaleout frontend separately from the backend, manually or with a HorizontalPodAutoscaler.",
+    title: "Scaling and rollouts",
+    description:
+      "Autoscale the scaleout frontend, and use the OnDelete update strategy to restart gateways in your own window.",
     icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21 21-6-6m6 6v-4.8m0 4.8h-4.8"/><path d="M3 16.2V21m0 0h4.8M3 21l6-6"/><path d="M21 7.8V3m0 0h-4.8M21 3l-6 6"/><path d="M3 7.8V3m0 0h4.8M3 3l6 6"/></svg>`,
   },
   {
@@ -34,28 +35,11 @@ const features = [
       "Probes based on /StatusPing, optional routing to the active gateway only, and a Prometheus ServiceMonitor.",
     icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><circle cx="12" cy="12" r="3"/></svg>`,
   },
-  {
-    title: "Controlled rollouts",
-    description:
-      "Set the StatefulSet update strategy to OnDelete so upgrades only restart gateways in your own maintenance window.",
-    icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 21v-5h5"/></svg>`,
-  },
-  {
-    title: "Certificate rotation",
-    description:
-      "CronJobs refresh the Gateway Network keystores, and can restart the gateways, Backup first, when certificates are renewed.",
-    icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></svg>`,
-  },
-  {
-    title: "External modules",
-    description: "Mount third-party or custom modules from a PersistentVolumeClaim instead of building a custom image.",
-    icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.27 6.96 12 12.01l8.73-5.05"/><path d="M12 22.08V12"/></svg>`,
-  },
 ];
 ---
 
 <section class="features-section">
-  <h2>What the <span class="text-gradient">charts do</span></h2>
+  <h2>Why use <span class="text-gradient">these charts?</span></h2>
   
   <div class="grid">
     {features.map(feature => (

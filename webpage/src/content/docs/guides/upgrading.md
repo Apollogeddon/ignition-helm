@@ -1,5 +1,6 @@
 ---
 title: Upgrading
+order: 5
 description: Upgrade an existing installation to a newer chart version.
 ---
 
