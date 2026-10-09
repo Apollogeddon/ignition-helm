@@ -18,6 +18,7 @@
   },
   "skip-github-release": true,
   "include-v-in-tag": false,
+  "group-pull-request-title-pattern": "chore${scope}: release charts",
   "plugins": [
     {
       "type": "sentence-case"
