@@ -35,11 +35,11 @@ Status: **Live** verified on a real deployment, **Unit** helm-unittest only, **R
 | 3 | Data kept on the PVC across restarts | Live | Live | |
 | 4 | Upgrade from the previous release | Not tested | Live (S02) | from 4.0.0 and 3.1.0 (failover) and 4.0.0 (scaleout): a one-time `--cascade=orphan` delete of the StatefulSets (`serviceName` changed in 4.1.0); `activeRouting` must go on in a later, separate upgrade (fix 40); 3.x installs left on the default root user also need `fixDataOwnership` once (fix 39). See the chart READMEs |
 | 5 | No password-resetting preStop | Live | Live | `gwcmd.sh -p` resets the login on 8.1 and 8.3 |
-| 6 | Custom lifecycle hooks | Live | Live (S07) | |
+| 6 | Custom lifecycle hooks | Live | Live (CI deploy test) | |
 | 7 | Rolling update across a redundant pair in a safe order | Not tested | Live (S06) | with activeRouting, readiness also waits for the Backup to be in sync before the Master is replaced |
 | 8 | Health check reflects gateway state | Live | Live | `/StatusPing`; `/main/system/StatusPing` is 404 on 8.3.1 and redirects to a 404 on 8.1 |
-| 9 | Configured probe commands honoured | Live | Live (S07) | |
-| 10 | startupProbe | Live | Live (S07) | |
+| 9 | Configured probe commands honoured | Live | Live (CI deploy test) | |
+| 10 | startupProbe | Live | Live (CI deploy test) | |
 | 11 | Uncommissioned gateway not reported healthy | Live (S08) | Live (S08) | fixed: readiness (`health-check.sh -r`) fails on `details: COMMISSIONING`; liveness does not, so no restart loop |
 | 12 | Master/Backup pairing over GAN TLS, sync Good | Not tested | Live | |
 | 13 | Backup takes over when the Master goes away | Not tested | Live | S01: graceful and crash (force delete); a hung Master needs a partition test (CI) |
@@ -52,8 +52,8 @@ Status: **Live** verified on a real deployment, **Unit** helm-unittest only, **R
 | 20 | Web TLS (`ssl.enabled`) | Not tested | Live (S05) | |
 | 21 | NetworkPolicy and extraIngress enforced | Rendered | CI | `testing.yaml` checks cross-namespace denial on kind (kindnet enforces NetworkPolicy) |
 | 22 | Log files cannot grow without bound | Live (S09) | Live (S09) | fixed: `logging.wrapperLogToStdout` (default on) appends `wrapper.logfile=/dev/stdout`; no `wrapper.log`, gateway log in `kubectl logs` |
-| 23 | Per-logger levels, SQLite limits | Live | Live (S07) | |
-| 24 | emptyDir size limits | Live | Live (S07) | |
+| 23 | Per-logger levels, SQLite limits | Live | Live (CI deploy test) | |
+| 24 | emptyDir size limits | Live | Live (CI deploy test) | |
 | 25 | GAN certificates issued | Not tested | Live | |
 | 26 | GAN rotation CronJob | Not tested | Unit | superseded by restartOnRenewal (the init container re-reads certificates on every start) |
 | 27 | Renewed certificate picked up (restart) | Unit | Live (S06) | fixed with `certManager.restartOnRenewal`: rolling restart when the certificate secrets change |
@@ -82,7 +82,6 @@ Scripts in `test/e2e` (see its README). Staging runs them on the shared single-n
 | S04 | Scaleout GAN connection, checked from the gateway logs | 8.3.1 | staging, CI | 30, 35 |
 | S05 | Web TLS with a certificate issued from the chart's CA | 8.3.1 | staging, CI | 20 |
 | S06 | Restart on certificate renewal: Backup restarted before Master | 8.3.1 | staging, CI | 27 |
-| S07 | Lifecycle, custom readiness, startupProbe, loggers, SQLite and emptyDir limits together | 8.3.1 | staging, CI | 6, 9, 10, 23, 24 |
 | S08 | Uncommissioned gateway never Ready and never restarted | 8.3.1, 8.1.53 | staging, CI | 11 |
 | S09 | Wrapper log goes to the container log | 8.3.1, 8.1.53 | staging, CI | 22 |
 | S10 | Split-brain (Master/Backup partition) and hung Master (Chaos Mesh) | 8.3.1 | CI only | 13, 15, 16 |
@@ -158,9 +157,9 @@ The orphan step is in both chart READMEs ("Upgrading from 4.0.0 or earlier").
 
 The gateway served the certificate issued from the chart's CA (`CN=s05-web.e2e.invalid`) on 8043 and reported RUNNING.
 
-### S07 chart options (8.3.1)
+### S07 chart options (8.3.1, retired)
 
-postStart hook, custom readiness command, startupProbe, per-logger levels, SQLite `entryLimit` and emptyDir size limits together: all in effect in the pod, `gateway.SslManager` no longer forced to DEBUG, Ready with no restarts.
+S07 is now part of the CI deploy test (`.github/scripts/tests/deploy-test.sh`), which runs on every pull request that changes a chart. Its last run as a scenario: postStart hook, custom readiness command, startupProbe, per-logger levels, SQLite `entryLimit` and emptyDir size limits together: all in effect in the pod, `gateway.SslManager` no longer forced to DEBUG, Ready with no restarts.
 
 ### S04 scaleout Gateway Network (8.3.1)
 

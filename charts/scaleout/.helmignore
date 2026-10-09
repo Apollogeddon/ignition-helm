@@ -27,3 +27,5 @@ node_modules
 .npmrc
 package.json
 package-lock.json
+# Chart-testing values, not part of the package
+ci/

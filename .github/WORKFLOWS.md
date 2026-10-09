@@ -33,9 +33,8 @@ The [`testing.yaml`](./workflows/testing.yaml) workflow ensures the functional i
 - **Unit Tests**: Uses `helm-unittest` to verify template logic against defined expectations in `charts/*/tests`.
 - **Linting**: Uses `chart-testing` (`ct lint`) to ensure charts meet Helm's structural requirements.
 - **Integration Tests**:
-  - Spins up a local Kubernetes cluster using **Kind**.
-  - Performs a `ct install` to verify the charts can be deployed.
-  - Executes specific deployment tests (e.g., checking `StatusPing` via `kubectl exec`) for both Failover and Scaleout architectures.
+  - Spins up a local Kubernetes cluster using **Kind** and installs cert-manager.
+  - Runs `.github/scripts/tests/deploy-test.sh` for each changed chart: a fresh install with the chart's `ci/deploy-values.yaml`, checked on the running gateways (RUNNING without restarts, NetworkPolicy enforcement, frontend to backend connectivity, chart options in effect), then an upgrade from the `main` branch's chart.
 
 ## 🚀 Release Process
 
