@@ -10,9 +10,10 @@ frontend:
   # Frontends are typically exposed via LoadBalancer for user access
   service:
     type: LoadBalancer
-  
-  # Sticky sessions are recommended for Perspective
-  sessionAffinity: ClientIP
+    # Sticky sessions are recommended for Perspective. ClientIP affinity can
+    # send clients to a terminating pod during a rolling update; prefer
+    # stickiness at the load balancer or Ingress if you have it.
+    sessionAffinity: ClientIP
 
   secrets:
     GATEWAY_ADMIN_PASSWORD: "strong-password"
