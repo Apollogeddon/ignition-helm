@@ -4,27 +4,27 @@ const base = import.meta.env.BASE_URL;
 const models = [
   {
     name: "Failover",
-    tagline: "Standard HA Redundancy",
-    description: "A standard Master/Backup pair for general-purpose SCADA deployments.",
+    tagline: "High availability",
+    description: "One gateway or a Master/Backup pair, for general-purpose SCADA deployments.",
     stats: [
-      { label: "Max Users", value: "~500" },
+      { label: "Users", value: "Moderate" },
       { label: "Complexity", value: "Low" },
-      { label: "Nodes", value: "2" },
+      { label: "Gateways", value: "1–2" },
     ],
-    features: ["Shared Storage", "Automatic Sync", "Simple License"],
+    features: ["Volume per gateway", "Redundancy sync", "Simple licensing"],
     link: `${base}/docs/charts/failover/`,
     icon: `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>`,
   },
   {
     name: "Scaleout",
-    tagline: "Enterprise Scale",
-    description: "Separate Frontend/Backend clusters for massive user loads and high concurrency.",
+    tagline: "High concurrency",
+    description: "Separate frontend and backend gateways, so user load scales without affecting devices.",
     stats: [
-      { label: "Max Users", value: "1000+" },
+      { label: "Users", value: "High" },
       { label: "Complexity", value: "High" },
-      { label: "Nodes", value: "N+2" },
+      { label: "Gateways", value: "N+1–2" },
     ],
-    features: ["Independent Scaling", "Isolated Backend", "EAM Integrated"],
+    features: ["Independent scaling", "Isolated backend", "EAM roles"],
     link: `${base}/docs/charts/scaleout/`,
     icon: `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="10" x2="6" y2="14"/><line x1="18" y1="10" x2="18" y2="14"/></svg>`,
   },
@@ -33,7 +33,7 @@ const models = [
 
 <section class="comparison-section">
   <div class="header">
-    <h2>Choose your <span class="text-gradient">Architecture</span></h2>
+    <h2>Choose your <span class="text-gradient">architecture</span></h2>
     <p>Select the deployment model that fits your operational needs.</p>
   </div>
 

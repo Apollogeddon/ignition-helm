@@ -1,8 +1,8 @@
-# GitHub Workflows Documentation
+# GitHub workflows
 
-This repository uses GitHub Actions to automate testing, quality assurance, documentation deployment, and the release process for the Ignition Helm charts.
+This page describes the GitHub Actions workflows that test, scan, release and document the Ignition Helm charts. It is for maintainers and contributors.
 
-## 🏗️ Orchestration: The Index Workflow
+## Orchestration: the index workflow
 
 The [`.index.yaml`](./workflows/.index.yaml) workflow is the primary entry point. It runs on pushes to `main` that change the charts and on every pull request, and orchestrates the other workflows in this order:
 
@@ -16,27 +16,28 @@ The [`.index.yaml`](./workflows/.index.yaml) workflow is the primary entry point
 
 A new push to a pull request cancels its previous run.
 
----
-
-## 🔍 Quality Assurance
+## Quality
 
 The [`quality.yaml`](./workflows/quality.yaml) workflow focuses on static analysis and security scanning:
 
-- **Kube-Linter**: Renders the Helm charts and scans the resulting manifests for Kubernetes best practices.
-- **Trivy**: Scans the charts for known vulnerabilities and configuration issues.
-- **Checkov**: A static code analysis tool for Infrastructure-as-Code (IaC) to detect security and compliance misconfigurations.
+- **kube-linter**: renders the Helm charts and checks the manifests against Kubernetes best practices.
+- **Trivy**: scans the charts for known vulnerabilities and misconfigurations.
+- **Checkov**: scans the charts for security and compliance misconfigurations.
 
-## 🧪 Testing
+## Testing
 
 The [`testing.yaml`](./workflows/testing.yaml) workflow ensures the functional integrity of the charts:
 
-- **Unit Tests**: Uses `helm-unittest` to verify template logic against defined expectations in `charts/*/tests`.
-- **Linting**: Uses `chart-testing` (`ct lint`) to ensure charts meet Helm's structural requirements.
-- **Integration Tests**:
-  - Spins up a local Kubernetes cluster using **Kind** and installs cert-manager.
-  - Runs `.github/scripts/tests/deploy-test.sh` for each changed chart: a fresh install with the chart's `ci/deploy-values.yaml`, checked on the running gateways (RUNNING without restarts, NetworkPolicy enforcement, frontend to backend connectivity, chart options in effect), then an upgrade from the `main` branch's chart.
+- **Unit tests**: `helm-unittest` checks the templates against the tests in `charts/*/tests`.
+- **Script tests**: runs `test/scripts/*_test.sh` against the shell scripts the charts ship.
+- **Linting**: `chart-testing` (`ct lint`) checks the charts' structure, with each chart's default values and its `ci/deploy-values.yaml`.
+- **Integration tests**:
+  - Creates a kind cluster and installs cert-manager with a self-signed `cluster-issuer` (`.github/scripts/ci/install-cert-manager.sh`).
+  - Runs `.github/scripts/tests/deploy-test.sh` for each changed chart (both, when the common chart changes). It installs the chart with its `ci/deploy-values.yaml` and checks the running gateways: RUNNING without restarts, the NetworkPolicy blocking another namespace, the scaleout frontend reaching its backend, and the chart options in effect. It then installs the `main` branch's chart and upgrades it to this one.
 
-## 🚀 Release Process
+The [`e2e.yaml`](./workflows/e2e.yaml) workflow, run manually, runs the end-to-end scenarios in [`test/e2e`](../test/e2e/README.md) on a disposable kind cluster.
+
+## Release
 
 The [`release.yaml`](./workflows/release.yaml) workflow automates versioning and publishing:
 
@@ -45,7 +46,7 @@ The [`release.yaml`](./workflows/release.yaml) workflow automates versioning and
 
 Every workflow installs Helm through [`.github/actions/setup-helm`](./actions/setup-helm/action.yml), which sets the Helm version in one place.
 
-## 📖 Documentation
+## Documentation site
 
 The [`webpage.yaml`](./workflows/webpage.yaml) workflow manages the [Astro](https://astro.build/)-based documentation site:
 
@@ -54,10 +55,8 @@ The [`webpage.yaml`](./workflows/webpage.yaml) workflow manages the [Astro](http
 - **Build**: Copies the chart repository's `index.yaml` into the site and builds the static site located in the `webpage/` directory, on pull requests too, so a broken site fails the pull request. Pushes and release calls build the tip of `main`, which has the `index.yaml` chart-releaser just pushed.
 - **Deploy**: Outside pull requests, publishes the build artifacts to **GitHub Pages**, which also serves the Helm repository.
 
----
+## Configuration
 
-## 🛠️ Configuration & Maintenance
-
-- **`release.json`**: Configures the behavior of `release-please`, defining which paths trigger releases and how changelogs are generated.
-- **`dependabot.yml`**: Automatically keeps GitHub Actions and Helm chart dependencies (defined in `charts/*/Chart.yaml`) up to date.
-- **`ct.yaml`**: Configuration for the `chart-testing` tool used in the testing workflow.
+- **`release.json`** and **`.release.json`**: release-please's configuration (the chart packages and how their changelogs are written) and manifest (each chart's current version).
+- **`dependabot.yml`**: keeps the Helm chart dependencies, the npm packages (the root tooling and the `webpage/` site) and the GitHub Actions up to date.
+- **`ct.yaml`** (repository root): configuration for `chart-testing`, used by the testing workflow.

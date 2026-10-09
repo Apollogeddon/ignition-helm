@@ -24,6 +24,20 @@ tests:
           path: spec.jobTemplate.spec.template.spec.containers[0].args[0]
           value: /config/scripts/prepare-gan-certificates.sh
 
+  - it: should mount the scripts from the Secret they are rendered as
+    set:
+      certManager:
+        rotation:
+          enabled: true
+    asserts:
+      - contains:
+          path: spec.jobTemplate.spec.template.spec.volumes
+          content:
+            name: config-scripts
+            secret:
+              secretName: ignition-failover-common-scripts
+              defaultMode: 0755
+
   - it: should create two cronjobs when redundancy is enabled
     set:
       certManager:
