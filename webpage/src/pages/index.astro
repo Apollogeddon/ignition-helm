@@ -8,9 +8,9 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 const base = import.meta.env.BASE_URL;
 ---
 
-<BaseLayout title="Ignition Helm Charts" description="Enterprise-grade Helm charts for deploying Inductive Automation Ignition on Kubernetes.">
+<BaseLayout title="Ignition Helm Charts" description="Helm charts for running Inductive Automation's Ignition gateways on Kubernetes.">
   <Hero 
-    tagline="The definitive way to deploy scalable, resilient Ignition architectures on Kubernetes."
+    tagline="Helm charts for running redundant and scaleout Ignition gateways on Kubernetes."
     logo={logoImage}
   />
   
@@ -22,6 +22,7 @@ const base = import.meta.env.BASE_URL;
     <div class="footer-content">
       <p>Released under the MIT License.</p>
       <p>Built with Astro.</p>
+      <p>Ignition is a trademark of Inductive Automation.</p>
     </div>
   </footer>
 </BaseLayout>

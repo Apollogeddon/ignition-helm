@@ -16,7 +16,8 @@ ignition:
     IGNITION_GAN_KEYSTORE_PASSWORD: "metro-password"
     IGNITION_WEB_KEYSTORE_PASSWORD: "web-password"
 
-  # Ensure the service points to the active master (via standard labels)
-  # Note: The chart also creates -primary and -backup headless services for direct access.
+  # The Service selects both gateways; set activeRouting.enabled: true to send
+  # traffic only to the active one.
+  # The chart also creates -primary and -backup headless Services for direct access.
   service:
     type: LoadBalancer

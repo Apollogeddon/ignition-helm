@@ -1,9 +1,11 @@
 ---
 title: Upgrading
-description: Upgrading an existing installation to a newer chart version.
+description: Upgrade an existing installation to a newer chart version.
 ---
 
-Most upgrades are a plain `helm upgrade`. The StatefulSets replace one pod at a time, the Backup (pod 1) before the Master (pod 0), and a Backup only counts as Ready once it is running.
+This guide covers upgrading an installed chart, including the one-time steps for installs from 4.0.0 or earlier.
+
+Most upgrades are a plain `helm upgrade` after `helm repo update`. Read the chart's `CHANGELOG.md` for the versions you are skipping. The StatefulSets replace one pod at a time, the Backup (pod 1) before the Master (pod 0), and a Backup only counts as Ready once it is running.
 
 Upgrading from **4.0.0 or earlier** (including 3.x) needs the extra steps below, once.
 
@@ -11,7 +13,7 @@ Upgrading from **4.0.0 or earlier** (including 3.x) needs the extra steps below,
 
 From 4.1.0 each StatefulSet is governed by a `<name>-headless` Service. Kubernetes does not allow `serviceName` to change on an existing StatefulSet, so `helm upgrade` is rejected. Delete only the StatefulSet objects first. Their pods and volumes keep running, and the upgraded StatefulSets adopt them:
 
-```sh
+```bash
 # failover
 kubectl delete statefulset ignition-failover --cascade=orphan -n <namespace>
 # scaleout
@@ -20,11 +22,13 @@ kubectl delete statefulset ignition-scaleout-frontend ignition-scaleout-backend 
 helm upgrade <release> ignition-charts/<chart> -n <namespace> ...
 ```
 
+The StatefulSet names above assume the default `applicationName`; use your own if you set it.
+
 On start, the upgraded gateways apply the chart's redundancy settings to their volumes, including the peer address under the new Service name, so a pair reconnects once both pods have been replaced.
 
-## 2. Turn on activeRouting afterwards
+## 2. Turn on active routing afterwards
 
-If you want `activeRouting`, enable it in a **second** upgrade, after every pod has been replaced. Until the Master's pod is replaced it can only be reached under the old Service name, so the new Backup cannot sync with it. With `activeRouting` a Backup must be in sync to be Ready, so a single upgrade that does both would wait forever (the Master keeps serving).
+If you want `activeRouting`, enable it in a **second** upgrade, after every pod has been replaced. Until the Master's pod is replaced it can only be reached under the old Service name, so the new Backup cannot sync with it. With `activeRouting` a Backup must be in sync to be Ready, so a single upgrade that does both would wait indefinitely (the Master keeps serving meanwhile).
 
 ## 3. Volumes from 3.x installs that ran as root
 
