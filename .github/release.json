@@ -24,5 +24,6 @@
       "type": "sentence-case"
     }
   ],
-  "bootstrap-sha": "df5e5c703e911229618f08f376a911a37c4d5d4d"
+  "bootstrap-sha": "df5e5c703e911229618f08f376a911a37c4d5d4d",
+  "last-release-sha": "3b4fbfe6c71824c4fe139e89236e8bd8bd8a6cd7"
 }
