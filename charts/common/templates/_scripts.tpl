@@ -326,30 +326,35 @@ stringData:
 
     echo "Running configure-ignition.sh"
 
-    # Gateway Restore Configuration
-    if [ -n "$IGNITION_RESTORE_URL" ]; then
+    # Gateway backup restore: stage the backup on the data volume once. The
+    # gateway starts with -r pointing at it, and the Ignition image restores it
+    # on the gateway's first start only, so the file stays for later starts.
+    backup="${DATA_DIR:-/data}/restore.gwbk"
+    if [ -z "$IGNITION_RESTORE_URL" ] && [ -z "$IGNITION_RESTORE_PATH" ]; then
+        echo "No Ignition Restore URL or Path provided. Skipping Gateway Backup restore."
+    elif [ -s "$backup" ]; then
+        echo "Gateway Backup already staged at $backup."
+    elif [ -n "$IGNITION_RESTORE_URL" ]; then
         echo "Downloading Gateway Backup from $IGNITION_RESTORE_URL..."
         if command -v curl &> /dev/null; then
-            curl -L -o /data/restore.gwbk "$IGNITION_RESTORE_URL"
-            echo "Gateway Backup downloaded to /data/restore.gwbk"
+            curl -fsSL -o "$backup.part" "$IGNITION_RESTORE_URL"
         elif command -v wget &> /dev/null; then
-            wget -O /data/restore.gwbk "$IGNITION_RESTORE_URL"
-            echo "Gateway Backup downloaded to /data/restore.gwbk"
+            wget -q -O "$backup.part" "$IGNITION_RESTORE_URL"
         else
             echo "Error: Neither curl nor wget found. Cannot download Gateway Backup."
             exit 1
         fi
-    elif [ -n "$IGNITION_RESTORE_PATH" ]; then
+        mv "$backup.part" "$backup"
+        echo "Gateway Backup downloaded to $backup"
+    else
         echo "Copying Gateway Backup from $IGNITION_RESTORE_PATH..."
-        if [ -f "$IGNITION_RESTORE_PATH" ]; then
-            cp "$IGNITION_RESTORE_PATH" /data/restore.gwbk
-            echo "Gateway Backup copied to /data/restore.gwbk"
-        else
+        if [ ! -f "$IGNITION_RESTORE_PATH" ]; then
             echo "Error: File not found at $IGNITION_RESTORE_PATH"
             exit 1
         fi
-    else
-        echo "No Ignition Restore URL or Path provided. Skipping Gateway Backup restore."
+        cp "$IGNITION_RESTORE_PATH" "$backup.part"
+        mv "$backup.part" "$backup"
+        echo "Gateway Backup copied to $backup"
     fi
 
     echo "configure-ignition.sh finished."

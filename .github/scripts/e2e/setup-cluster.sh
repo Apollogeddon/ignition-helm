@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Installs what the e2e scenarios expect on the disposable kind cluster:
 # cert-manager with a self-signed ClusterIssuer named cluster-issuer (the chart
-# default), Contour as the ingress controller, and Chaos Mesh for S09.
+# default), Contour as the ingress controller, and Chaos Mesh for S10.
 set -euo pipefail
 
 CONTOUR_VERSION="${CONTOUR_VERSION:-release-1.32}"
