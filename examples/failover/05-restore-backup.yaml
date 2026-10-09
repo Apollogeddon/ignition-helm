@@ -1,12 +1,13 @@
 # 05-restore-backup.yaml
-# Automatically restores a Gateway Backup (.gwbk) on first startup.
+# Fetches a Gateway Backup (.gwbk) into the data volume (/data/restore.gwbk)
+# before the gateway starts.
 # Useful for seeding test environments, CI pipelines, or disaster recovery.
 
 ignition:
   restore:
     enabled: true
     # URL to the backup file (must be accessible from the pod)
-    # The container will download this file and restore it before starting Ignition.
+    # The init container downloads this file before the gateway starts.
     url: "https://example.com/backups/production-snapshot.gwbk"
     
     # Alternative: Use a local path if you have mounted a volume containing the file
