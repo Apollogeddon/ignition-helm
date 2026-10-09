@@ -70,8 +70,10 @@ spec:
         {{- end }}
         - name: EAM_SETUP_INSTALLSELECTION
           value: {{ .Values.frontend.eam.role | quote }}
+        # the Controller's Gateway Network name: backends are named after their
+        # pod (GATEWAY_SYSTEM_NAME), and backend-0 is the Master of a redundant pair
         - name: EAM_AGENT_CONTROLLERSERVERNAME
-          value: "backend"
+          value: {{ printf "%s-backend-0" (include "ignition.name" .) | quote }}
         - name: GATEWAY_SYSTEM_NAME
           valueFrom:
             fieldRef:

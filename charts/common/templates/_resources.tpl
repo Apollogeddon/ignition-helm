@@ -520,8 +520,8 @@ spec:
               readOnly: true
           volumes:
           - name: config-scripts
-            configMap:
-              name: {{ include "ignition-common.scriptsName" $.context }}
+            secret:
+              secretName: {{ include "ignition-common.scriptsName" $.context }}
               defaultMode: 0755
           - name: gan-tls
             secret:

@@ -45,7 +45,7 @@ certManager:
     enabled: false
     schedule: "*/15 * * * *"
     # -- Needs /bin/sh, sha256sum and kubectl
-    image: alpine/kubectl:1.34.1
+    image: alpine/kubectl:1.37.1
 
 affinity:
   # -- Enable or disable pod anti-affinity
@@ -255,7 +255,7 @@ ignition:
   activeRouting:
     enabled: false
     # -- Labeller image; needs /bin/sh, curl and kubectl
-    image: alpine/kubectl:1.34.1
+    image: alpine/kubectl:1.37.1
     # -- Seconds between /system/gwinfo polls
     intervalSeconds: 2
     # -- Polls to keep the label on a gateway that stops answering

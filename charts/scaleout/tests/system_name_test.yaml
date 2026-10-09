@@ -25,6 +25,25 @@ tests:
               fieldRef:
                 fieldPath: metadata.name
 
+  - it: should point the frontend EAM Agent at the backend Controller's gateway name
+    template: templates/frontend/frontend-statefulset.yaml
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: EAM_AGENT_CONTROLLERSERVERNAME
+            value: ignition-scaleout-backend-0
+
+  - it: should follow applicationName in the EAM Controller's gateway name
+    template: templates/frontend/frontend-statefulset.yaml
+    set:
+      applicationName: plant
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: EAM_AGENT_CONTROLLERSERVERNAME
+            value: plant-backend-0
   - it: should start the backend with -r and the staged backup when its restore has a source
     template: templates/backend/backend-statefulset.yaml
     set:
