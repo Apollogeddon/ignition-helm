@@ -12,7 +12,7 @@ jobs:
   # This job creates each chart version's tag and release, with the packaged chart
   # attached. release-please only opens the release pull requests that bump the
   # versions and changelogs: it creates no releases of its own, and expects the
-  # <chart>-<version> tag names when it looks for the last release.
+  # <chart>-v<version> tag names when it looks for the last release.
   version:
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -24,8 +24,8 @@ jobs:
 
       - name: Configure Git
         run: |
-          git config user.name "$GITHUB_ACTOR"
-          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
       - name: Install Helm
         uses: ./.github/actions/setup-helm
@@ -59,7 +59,8 @@ jobs:
         run: |
           mkdir -p .cr-index
           cr index --owner "$GITHUB_REPOSITORY_OWNER" --git-repo "${GITHUB_REPOSITORY#*/}" \
-            --package-path .cr-new-packages --pages-branch main --push
+            --package-path .cr-new-packages --pages-branch main --push \
+            --release-name-template '{{ .Name }}-v{{ .Version }}'
 
       # release-please marks a merged release pull request as released when it creates
       # the release, and opens no new one while a merged one is still pending. As

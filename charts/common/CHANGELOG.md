@@ -5,9 +5,7 @@
 
 ### Bug Fixes
 
-* **charts:** Mount the scripts Secret in the GAN certificate rotation CronJob ([2b09a7c](https://github.com/Apollogeddon/ignition-helm/commit/2b09a7cd1762784e98e66d96116e08ba58a89ed4))
 * **charts:** Mount the scripts Secret in the GAN certificate rotation CronJob ([17e369e](https://github.com/Apollogeddon/ignition-helm/commit/17e369e7c7ab5660e5ee4a9605044974933aea46))
-* **charts:** Restore the gateway backup from restore.url or restore.path on the first start ([1697639](https://github.com/Apollogeddon/ignition-helm/commit/1697639913ced099c8dc2ca50e42495f723ad825))
 * **charts:** Restore the gateway backup from restore.url or restore.path on the first start ([878c5ee](https://github.com/Apollogeddon/ignition-helm/commit/878c5eef83f099c20607fd7f7abc07ae7c5dde71))
 
 ## [3.2.0](https://github.com/Apollogeddon/ignition-helm/compare/ignition-common-3.1.0...ignition-common-v3.2.0) (2026-10-07)
