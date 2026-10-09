@@ -3,7 +3,7 @@ name: ignition-scaleout
 description: A Helm chart for failover Ignition Gateway with scalable frontend
   client functionality
 type: application
-version: 4.2.1
+version: 4.2.2
 keywords:
   - ignition
   - scada
