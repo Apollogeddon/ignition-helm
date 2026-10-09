@@ -3,7 +3,7 @@ set -e
 
 echo "Starting Scaleout Architecture Deployment Test..."
 
-# Install with NetworkPolicy, HPA and redundancy enabled
+# Install with NetworkPolicy and HPA enabled
 echo "Installing ignition-scaleout..."
 helm install scaleout charts/scaleout \
   --set frontend.networkPolicy.enabled=true \
@@ -79,14 +79,20 @@ else
   exit 1
 fi
 
-# PDBs (should be created because HPA is enabled)
+# PDBs: the frontend has one, as it runs at least 2 replicas. The single backend
+# has none without redundancy, as a minAvailable of 1 would block every node drain.
 echo "Checking PDB resources..."
-if kubectl get pdb ignition-scaleout-frontend && kubectl get pdb ignition-scaleout-backend; then
-  echo "SUCCESS: PDB resources found for both components."
+if kubectl get pdb ignition-scaleout-frontend; then
+  echo "SUCCESS: Frontend PDB found."
 else
-  echo "ERROR: One or more PDB resources missing"
+  echo "ERROR: Frontend PDB resource not found"
   exit 1
 fi
+if kubectl get pdb ignition-scaleout-backend >/dev/null 2>&1; then
+  echo "ERROR: Backend PDB found for a single backend without redundancy"
+  exit 1
+fi
+echo "SUCCESS: No backend PDB without redundancy."
 
 echo "Cleaning up scaleout deployment..."
 helm uninstall scaleout
