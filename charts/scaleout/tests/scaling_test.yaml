@@ -1,0 +1,96 @@
+suite: Ignition Scaleout Scaling, Disruption Budgets and Persistence
+templates:
+  - templates/frontend/hpa.yaml
+  - templates/backend/hpa.yaml
+  - templates/frontend/pdb.yaml
+  - templates/backend/networkpolicy.yaml
+  - templates/backend/backend-statefulset.yaml
+tests:
+  - it: should pass the frontend HPA's minimum replicas through
+    template: templates/frontend/hpa.yaml
+    set:
+      frontend:
+        hpa:
+          enabled: true
+          minReplicas: 2
+    asserts:
+      - equal:
+          path: spec.minReplicas
+          value: 2
+
+  - it: should not create a backend HPA by default
+    template: templates/backend/hpa.yaml
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should create a backend HPA for the backend StatefulSet when enabled
+    template: templates/backend/hpa.yaml
+    set:
+      backend:
+        hpa:
+          enabled: true
+          minReplicas: 1
+    asserts:
+      - isKind:
+          of: HorizontalPodAutoscaler
+      - equal:
+          path: spec.scaleTargetRef.name
+          value: ignition-scaleout-backend
+      - equal:
+          path: spec.minReplicas
+          value: 1
+
+  - it: should not create a frontend PDB for a single frontend
+    template: templates/frontend/pdb.yaml
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should create a frontend PDB when the frontend autoscales
+    template: templates/frontend/pdb.yaml
+    set:
+      frontend:
+        hpa:
+          enabled: true
+    asserts:
+      - isKind:
+          of: PodDisruptionBudget
+      - equal:
+          path: spec.minAvailable
+          value: 1
+
+  - it: should create a frontend PDB for more than one frontend replica
+    template: templates/frontend/pdb.yaml
+    set:
+      frontend:
+        redundancy:
+          replicas: 2
+    asserts:
+      - isKind:
+          of: PodDisruptionBudget
+
+  - it: should create a NetworkPolicy for the backend when enabled
+    template: templates/backend/networkpolicy.yaml
+    set:
+      backend:
+        networkPolicy:
+          enabled: true
+    asserts:
+      - isKind:
+          of: NetworkPolicy
+      - equal:
+          path: spec.podSelector.matchLabels["app.kubernetes.io/component"]
+          value: backend
+
+  - it: should claim a data volume for each backend and mount it over the data directory
+    template: templates/backend/backend-statefulset.yaml
+    asserts:
+      - equal:
+          path: spec.volumeClaimTemplates[0].metadata.name
+          value: data
+      - contains:
+          path: spec.template.spec.containers[0].volumeMounts
+          content:
+            mountPath: /usr/local/bin/ignition/data
+            name: data

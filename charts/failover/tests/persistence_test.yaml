@@ -1,0 +1,20 @@
+suite: Ignition Failover Persistence
+templates:
+  - ignition-statefulset.yaml
+tests:
+  - it: should claim a data volume for each gateway
+    asserts:
+      - equal:
+          path: spec.volumeClaimTemplates[0].metadata.name
+          value: data
+      - contains:
+          path: spec.volumeClaimTemplates[0].spec.accessModes
+          content: ReadWriteOnce
+
+  - it: should mount the data volume over the gateway's data directory
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].volumeMounts
+          content:
+            mountPath: /usr/local/bin/ignition/data
+            name: data

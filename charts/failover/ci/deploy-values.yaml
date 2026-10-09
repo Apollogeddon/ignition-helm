@@ -1,0 +1,22 @@
+# Values for the deployment test (.github/scripts/tests/deploy-test.sh) and for
+# chart-testing's lint: options that only show on a running gateway.
+ignition:
+  networkPolicy:
+    enabled: true
+  lifecycle:
+    postStart:
+      exec:
+        command: ["sh", "-c", "date > /usr/local/bin/ignition/temp/poststart-ran"]
+  readinessProbe:
+    command: ["/config/scripts/health-check.sh", "-t", "4", "-r"]
+  startupProbe:
+    enabled: true
+  logging:
+    loggers:
+      gateway.SslManager: WARN
+      perspective: INFO
+    sqlite:
+      entryLimit: 20000
+  emptyDirSizeLimit:
+    logs: 256Mi
+    temp: 512Mi
