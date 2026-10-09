@@ -36,6 +36,14 @@ jobs:
           if [[ -n "$changed" ]]; then
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
+          # the charts to deploy: a change to the common library chart affects both
+          deploy=$(for c in $changed; do
+            case "$c" in
+              charts/common) echo failover; echo scaleout ;;
+              charts/*) echo "${c#charts/}" ;;
+            esac
+          done | sort -u | tr '\n' ' ')
+          echo "deploy=$deploy" >> "$GITHUB_OUTPUT"
 
       - name: Update dependencies
         run: sh ./.github/scripts/ci/update-dependencies.sh
@@ -64,14 +72,11 @@ jobs:
         if: steps.list-changed.outputs.changed == 'true'
         run: ./.github/scripts/ci/install-cert-manager.sh
 
-      - name: Run chart-testing (install)
+      # a fresh install with each chart's ci/deploy-values.yaml, checked on the
+      # running gateways, then an upgrade from the default branch's chart
+      - name: Deploy and check the changed charts
         if: steps.list-changed.outputs.changed == 'true'
-        run: ct install --target-branch ${{ github.event.repository.default_branch || 'main' }} --upgrade
-
-      - name: Test Failover Deployment
-        if: steps.list-changed.outputs.changed == 'true'
-        run: sh ./.github/scripts/tests/test-failover.sh
-
-      - name: Test Scaleout Deployment
-        if: steps.list-changed.outputs.changed == 'true'
-        run: sh ./.github/scripts/tests/test-scaleout.sh
+        env:
+          CHARTS: ${{ steps.list-changed.outputs.deploy }}
+          TARGET_BRANCH: ${{ github.event.repository.default_branch || 'main' }}
+        run: for c in $CHARTS; do bash ./.github/scripts/tests/deploy-test.sh "$c"; done
