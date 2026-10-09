@@ -1,16 +1,16 @@
-# Security Policy
+# Security policy
 
-## Supported Versions
+## Supported versions
 
 Only the latest release of each chart receives security fixes.
 
-## Reporting a Vulnerability
+## Reporting a vulnerability
 
-Please report security vulnerabilities privately using [GitHub's private vulnerability reporting](https://github.com/Apollogeddon/ignition-helm/security/advisories/new) rather than opening a public issue.
+Report security vulnerabilities privately using [GitHub's private vulnerability reporting](https://github.com/Apollogeddon/ignition-helm/security/advisories/new) rather than opening a public issue.
 
 You should expect an initial response within a few days. If the issue is confirmed, a fix is released as a patch version of the affected charts and credited in the advisory unless you request otherwise.
 
-## Automated Security Tooling
+## Automated security tooling
 
 This repository runs the following on every change:
 

@@ -1,73 +1,68 @@
 ---
 title: ignition-failover
-description: A Helm chart for failover Ignition Gateway with combined frontend/backend functionality
+description: Reference for the ignition-failover chart, which runs a single Ignition gateway or a Master/Backup redundant pair.
 ---
 
-A Helm chart for failover Ignition Gateway with combined frontend/backend functionality. This chart deploys an Ignition Gateway configured for redundancy, capable of acting as both a frontend and backend in a simplified failover architecture.
+`ignition-failover` deploys a single Ignition gateway, or a Master/Backup redundant pair, that serves both devices and users. This page describes how it starts up and lists its values. For installation, see the [installation guide](../../guides/installation/).
 
-## Initialization Process
+## Startup
 
-The following diagram illustrates how the chart initializes redundancy and handles certificate exchange during startup.
+Before the gateway starts, the `preconfigure` init container prepares its data volume. cert-manager has already issued the Gateway Network certificate into a Secret, which the pod mounts.
 
-> **Note:** The chart automatically creates two headless services (`-primary` and `-backup`) which always target pod ordinal 0 and 1 respectively, allowing for direct diagnostics of a specific node.
+The chart also creates two headless Services, `<name>-primary` and `<name>-backup`, that always target pod ordinals 0 and 1, so you can reach a specific gateway directly. `<name>` is `applicationName` (default `ignition-failover`).
 
 ```mermaid
 sequenceDiagram
+    participant Certs as cert-manager
     participant K8s as Kubernetes
-    participant Init as Init Container
-    participant Certs as Cert Manager
-    participant Ignition as Ignition Gateway
-    
-    K8s->>Init: Start Pod
-    Init->>Certs: Request GAN Certs
-    Certs-->>Init: Mount Secrets (GAN TLS/CA)
-    opt SSL Enabled
-        K8s-->>Init: Mount Secret (Web TLS)
-        Init->>Init: Prepare Web Keystore
+    participant Init as Init container
+    participant Ignition as Ignition gateway
+
+    Certs->>K8s: Issue GAN certificate and CA into Secrets
+    K8s->>Init: Start pod, mount Secrets
+    Init->>Init: Seed data volume (first start)
+    Init->>Init: Apply redundancy settings
+    alt Pod 0
+        Init->>Init: Role Master
+    else Pod 1
+        Init->>Init: Role Backup
     end
-    Init->>Init: Generate Keystore (p12)
-    Init->>Init: Seed Redundancy XML
-    
-    alt is Master (0)
-        Init->>Init: Apply Master Config
-    else is Backup (1)
-        Init->>Init: Apply Backup Config
+    Init->>Init: Install GAN keystore
+    opt ssl.enabled
+        Init->>Init: Install web server keystore
     end
-    
-    Init->>Ignition: Start Main Container
-    Ignition->>Ignition: Load Keystores
-    Ignition->>Ignition: Establish Gateway Network
+    Init->>Ignition: Start gateway container
+    Ignition->>Ignition: Connect Gateway Network to peer
 ```
 
-> **Upgrading from 4.0.0 or earlier?** It needs a one-time step; see the [Upgrading guide](../../guides/upgrading/).
+> **Upgrading from 4.0.0 or earlier?** It needs a one-time step; see the [upgrading guide](../../guides/upgrading/).
 
-## Configuration
+## Values
 
-The following sections list the configurable parameters of the ignition-failover chart, broken down by category.
+The tables below list the chart's values and defaults, grouped by area. [`values.yaml`](https://github.com/Apollogeddon/ignition-helm/blob/main/charts/failover/values.yaml) is the authoritative list.
 
-### General Settings
+### General
 
-Basic metadata and image configuration.
+Resource naming and the container image.
 
 | Parameter | Type | Default |
 | --- | --- | --- |
 | `applicationName` | string | `"ignition-failover"` |
 | `image.repository` | string | `"inductiveautomation/ignition"` |
-| `image.tag` | string | `""` |
+| `image.tag` | string | `""` (the chart's `appVersion`, 8.3.1) |
 | `image.pullPolicy` | string | `"IfNotPresent"` |
+| `image.imagePullSecrets` | list | unset |
 
-### Web Server SSL/TLS
+### Web server TLS
 
-Configuration for providing a custom keystore for the Web Server (HTTPS).
+Serve HTTPS with your own PKCS#12 keystore. `ignition.ssl.secretName` defaults to `<name>-web-tls`.
 
 | Parameter | Type | Default |
 | --- | --- | --- |
 | `ignition.ssl.enabled` | bool | `false` |
 | `ignition.ssl.secretName` | string | `""` |
 
-### Security & Monitoring
-
-Advanced security and observability settings.
+### Network policy and monitoring
 
 | Parameter | Type | Default |
 | --- | --- | --- |
@@ -76,10 +71,11 @@ Advanced security and observability settings.
 | `ignition.serviceMonitor.enabled` | bool | `false` |
 | `ignition.serviceMonitor.interval` | string | `"30s"` |
 | `ignition.serviceMonitor.path` | string | `"/data/metrics"` |
+| `ignition.serviceMonitor.additionalLabels` | object | `{}` |
 
-### Ignition Configuration
+### Gateway
 
-Core Ignition Gateway settings, including EULA acceptance and module selection.
+Gateway environment variables (including EULA acceptance and enabled modules), arguments, logging and the EAM role.
 
 | Parameter | Type | Default |
 | --- | --- | --- |
@@ -115,7 +111,7 @@ GATEWAY_MODULES_ENABLED: perspective,symbol-factory,alarm-notification,modbus-dr
 
 ### Redundancy
 
-Settings to control the Gateway's redundancy behavior.
+Redundancy settings, applied to each gateway's data volume on every start.
 
 | Parameter | Type | Default |
 | --- | --- | --- |
@@ -141,9 +137,7 @@ httpReadTimeout: 60000
 backupFailoverTimeout: 10000
 ```
 
-### Persistence & Storage
-
-Configuration for persistent data storage.
+### Persistence and storage
 
 | Parameter | Type | Default |
 | --- | --- | --- |
@@ -153,12 +147,15 @@ Configuration for persistent data storage.
 | `ignition.localMounts` | list | `[]` |
 | `ignition.restore.enabled` | bool | `false` |
 | `ignition.restore.url` | string | `""` |
+| `ignition.restore.path` | string | unset |
+| `ignition.externalModules.enabled` | bool | `false` |
+| `ignition.externalModules.pvcName` | string | `""` |
 | `ignition.emptyDirSizeLimit` | object | `{"logs":"","temp":"","dotIgnition":""}` |
 | `ignition.fixDataOwnership` | bool | `false` |
 
-### Networking & Ingress
+### Networking and certificates
 
-Service exposure and Ingress settings.
+Service, Ingress and cert-manager settings.
 
 | Parameter | Type | Default |
 | --- | --- | --- |
@@ -166,8 +163,11 @@ Service exposure and Ingress settings.
 | `ignition.service.ports` | object | `{"http":8088,"https":8043,"gan":8060}` |
 | `ignition.service.nodePorts` | object | unset |
 | `ignition.service.sessionAffinity` | string | `"None"` |
+| `ignition.service.annotations` | object | unset |
 | `ignition.ingress.enabled` | bool | `false` |
 | `ignition.ingress.className` | string | `""` |
+| `ignition.ingress.annotations` | object | unset |
+| `ignition.ingress.hosts` | list | unset |
 | `ignition.ingress.tls` | list | `[]` |
 | `certManager.issuer.name` | string | `"cluster-issuer"` |
 | `certManager.issuer.kind` | string | `"ClusterIssuer"` |
@@ -175,22 +175,24 @@ Service exposure and Ingress settings.
 | `certManager.rotation.schedule` | string | `"0 7 * * *"` |
 | `certManager.restartOnRenewal` | object | `{"enabled":false,"schedule":"*/15 * * * *","image":"alpine/kubectl:1.34.1"}` |
 
-### Resources & Scheduling
+### Resources and scheduling
 
-CPU/Memory requests/limits and pod affinity.
+CPU and memory, the update strategy and pod anti-affinity. `affinity.type` is `soft` (preferred) or `hard` (required).
 
 | Parameter | Type | Default |
 | --- | --- | --- |
 | `ignition.resources.requests` | object | `{"memory":"1Gi","cpu":"500m"}` |
 | `ignition.resources.limits.cpu` | string | `"1000m"` |
 | `ignition.resources.limits.memory` | string | `"2Gi"` |
+| `ignition.initResources` | object | `{"requests":{"memory":"128Mi","cpu":"100m"},"limits":{"memory":"256Mi","cpu":"200m"}}` |
+| `ignition.updateStrategy.type` | string | `"RollingUpdate"` |
 | `affinity.enabled` | bool | `false` |
 | `affinity.type` | string | `"soft"` |
 | `affinity.topologyKey` | string | `"kubernetes.io/hostname"` |
 
 ### Probes
 
-Health checks for the pod.
+Health checks for the gateway container. A `command` you set is used as-is.
 
 | Parameter | Type | Default |
 | --- | --- | --- |
@@ -228,9 +230,9 @@ command:
   - "-r"
 ```
 
-### Security & Accounts
+### Security and accounts
 
-Security context and Service Account settings.
+Security context, secrets and the ServiceAccount. With `ignition.sealedSecrets`, the `ignition.secrets` values must be encrypted with `kubeseal`.
 
 | Parameter | Type | Default |
 | --- | --- | --- |
