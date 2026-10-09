@@ -48,6 +48,39 @@ tests:
             name: IGNITION_RESTORE_PATH
             value: "/restore/backup.gwbk"
 
+  - it: should start the gateway with -r and the staged backup when restore has a source
+    set:
+      ignition:
+        restore:
+          enabled: true
+          url: "http://files/my.gwbk"
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].args[0]
+          value: -r
+      - equal:
+          path: spec.template.spec.containers[0].args[1]
+          value: /usr/local/bin/ignition/data/restore.gwbk
+      - contains:
+          path: spec.template.spec.containers[0].args
+          content: gateway.useProxyForwardedHeader=true
+
+  - it: should not pass -r without restore
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].args
+          content: -r
+
+  - it: should not pass -r when restore is enabled without a url or path
+    set:
+      ignition:
+        restore:
+          enabled: true
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].args
+          content: -r
+
   - it: should not have web-tls volume by default
     template: ignition-statefulset.yaml
     asserts:

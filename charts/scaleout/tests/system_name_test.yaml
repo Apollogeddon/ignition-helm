@@ -44,3 +44,29 @@ tests:
           content:
             name: EAM_AGENT_CONTROLLERSERVERNAME
             value: plant-backend-0
+  - it: should start the backend with -r and the staged backup when its restore has a source
+    template: templates/backend/backend-statefulset.yaml
+    set:
+      backend:
+        restore:
+          enabled: true
+          path: /restore/backup.gwbk
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].args[0]
+          value: -r
+      - equal:
+          path: spec.template.spec.containers[0].args[1]
+          value: /usr/local/bin/ignition/data/restore.gwbk
+
+  - it: should not pass -r to the frontend when only the backend restores
+    template: templates/frontend/frontend-statefulset.yaml
+    set:
+      backend:
+        restore:
+          enabled: true
+          path: /restore/backup.gwbk
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].args
+          content: -r

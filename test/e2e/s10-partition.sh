@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# S09: network faults on a redundant pair with activeRouting (needs Chaos Mesh,
+# S10: network faults on a redundant pair with activeRouting (needs Chaos Mesh,
 # so run it on a disposable cluster, not a shared one).
 #   A. split-brain: partition the Master from the Backup only. The Backup takes
 #      over while the Master keeps running, so both report Active; the labeller
@@ -16,14 +16,14 @@ CHART="$(dirname "$0")/../../charts/failover"
 STS=ignition-failover
 PARTITION_SECONDS="${PARTITION_SECONDS:-90}"
 
-kubectl get crd networkchaos.chaos-mesh.org >/dev/null 2>&1 || die "S09 needs Chaos Mesh (NetworkChaos CRD not found)"
+kubectl get crd networkchaos.chaos-mesh.org >/dev/null 2>&1 || die "S10 needs Chaos Mesh (NetworkChaos CRD not found)"
 
 e2e_chart "$CHART"
 e2e_begin "${WATCH_URL:-}"
-ns=$(e2e_ns s09)
+ns=$(e2e_ns s10)
 e2e_require_memory "$ns"
 
-args=(s09 "$CHART" -n "$ns" -f "$(dirname "$0")/values/small.yaml"
+args=(s10 "$CHART" -n "$ns" -f "$(dirname "$0")/values/small.yaml"
   --set ignition.redundancy.enabled=true
   --set ignition.activeRouting.enabled=true)
 [ -z "${IMAGE_TAG:-}" ] || args+=(--set "image.tag=$IMAGE_TAG")
@@ -58,9 +58,9 @@ nodeport=$(kubectl -n "$ns" get svc $STS-active -o jsonpath='{.spec.ports[?(@.na
 fault() {
   local name=$1 spec=$2 window=$(( PARTITION_SECONDS + 240 ))
   log "$name: recording ${window}s"
-  "$(dirname "$0")/record.sh" "$window" "$E2E_OUT/s09-$name-traffic.log" via="http://$NODE_IP:$nodeport/system/gwinfo" &
+  "$(dirname "$0")/record.sh" "$window" "$E2E_OUT/s10-$name-traffic.log" via="http://$NODE_IP:$nodeport/system/gwinfo" &
   local rec=$!
-  states "$window" "$E2E_OUT/s09-$name-states.log" &
+  states "$window" "$E2E_OUT/s10-$name-states.log" &
   local st=$!
   sleep 10
   log "$name: injecting for ${PARTITION_SECONDS}s"
@@ -68,14 +68,14 @@ fault() {
 apiVersion: chaos-mesh.org/v1alpha1
 kind: NetworkChaos
 metadata:
-  name: s09-$name
+  name: s10-$name
 spec:
   mode: all
   duration: ${PARTITION_SECONDS}s
 $spec
 EOF
   wait "$rec" "$st" 2>/dev/null || true
-  kubectl -n "$ns" delete networkchaos "s09-$name" --wait=true >/dev/null || true
+  kubectl -n "$ns" delete networkchaos "s10-$name" --wait=true >/dev/null || true
 }
 
 # A. split-brain
@@ -91,8 +91,8 @@ fault split-brain "  action: partition
       namespaces: [$ns]
       pods:
         $ns: [$STS-1]"
-both=$(grep -c '0=Master/[A-Za-z]*/Active 1=Backup/[A-Za-z]*/Active' "$E2E_OUT/s09-split-brain-states.log" || true)
-multi=$(grep -c 'labelled=[^ ]*,' "$E2E_OUT/s09-split-brain-states.log" || true)
+both=$(grep -c '0=Master/[A-Za-z]*/Active 1=Backup/[A-Za-z]*/Active' "$E2E_OUT/s10-split-brain-states.log" || true)
+multi=$(grep -c 'labelled=[^ ]*,' "$E2E_OUT/s10-split-brain-states.log" || true)
 log "split-brain: both Active for ${both}s, more than one pod labelled for ${multi}s"
 [ "$multi" -eq 0 ] || die "traffic was routed to two gateways during the split-brain"
 wait_pair 600 || die "pair did not settle after the partition healed"
@@ -105,14 +105,14 @@ fault hung-master "  action: partition
     namespaces: [$ns]
     pods:
       $ns: [$STS-0]"
-gap=$(awk '{split($2, v, "="); if (v[2] !~ /\/Active$/) {run++; if (run > max) max = run} else run = 0} END {print max + 0}' "$E2E_OUT/s09-hung-master-traffic.log")
+gap=$(awk '{split($2, v, "="); if (v[2] !~ /\/Active$/) {run++; if (run > max) max = run} else run = 0} END {print max + 0}' "$E2E_OUT/s10-hung-master-traffic.log")
 log "hung Master: longest time not served by an Active gateway ${gap}s"
 wait_pair 900 || die "pair did not recover after the Master was isolated"
 
 {
-  echo "S09 $(date -u +%FT%TZ) image=${IMAGE_TAG:-default} partition=${PARTITION_SECONDS}s"
+  echo "S10 $(date -u +%FT%TZ) image=${IMAGE_TAG:-default} partition=${PARTITION_SECONDS}s"
   echo "  split-brain: both Active ${both}s, two pods labelled ${multi}s"
   echo "  hung Master: longest unserved ${gap}s"
-} | tee -a "$E2E_OUT/s09-summary.txt" >&2
+} | tee -a "$E2E_OUT/s10-summary.txt" >&2
 e2e_watch_check
-log "S09 passed"
+log "S10 passed"

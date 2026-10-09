@@ -217,8 +217,12 @@ ignition:
   # -- Gateway Restore Configuration
   # To configure Database connections, MQTT clients, and other Gateway settings,
   # provide a Gateway Backup (.gwbk) file via URL or local path (if mounted).
+  # The init container stages it on the data volume as restore.gwbk once, and the
+  # gateway starts with `-r` on it: the Ignition image restores it on the
+  # gateway's first start only, so later restarts keep the gateway's own changes.
+  # To restore again, start from an empty data volume.
   restore:
-    # -- Enable Gateway Restore
+    # -- Enable Gateway Restore (needs a url or path)
     enabled: false
     # -- URL to download the .gwbk file from
     url: ""
