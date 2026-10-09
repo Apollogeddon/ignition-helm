@@ -9,7 +9,7 @@ How the `ignition-failover` and `ignition-scaleout` charts are tested, what each
 | Unit | `charts/*/tests` (helm-unittest, run in CI) | Rendering of every option |
 | Staging e2e | `test/e2e` scripts against a shared single-node cluster | Real gateways on Ignition 8.1 and 8.3: health, redundancy, upgrades, ingress, failover timing |
 | Script | `test/scripts` (run in CI) | The shell scripts the chart ships (`health-check.sh`, `active-routing.sh`, `certify.sh`), run against stub `curl`/`kubectl` |
-| CI e2e | `.github/workflows/e2e.yaml`: disposable three-node kind cluster with cert-manager, Contour and Chaos Mesh (manual only; a full run takes about two hours) | The staging scenarios plus what a shared single node can't do safely: network partitions (S09). kind's default CNI enforces NetworkPolicy, which `testing.yaml` already checks |
+| CI e2e | `.github/workflows/e2e.yaml`: disposable three-node kind cluster with cert-manager, Contour and Chaos Mesh (manual only; a full run takes about two hours) | The staging scenarios plus what a shared single node can't do safely: network partitions (S10). kind's default CNI enforces NetworkPolicy, which `testing.yaml` already checks |
 | Manual | Testing environment | Avi/AKO ingress behaviour |
 
 ## Staging guardrails
@@ -45,7 +45,7 @@ Status: **Live** verified on a real deployment, **Unit** helm-unittest only, **R
 | 13 | Backup takes over when the Master goes away | Not tested | Live | S01: graceful and crash (force delete); a hung Master needs a partition test (CI) |
 | 14 | User traffic only reaches the active gateway | Unit | Live (S01 active) | fixed with `activeRouting`: 48 of 49 s served by the Active gateway (was 44%); off by default |
 | 15 | Failover downtime measured | Not tested | Live | S01 with activeRouting, measured from a probe pod in the cluster (every second): graceful 4-5 s unserved, crash 2-3 s; samples from the test machine are coarser and showed 2-3 s for both |
-| 16 | Split-brain recovery after a crash | Not tested | CI (S09) | activeRouting keeps traffic on the Master when both report Active; S09 partitions the pair (Chaos Mesh) |
+| 16 | Split-brain recovery after a crash | Not tested | CI (S10) | activeRouting keeps traffic on the Master when both report Active; S10 partitions the pair (Chaos Mesh) |
 | 17 | PodDisruptionBudget protects the pair | Not tested | Live | |
 | 18 | Service (NodePort/ClusterIP/LB) serves traffic | Not tested | Live (NodePort) | LoadBalancer needs MetalLB (CI) |
 | 19 | Chart Ingress routes to the gateway | Not tested | Live | S01 via Contour with `ingress.className` |
@@ -69,7 +69,7 @@ Status: **Live** verified on a real deployment, **Unit** helm-unittest only, **R
 | 39 | Upgrade from a 3.x install that ran the gateway as root | n/a | Live (S02) | 3.1.0 ran everything as root by default, so its data volumes are root-owned and local-path does not apply `fsGroup`; the new non-root `preconfigure` failed with `Permission denied`. Opt-in `fixDataOwnership` chowns the volume once; installs that set `securityContext.runAsUser` (e.g. 2003) are not affected |
 | 40 | Upgrade from 4.0.0 or earlier with activeRouting | n/a | Live (S02) | enabling activeRouting in the same upgrade deadlocks: the old Master is only reachable under the old Service name, so the new Backup never syncs and never becomes Ready (the Master keeps serving). Enabling it in a second upgrade works; documented in both READMEs |
 | 35 | Scaleout backend named after its pod on the Gateway Network | Unit | Live (S04) | fixed: the backend had no `GATEWAY_SYSTEM_NAME`, so `-n "$(GATEWAY_SYSTEM_NAME)"` stayed literal and every backend gateway had that name |
-| 41 | Restore a gateway backup (`restore`) | Not tested | CI (S10) | fixed: the backup was downloaded to the data volume but the gateway was never started with `-r`, so nothing was restored. It is now staged once and restored on the first start only; a restart keeps the gateway's own changes |
+| 41 | Restore a gateway backup (`restore`) | Not tested | CI (S09) | fixed: the backup was downloaded to the data volume but the gateway was never started with `-r`, so nothing was restored. It is now staged once and restored on the first start only; a restart keeps the gateway's own changes |
 
 ## E2E scenarios
 
@@ -85,8 +85,8 @@ Scripts in `test/e2e` (see its README). Staging runs them on the shared single-n
 | S06 | Restart on certificate renewal: Backup restarted before Master | 8.3.1 | staging, CI | 27 |
 | S07 | Uncommissioned gateway never Ready and never restarted | 8.3.1, 8.1.53 | staging, CI | 11 |
 | S08 | Wrapper log goes to the container log | 8.3.1, 8.1.53 | staging, CI | 22 |
-| S09 | Split-brain (Master/Backup partition) and hung Master (Chaos Mesh) | 8.3.1 | CI only | 13, 15, 16 |
-| S10 | Restore a gateway backup from a URL on a new install, then a restart keeps a change made after the restore | 8.3.1 | staging, CI | 41 |
+| S09 | Restore a gateway backup from a URL on a new install, then a restart keeps a change made after the restore | 8.3.1 | staging, CI | 41 |
+| S10 | Split-brain (Master/Backup partition) and hung Master (Chaos Mesh) | 8.3.1 | CI only | 13, 15, 16 |
 
 ## Results
 
@@ -222,4 +222,4 @@ The watch now stops a run only after 3 failures in a row, and does not count fai
 
 ### Not yet run
 
-S09 and the CI workflow: they run on GitHub once `main` is pushed (start E2E manually from Actions).
+S10 and the CI workflow: they run on GitHub once `main` is pushed (start E2E manually from Actions).
