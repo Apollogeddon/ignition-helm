@@ -5,12 +5,12 @@ import FeatureGrid from "../components/FeatureGrid.astro";
 import Hero from "../components/Hero.astro";
 import BaseLayout from "../layouts/BaseLayout.astro";
 
-const base = import.meta.env.BASE_URL;
+const year = new Date().getFullYear();
 ---
 
-<BaseLayout title="Ignition Helm Charts" description="Helm charts for running Inductive Automation's Ignition gateways on Kubernetes.">
+<BaseLayout title="Ignition Helm Charts · Ignition gateways on Kubernetes" description="Helm charts for running Ignition on Kubernetes, as a redundant Master/Backup pair or as separate frontend and backend gateways.">
   <Hero 
-    tagline="Helm charts for running redundant and scaleout Ignition gateways on Kubernetes."
+    tagline="Helm charts for running Ignition on Kubernetes, as a redundant Master/Backup pair or as separate frontend and backend gateways."
     logo={logoImage}
   />
   
@@ -20,8 +20,7 @@ const base = import.meta.env.BASE_URL;
   
   <footer class="custom-footer">
     <div class="footer-content">
-      <p>Released under the MIT License.</p>
-      <p>Built with Astro.</p>
+      <p>© {year} Apollogeddon. Released under the MIT License.</p>
       <p>Ignition is a trademark of Inductive Automation.</p>
     </div>
   </footer>

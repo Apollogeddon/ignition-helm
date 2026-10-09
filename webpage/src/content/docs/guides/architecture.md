@@ -1,5 +1,6 @@
 ---
 title: Architecture
+order: 2
 description: The two deployment models, failover and scaleout, and how to choose between them.
 ---
 

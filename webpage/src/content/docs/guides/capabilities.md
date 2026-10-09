@@ -1,5 +1,6 @@
 ---
-title: Features and capabilities
+title: Capabilities
+order: 3
 description: What the Ignition Helm charts do, grouped by area, with example values.
 ---
 

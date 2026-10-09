@@ -6,6 +6,7 @@ const docs = defineCollection({
   schema: z.object({
     title: z.string(),
     description: z.string().optional(),
+    order: z.number().optional(),
     template: z.string().optional(),
     hero: z
       .object({
