@@ -360,17 +360,33 @@ Params:
 {{- end }}
 
 {{/*
+Restore enabled: restore.enabled with a url or path to take the backup from.
+Renders "true" or nothing.
+Params:
+  values: The component-specific values object
+*/}}
+{{- define "ignition-common.restoreEnabled" -}}
+{{- $restore := .values.restore | default dict }}
+{{- if and $restore.enabled (or $restore.url $restore.path) }}true{{ end }}
+{{- end }}
+
+{{/*
 Gateway container args
 Renders .values.args and, when logging.wrapperLogToStdout is set, appends the
 wrapper property wrapper.logfile=/dev/stdout (after "--", added if missing) so
 the gateway log goes to the container log instead of an unrotated
 logs/wrapper.log on the logs emptyDir. Skipped when args already set
-wrapper.logfile.
+wrapper.logfile. With restore enabled and a url or path set, it prepends
+-r with the backup configure-ignition.sh stages on the data volume: the
+Ignition image restores it on the gateway's first start only.
 Params:
   values: The component-specific values object
 */}}
 {{- define "ignition-common.args" -}}
 {{- $args := .values.args | default list }}
+{{- if include "ignition-common.restoreEnabled" . }}
+{{- $args = concat (list "-r" "/usr/local/bin/ignition/data/restore.gwbk") $args }}
+{{- end }}
 {{- $logging := .values.logging | default dict }}
 {{- if and $logging.wrapperLogToStdout (not (regexMatch "(^| )wrapper\\.logfile=" (join " " $args))) }}
 {{- if not (has "--" $args) }}
