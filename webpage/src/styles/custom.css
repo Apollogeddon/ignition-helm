@@ -19,7 +19,7 @@
   --sl-border-radius: 8px;
 
   /* Shared Palette (Standard) */
-  --sl-color-accent-secondary: #ff9e6a;
+  --sl-color-accent-secondary: #67e8f9; /* Cyan accent for the Helm charts */
 }
 
 /* Dark Mode Variables (Default) */
@@ -34,10 +34,10 @@
   --sl-color-hairline: #27272a;
 
   /* Accent */
-  --sl-color-accent-low: #1a0d05;
-  --sl-color-accent: #f36c21;
-  --sl-color-accent-rgb: 243, 108, 33;
-  --sl-color-accent-high: #ffefe6;
+  --sl-color-accent-low: #083344;
+  --sl-color-accent: #06b6d4;
+  --sl-color-accent-rgb: 6, 182, 212;
+  --sl-color-accent-high: #cffafe;
 
   /* Semantic Text Colors */
   --sl-color-white: #ffffff;
@@ -68,10 +68,12 @@
   --sl-color-bg-sidebar: #ffffff;
   --sl-color-hairline: #e5e7eb;
 
-  --sl-color-accent-low: #fff7ed;
-  --sl-color-accent: #ea580c;
-  --sl-color-accent-rgb: 234, 88, 12;
-  --sl-color-accent-high: #7c2d12;
+  --sl-color-accent-low: #ecfeff;
+  --sl-color-accent: #0e7490;
+  --sl-color-accent-rgb: 14, 116, 144;
+  --sl-color-accent-high: #164e63;
+  /* the shared secondary is too pale for the heading gradient on white */
+  --sl-color-accent-secondary: #06b6d4;
 
   --sl-color-text: #111827;
   --sl-color-text-muted: #4b5563;
