@@ -1,5 +1,6 @@
 {
   "name": "ignition-helm",
+  "description": "Helm charts for running Ignition on Kubernetes, as a redundant Master/Backup pair or as separate frontend and backend gateways",
   "private": true,
   "type": "module",
   "scripts": {
