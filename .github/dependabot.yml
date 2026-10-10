@@ -44,9 +44,10 @@ updates:
         patterns: ["@apollogeddon/*"]
       dependencies:
         patterns: ["*"]
-    # Repository tooling and the site don't ship in the charts, so no release.
+    # release-please only releases a chart for commits under its directory, so this
+    # releases nothing
     commit-message:
-      prefix: "chore(deps)"
+      prefix: "fix(deps)"
     # astro-mermaid accepts mermaid 10 or 11 only, so a major mermaid update
     # breaks the webpage's install until astro-mermaid supports it
     ignore:
