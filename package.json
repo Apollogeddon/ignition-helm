@@ -8,7 +8,7 @@
     "lint:md": "markdownlint-cli2 --fix \"**/*.{md,mdx}\""
   },
   "devDependencies": {
-    "@apollogeddon/forgejs": "3.2.0",
+    "@apollogeddon/forgejs": "4.0.0",
     "markdownlint-cli2": "0.23.3"
   },
   "overrides": {
