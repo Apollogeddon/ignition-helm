@@ -18,7 +18,7 @@
     "sharp": "0.35.5"
   },
   "devDependencies": {
-    "@apollogeddon/forgejs": "4.0.0",
+    "@apollogeddon/forgejs": "5.0.0",
     "@astrojs/mdx": "8.0.3",
     "@astrojs/sitemap": "3.7.4",
     "mermaid": "11.17.2"

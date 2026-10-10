@@ -28,7 +28,6 @@ jobs:
       pull-requests: write
     with:
       working_directory: webpage
-      node_version: "22"
 
   markdown:
     name: Markdown
