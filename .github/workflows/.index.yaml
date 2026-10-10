@@ -13,13 +13,9 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
+# each job asks for what it needs
 permissions:
-  contents: write
-  pull-requests: write
-  id-token: write
-  pages: write
-  # the webpage installs @apollogeddon/forgejs from GitHub Packages
-  packages: read
+  contents: read
 
 jobs:
   # What a pull request needs: the chart pipeline when the charts or what tests and
@@ -86,6 +82,9 @@ jobs:
     if: needs.changes.outputs.charts == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    # pushes the refreshed chart locks on main
+    permissions:
+      contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -132,12 +131,41 @@ jobs:
     if: github.event_name != 'pull_request'
     uses: ./.github/workflows/release.yaml
     secrets: inherit
+    permissions:
+      contents: write
+      pull-requests: write
+
+  # a pull request opened with the workflow token starts no workflow, so the release
+  # pull request asks for its review here
+  review-release:
+    needs: release
+    if: needs.release.outputs.pr_number != ''
+    uses: apollogeddon/forgejs/.github/workflows/review.yml@main
+    with:
+      pull_request: ${{ needs.release.outputs.pr_number }}
+    permissions:
+      pull-requests: write
 
   # on a pull request, the site's checks and build; on main, the site with the new index.yaml
   webpage:
     needs: release
     if: ${{ !failure() && !cancelled() && (github.event_name == 'pull_request' || needs.release.result == 'success') }}
     uses: ./.github/workflows/webpage.yaml
+    permissions:
+      contents: read
+      # the webpage installs @apollogeddon/forgejs from GitHub Packages
+      packages: read
+      # Gitleaks comments on the pull request when it finds a secret
+      pull-requests: write
+      pages: write
+      id-token: write
+
+  # CODEOWNERS doesn't request a review on a bot's pull request, so Dependabot's asks here
+  review:
+    if: github.event_name == 'pull_request' && github.event.pull_request.user.login == 'dependabot[bot]'
+    uses: apollogeddon/forgejs/.github/workflows/review.yml@main
+    permissions:
+      pull-requests: write
 
   # last, so a Dependabot pull request merges only once every check above has passed
   auto-merge:
