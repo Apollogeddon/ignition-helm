@@ -1,4 +1,13 @@
 version: 2
+# @apollogeddon packages come from GitHub Packages, which Dependabot can't read without a
+# token, even for a public package: PACKAGES_TOKEN is a read:packages Dependabot secret.
+registries:
+  npm-github:
+    type: npm-registry
+    url: https://npm.pkg.github.com
+    # No .npmrc is committed (it holds a token), so name the scope this registry serves.
+    scope: "@apollogeddon"
+    token: ${{ secrets.PACKAGES_TOKEN }}
 
 updates:
   - package-ecosystem: "helm"
@@ -24,6 +33,8 @@ updates:
     directories:
       - "/"
       - "/webpage"
+    registries:
+      - npm-github
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 10
