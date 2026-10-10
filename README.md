@@ -10,9 +10,11 @@
     <a href="https://apollogeddon.github.io/ignition-helm"><strong>Read the docs</strong></a>
     <br />
     <br />
-    <a href="https://github.com/apollogeddon/ignition-helm/issues">Report a bug</a>
-    ·
-    <a href="https://github.com/apollogeddon/ignition-helm/issues">Request a feature</a>
+    <a href="https://apollogeddon.github.io/ignition-helm/docs/guides/installation/">Getting started</a>
+    &middot;
+    <a href="https://apollogeddon.github.io/ignition-helm/docs/charts/failover/">Failover chart</a>
+    &middot;
+    <a href="https://apollogeddon.github.io/ignition-helm/docs/charts/scaleout/">Scaleout chart</a>
   </p>
 </div>
 
