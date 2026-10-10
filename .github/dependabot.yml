@@ -36,9 +36,12 @@ updates:
     registries:
       - npm-github
     schedule:
-      interval: "weekly"
+      interval: "daily"
     open-pull-requests-limit: 10
     groups:
+      # our own packages, apart from the rest so they never wait on a third-party update
+      apollogeddon:
+        patterns: ["@apollogeddon/*"]
       dependencies:
         patterns: ["*"]
     # Repository tooling and the site don't ship in the charts, so no release.
@@ -51,6 +54,8 @@ updates:
         update-types: ["version-update:semver-major"]
     cooldown:
       default-days: 3
+      # we published them, so the wait for a yanked release doesn't apply
+      exclude: ["@apollogeddon/*"]
 
   - package-ecosystem: "github-actions"
     directory: "/"
