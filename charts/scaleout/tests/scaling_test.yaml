@@ -3,6 +3,7 @@ templates:
   - templates/frontend/hpa.yaml
   - templates/backend/hpa.yaml
   - templates/frontend/pdb.yaml
+  - templates/frontend/frontend-statefulset.yaml
   - templates/backend/networkpolicy.yaml
   - templates/backend/backend-statefulset.yaml
 tests:
@@ -18,28 +19,151 @@ tests:
           path: spec.minReplicas
           value: 2
 
-  - it: should not create a backend HPA by default
+  - it: should not create a frontend HPA by default
+    template: templates/frontend/hpa.yaml
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should scale the frontend StatefulSet on CPU by default when enabled
+    template: templates/frontend/hpa.yaml
+    set:
+      frontend:
+        hpa:
+          enabled: true
+    asserts:
+      - isKind:
+          of: HorizontalPodAutoscaler
+      - isAPIVersion:
+          of: autoscaling/v2
+      - equal:
+          path: spec.scaleTargetRef
+          value:
+            apiVersion: apps/v1
+            kind: StatefulSet
+            name: ignition-scaleout-frontend
+      - equal:
+          path: spec.maxReplicas
+          value: 10
+      - equal:
+          path: spec.metrics
+          value:
+            - type: Resource
+              resource:
+                name: cpu
+                target:
+                  type: Utilization
+                  averageUtilization: 80
+      - notExists:
+          path: spec.behavior
+
+  - it: should add a memory target and render the scaling behavior as given
+    template: templates/frontend/hpa.yaml
+    set:
+      frontend:
+        hpa:
+          enabled: true
+          targetCPUUtilizationPercentage: ""
+          targetMemoryUtilizationPercentage: 75
+          behavior:
+            scaleDown:
+              stabilizationWindowSeconds: 600
+              policies:
+                - type: Pods
+                  value: 1
+                  periodSeconds: 300
+    asserts:
+      - equal:
+          path: spec.metrics
+          value:
+            - type: Resource
+              resource:
+                name: memory
+                target:
+                  type: Utilization
+                  averageUtilization: 75
+      - equal:
+          path: spec.behavior.scaleDown.stabilizationWindowSeconds
+          value: 600
+      - equal:
+          path: spec.behavior.scaleDown.policies[0]
+          value:
+            type: Pods
+            value: 1
+            periodSeconds: 300
+
+  - it: should refuse a frontend HPA with no utilization target
+    template: templates/frontend/hpa.yaml
+    set:
+      frontend:
+        hpa:
+          enabled: true
+          targetCPUUtilizationPercentage: ""
+    asserts:
+      - failedTemplate:
+          errorPattern: "frontend.hpa needs targetCPUUtilizationPercentage or targetMemoryUtilizationPercentage"
+
+  - it: should refuse a frontend HPA whose minimum exceeds its maximum
+    template: templates/frontend/hpa.yaml
+    set:
+      frontend:
+        hpa:
+          enabled: true
+          minReplicas: 4
+          maxReplicas: 2
+    asserts:
+      - failedTemplate:
+          errorPattern: "frontend.hpa.minReplicas must not exceed maxReplicas"
+
+  - it: should set the frontend replicas while the HPA is off
+    template: templates/frontend/frontend-statefulset.yaml
+    set:
+      frontend:
+        redundancy:
+          replicas: 3
+    asserts:
+      - equal:
+          path: spec.replicas
+          value: 3
+
+  - it: should leave the frontend replicas to the HPA while it is on
+    template: templates/frontend/frontend-statefulset.yaml
+    set:
+      frontend:
+        redundancy:
+          replicas: 3
+        hpa:
+          enabled: true
+    asserts:
+      - notExists:
+          path: spec.replicas
+
+  - it: should not create a backend HPA
     template: templates/backend/hpa.yaml
     asserts:
       - hasDocuments:
           count: 0
 
-  - it: should create a backend HPA for the backend StatefulSet when enabled
+  - it: should refuse a backend HPA, as the backend is one gateway or a redundant pair
     template: templates/backend/hpa.yaml
     set:
       backend:
         hpa:
           enabled: true
-          minReplicas: 1
     asserts:
-      - isKind:
-          of: HorizontalPodAutoscaler
+      - failedTemplate:
+          errorPattern: "backend.hpa.enabled: the backend can't autoscale"
+
+  - it: should keep the backend replicas fixed
+    template: templates/backend/backend-statefulset.yaml
+    set:
+      backend:
+        redundancy:
+          enabled: true
+    asserts:
       - equal:
-          path: spec.scaleTargetRef.name
-          value: ignition-scaleout-backend
-      - equal:
-          path: spec.minReplicas
-          value: 1
+          path: spec.replicas
+          value: 2
 
   - it: should not create a frontend PDB for a single frontend
     template: templates/frontend/pdb.yaml

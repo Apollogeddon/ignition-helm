@@ -12,7 +12,10 @@ spec:
     matchLabels:
       {{- include "ignition.selectorLabels" . | nindent 6 }}
   serviceName: {{ include "ignition.name" . }}-frontend-headless
+  {{- /* the HPA owns the replica count while it is enabled; helm would reset it on every upgrade */}}
+  {{- if not .Values.frontend.hpa.enabled }}
   replicas: {{ .Values.frontend.redundancy.replicas }}
+  {{- end }}
   updateStrategy:
     {{- include "ignition-common.updateStrategy" (dict "values" .Values.frontend) | nindent 4 }}
   template:
