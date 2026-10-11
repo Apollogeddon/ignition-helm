@@ -75,3 +75,8 @@ jobs:
       # .index.yaml asks for Dependabot's reviews and merges its pull requests
       auto_merge: false
       review_dependabot: false
+      # the built site, served under its GitHub Pages path: its internal links, and every page
+      # in the sitemap against WCAG 2.2 A and AA with axe
+      base_path: /ignition-helm/
+      check_links: true
+      check_accessibility: true

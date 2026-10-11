@@ -52,7 +52,7 @@ The [`webpage.yaml`](./workflows/webpage.yaml) workflow manages the [Astro](http
 
 - **Markdown**: Lints every Markdown file in the repository with `markdownlint-cli2`.
 - **Quality**: Gitleaks over the whole repository, OSV-Scanner on the site's dependencies, Biome and the type check.
-- **Build**: A pre-build command copies the chart repository's `index.yaml` into the site, which is then built from the `webpage/` directory, on pull requests too, so a broken site fails the pull request. Pushes and release calls build the tip of `main` (`ref: main`), which has the `index.yaml` chart-releaser just pushed.
+- **Build**: A pre-build command copies the chart repository's `index.yaml` into the site, which is then built from the `webpage/` directory, on pull requests too. forgejs then checks the built site's internal links with lychee and every page against WCAG 2.2 A and AA with axe, so a broken or inaccessible site fails the pull request. Pushes and release calls build the tip of `main` (`ref: main`), which has the `index.yaml` chart-releaser just pushed.
 - **Deploy**: On `main`, publishes the build to **GitHub Pages**, which also serves the Helm repository, and commits OSV-Scanner's security patches to the site's dependencies.
 
 ## Configuration

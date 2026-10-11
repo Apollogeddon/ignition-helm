@@ -34,8 +34,9 @@ const base = import.meta.env.BASE_URL;
 		</script>
 	</head>
 	<body>
+		<a class="skip-link" href="#main">Skip to content</a>
 		<Navbar />
-		<main>
+		<main id="main" tabindex="-1">
 			<slot />
 		</main>
 	</body>

@@ -21,7 +21,7 @@ helm install my-ignition ignition-charts/ignition-failover`;
     <div class="actions">
       <a href={`${base}/docs/guides/installation/`} class="btn btn-primary">
         Get started
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14m-7-7 7 7-7 7"/></svg>
+        <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14m-7-7 7 7-7 7"/></svg>
       </a>
       <a href="https://github.com/apollogeddon/ignition-helm" class="btn btn-secondary">
         View on GitHub
@@ -35,9 +35,9 @@ helm install my-ignition ignition-charts/ignition-failover`;
         <span class="dot"></span>
         <span class="label">Quick start</span>
       </div>
-      <pre><code>{quickStartCode}</code></pre>
+      <pre tabindex="0"><code>{quickStartCode}</code></pre>
       <button class="copy-btn" id="copy-btn" data-code={quickStartCode} aria-label="Copy to clipboard">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+        <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
       </button>
     </div>
   </div>
@@ -51,7 +51,7 @@ helm install my-ignition ignition-charts/ignition-failover`;
     if (code) {
       await navigator.clipboard.writeText(code);
       const originalContent = copyBtn.innerHTML;
-      copyBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+      copyBtn.innerHTML = '<svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
       setTimeout(() => {
         copyBtn.innerHTML = originalContent;
       }, 2000);
