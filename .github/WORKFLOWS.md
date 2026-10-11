@@ -48,12 +48,12 @@ Every workflow installs Helm through [`.github/actions/setup-helm`](./actions/se
 
 ## Documentation site
 
-The [`webpage.yaml`](./workflows/webpage.yaml) workflow manages the [Astro](https://astro.build/)-based documentation site:
+The [`webpage.yaml`](./workflows/webpage.yaml) workflow manages the [Astro](https://astro.build/)-based documentation site. After its own Markdown job, it calls [forgejs](https://github.com/apollogeddon/forgejs)'s [`website.yml`](https://github.com/apollogeddon/forgejs/blob/main/.github/workflows/website.yml) with `working_directory: webpage`:
 
-- **Quality**: Calls [forgejs](https://github.com/apollogeddon/forgejs)'s `quality.yml`: Gitleaks over the whole repository, OSV-Scanner on the site's dependencies, Biome and the type check.
 - **Markdown**: Lints every Markdown file in the repository with `markdownlint-cli2`.
-- **Build**: Copies the chart repository's `index.yaml` into the site and builds the static site located in the `webpage/` directory, on pull requests too, so a broken site fails the pull request. Pushes and release calls build the tip of `main`, which has the `index.yaml` chart-releaser just pushed.
-- **Deploy**: Outside pull requests, publishes the build artifacts to **GitHub Pages**, which also serves the Helm repository.
+- **Quality**: Gitleaks over the whole repository, OSV-Scanner on the site's dependencies, Biome and the type check.
+- **Build**: A pre-build command copies the chart repository's `index.yaml` into the site, which is then built from the `webpage/` directory, on pull requests too, so a broken site fails the pull request. Pushes and release calls build the tip of `main` (`ref: main`), which has the `index.yaml` chart-releaser just pushed.
+- **Deploy**: On `main`, publishes the build to **GitHub Pages**, which also serves the Helm repository, and commits OSV-Scanner's security patches to the site's dependencies.
 
 ## Configuration
 

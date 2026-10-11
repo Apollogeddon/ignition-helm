@@ -17,18 +17,6 @@ concurrency:
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
-  # forgejs's checks: Gitleaks over the repository, OSV-Scanner, Biome and the type check.
-  # The build and deploy stay here: the site also serves the chart repository's index.yaml.
-  quality:
-    uses: apollogeddon/forgejs/.github/workflows/quality.yml@main
-    permissions:
-      contents: read
-      packages: read
-      # Gitleaks comments on the pull request when it finds a secret
-      pull-requests: write
-    with:
-      working_directory: webpage
-
   markdown:
     name: Markdown
     runs-on: ubuntu-latest
@@ -60,61 +48,30 @@ jobs:
       - name: Lint markdown
         run: npx markdownlint-cli2 "**/*.{md,mdx}"
 
-  build:
-    needs: [quality, markdown]
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
+  # forgejs's website pipeline: Gitleaks over the whole repository, OSV-Scanner, Biome, the
+  # type check and the build, then outside pull requests the GitHub Pages deploy (and on main
+  # OSV security patches). The site also serves the chart repository's index.yaml, which the
+  # pre-build command copies in.
+  site:
+    needs: [markdown]
+    uses: apollogeddon/forgejs/.github/workflows/website.yml@main
+    # GitHub checks every called job's permissions, including the ones these inputs skip
     permissions:
-      contents: read
+      contents: write
       packages: read
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-        with:
-          # a pull request builds its own code; otherwise the tip of main, not the commit that
-          # triggered the run: when called after release, chart-releaser has just pushed index.yaml
-          ref: ${{ github.event_name == 'pull_request' && github.ref || 'main' }}
-          persist-credentials: false
-
-      - name: Setup Node
-        uses: actions/setup-node@v7
-        with:
-          node-version-file: webpage/.nvmrc
-          cache: "npm"
-          cache-dependency-path: webpage/package-lock.json
-          registry-url: "https://npm.pkg.github.com"
-          scope: "@apollogeddon"
-
-      - name: Install dependencies
-        run: cd webpage && npm ci --ignore-scripts
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build site
-        run: sh ./.github/scripts/ci/deploy-webpage.sh
-
-      - name: Upload artifact
-        if: github.event_name != 'pull_request'
-        uses: actions/upload-pages-artifact@v5
-        with:
-          path: webpage/dist
-          retention-days: 1
-
-  deploy:
-    needs: build
-    if: github.event_name != 'pull_request'
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    permissions:
+      # Gitleaks comments on the pull request when it finds a secret
+      pull-requests: write
       pages: write
       id-token: write
-    concurrency:
-      group: pages
-      cancel-in-progress: false
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v5
+    with:
+      working_directory: webpage
+      # a pull request builds its own code; otherwise the tip of main, not the commit that
+      # triggered the run: when called after release, chart-releaser has just pushed index.yaml
+      ref: ${{ github.event_name != 'pull_request' && 'main' || '' }}
+      pre_build_command: cp ../index.yaml public/index.yaml
+      run_tests: false
+      # the site deploys from main; release-please versions the charts
+      enable_versioning: false
+      # .index.yaml asks for Dependabot's reviews and merges its pull requests
+      auto_merge: false
+      review_dependabot: false
