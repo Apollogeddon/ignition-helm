@@ -9,6 +9,3 @@ frontend:
 backend:
   networkPolicy:
     enabled: true
-  hpa:
-    enabled: true
-    minReplicas: 1
