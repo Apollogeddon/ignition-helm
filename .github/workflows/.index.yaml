@@ -153,7 +153,8 @@ jobs:
     if: ${{ !failure() && !cancelled() && (github.event_name == 'pull_request' || needs.release.result == 'success') }}
     uses: ./.github/workflows/webpage.yaml
     permissions:
-      contents: read
+      # forgejs's website.yml commits OSV security patches on main
+      contents: write
       # the webpage installs @apollogeddon/forgejs from GitHub Packages
       packages: read
       # Gitleaks comments on the pull request when it finds a secret
