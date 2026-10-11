@@ -1,9 +1,10 @@
 #!/bin/bash
-# Creates a tag and GitHub release named <chart>-v<version>, with the chart attached,
-# for each packaged chart version that has no release yet, and copies the packages
-# that index.yaml doesn't list yet to .cr-new-packages for the chart index. gh creates
-# each release as a draft, attaches the chart and then publishes it, as a published
-# release may be immutable and refuse new files.
+# Creates a tag and GitHub release named <chart>-v<version>, with the chart and its
+# cosign signature bundle attached, for each packaged chart version that has no
+# release yet, and copies the packages that index.yaml doesn't list yet to
+# .cr-new-packages for the chart index. Each chart is signed keyless, as this workflow,
+# before its release exists: gh creates the release as a draft, attaches both files
+# and then publishes it, as a published release is immutable and refuses new files.
 set -euo pipefail
 
 rm -rf .cr-new-packages
@@ -19,7 +20,13 @@ for pkg in .cr-release-packages/*.tgz; do
     echo "$tag is already released"
     continue
   fi
-  gh release create "$tag" "$pkg" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
+  bundle="$pkg.sigstore.json"
+  cosign sign-blob --yes --bundle "$bundle" "$pkg"
+  # much the check a user runs, so a bundle that wouldn't verify is never released
+  cosign verify-blob "$pkg" --bundle "$bundle" \
+    --certificate-identity-regexp "^https://github\.com/$GITHUB_REPOSITORY/\.github/workflows/release\.yaml@" \
+    --certificate-oidc-issuer https://token.actions.githubusercontent.com
+  gh release create "$tag" "$pkg" "$bundle" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
     --title "$tag" --notes-file "${pkg%.tgz}.md"
   # versions released before the tags had a v keep their index entry and download
   if grep -qF "/$(basename "$pkg")" index.yaml; then

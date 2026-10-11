@@ -52,6 +52,21 @@ helm repo add ignition-charts https://apollogeddon.github.io/ignition-helm
 helm repo update
 ```
 
+### Verifying a chart
+
+Each chart version's release carries a [Sigstore](https://www.sigstore.dev/) bundle beside the chart, `<chart>-<version>.tgz.sigstore.json`. The release workflow signs the chart keyless with [cosign](https://docs.sigstore.dev/cosign/) before the release is published, so the bundle ties the exact `.tgz` the Helm repository serves to this repository's release workflow on `main`, and the signature is recorded in the public Rekor transparency log. To check a chart before installing it, with [cosign](https://docs.sigstore.dev/cosign/system_config/installation/) v3 or later and the [GitHub CLI](https://cli.github.com/) (or download the bundle from the release page):
+
+```bash
+helm pull ignition-charts/ignition-scaleout --version <version>
+gh release download ignition-scaleout-v<version> --repo Apollogeddon/ignition-helm --pattern '*.sigstore.json'
+cosign verify-blob ignition-scaleout-<version>.tgz \
+  --bundle ignition-scaleout-<version>.tgz.sigstore.json \
+  --certificate-identity https://github.com/Apollogeddon/ignition-helm/.github/workflows/release.yaml@refs/heads/main \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com
+```
+
+`Verified OK` means the chart was built and released by this repository's release workflow and hasn't changed since. Chart versions released before signing was added have no bundle.
+
 ## Quick start
 
 Install a single failover gateway. Set your own admin password; the default is `admin`.

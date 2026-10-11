@@ -50,6 +50,21 @@ helm install my-ignition ignition-charts/ignition-failover \
 
 Resources are named after `applicationName` (default `ignition-failover`), not the release name: the StatefulSet is `ignition-failover` and its pods are `ignition-failover-0` and `ignition-failover-1`. Set `applicationName` to install more than one release in a namespace.
 
+### Verifying the chart
+
+Each release carries a cosign signature bundle, `ignition-failover-<version>.tgz.sigstore.json`, made keyless by the repository's release workflow. To check a chart before installing it:
+
+```bash
+helm pull ignition-charts/ignition-failover --version <version>
+gh release download ignition-failover-v<version> --repo Apollogeddon/ignition-helm --pattern '*.sigstore.json'
+cosign verify-blob ignition-failover-<version>.tgz \
+  --bundle ignition-failover-<version>.tgz.sigstore.json \
+  --certificate-identity https://github.com/Apollogeddon/ignition-helm/.github/workflows/release.yaml@refs/heads/main \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com
+```
+
+See [Verifying a chart](../../README.md#verifying-a-chart) for what this checks.
+
 ## Operations
 
 - **Controlled rollouts**: set `ignition.updateStrategy.type` to `OnDelete` so a `helm upgrade` does not restart running gateways. Each pod then picks up the change when you delete it, in your own maintenance window.

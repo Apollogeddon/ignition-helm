@@ -50,6 +50,21 @@ Resources are named after `applicationName` (default `ignition-scaleout`), not t
 
 Both layers' Gateway Network keystores are created with `frontend.secrets.IGNITION_GAN_KEYSTORE_PASSWORD`, so if you change it, set `backend.secrets.IGNITION_GAN_KEYSTORE_PASSWORD` to the same value.
 
+### Verifying the chart
+
+Each release carries a cosign signature bundle, `ignition-scaleout-<version>.tgz.sigstore.json`, made keyless by the repository's release workflow. To check a chart before installing it:
+
+```bash
+helm pull ignition-charts/ignition-scaleout --version <version>
+gh release download ignition-scaleout-v<version> --repo Apollogeddon/ignition-helm --pattern '*.sigstore.json'
+cosign verify-blob ignition-scaleout-<version>.tgz \
+  --bundle ignition-scaleout-<version>.tgz.sigstore.json \
+  --certificate-identity https://github.com/Apollogeddon/ignition-helm/.github/workflows/release.yaml@refs/heads/main \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com
+```
+
+See [Verifying a chart](../../README.md#verifying-a-chart) for what this checks.
+
 ## Operations
 
 - **Controlled rollouts**: set `frontend.updateStrategy.type` or `backend.updateStrategy.type` to `OnDelete` so a `helm upgrade` does not restart running gateways. Each pod then picks up the change when you delete it, in your own maintenance window.
