@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.3.0](https://github.com/Apollogeddon/ignition-helm/compare/ignition-scaleout-v4.2.2...ignition-scaleout-v4.3.0) (2026-10-11)
+
+
+### Features
+
+* **scaleout:** Leave the frontend's replicas to its HPA and refuse a backend HPA ([#76](https://github.com/Apollogeddon/ignition-helm/issues/76)) ([893c8f8](https://github.com/Apollogeddon/ignition-helm/commit/893c8f80000f51db59fa44ecf94a8fbee1a6276a))
+
 ## [4.2.2](https://github.com/Apollogeddon/ignition-helm/compare/ignition-scaleout-4.2.1...ignition-scaleout-4.2.2) (2026-10-09)
 
 
