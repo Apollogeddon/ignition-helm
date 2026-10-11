@@ -686,3 +686,92 @@ affinity:
     {{- end }}
 {{- end }}
 {{- end }}
+
+{{/*
+StatefulSet update strategy
+Renders the body of a StatefulSet's updateStrategy: the type and, for
+RollingUpdate, a partition of 0 so every pod is updated.
+Params:
+  values: The component-specific values object
+*/}}
+{{- define "ignition-common.updateStrategy" -}}
+type: {{ .values.updateStrategy.type }}
+{{- if eq .values.updateStrategy.type "RollingUpdate" }}
+rollingUpdate:
+  partition: 0
+{{- end }}
+{{- end }}
+
+{{/*
+Gateway pod securityContext
+The pod-level securityContext from .values.securityContext, with the
+RuntimeDefault seccomp profile the restricted Pod Security level requires.
+Params:
+  values: The component-specific values object
+*/}}
+{{- define "ignition-common.podSecurityContext" -}}
+securityContext:
+  fsGroup: {{ .values.securityContext.fsGroup }}
+  runAsGroup: {{ .values.securityContext.runAsGroup }}
+  runAsNonRoot: {{ .values.securityContext.runAsNonRoot }}
+  runAsUser: {{ .values.securityContext.runAsUser }}
+  seccompProfile:
+    type: RuntimeDefault
+{{- end }}
+
+{{/*
+Gateway container
+The start of the gateway container, as a list item: its name, securityContext,
+image, resources, args and ports. The chart adds envFrom, env, volumeMounts and
+probes after it, as those differ between components.
+Params:
+  image: The image values object
+  values: The component-specific values object
+  context: The global context (Dot)
+*/}}
+{{- define "ignition-common.gatewayContainer" -}}
+- name: gateway
+  securityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
+    readOnlyRootFilesystem: false
+  image: {{ .image.repository }}:{{ .image.tag | default .context.Chart.AppVersion }}
+  imagePullPolicy: {{ .image.pullPolicy }}
+  resources: {{ .values.resources | toYaml | nindent 4 }}
+  {{- include "ignition-common.args" (dict "values" .values) | nindent 2 }}
+  ports:
+  - name: http
+    containerPort: {{ .values.service.ports.http }}
+  - name: https
+    containerPort: {{ .values.service.ports.https }}
+  - name: gan
+    containerPort: {{ .values.service.ports.gan }}
+{{- end }}
+
+{{/*
+Gateway data volume claim
+The StatefulSet's volumeClaimTemplates for the gateway's data volume. A
+storageClassName of "-" sets an empty class, which disables dynamic
+provisioning; an empty one leaves the cluster's default class.
+Params:
+  values: The component-specific values object
+*/}}
+{{- define "ignition-common.volumeClaimTemplates" -}}
+volumeClaimTemplates:
+- metadata:
+    name: data
+  spec:
+    accessModes: {{- toYaml .values.persistence.accessModes | nindent 6 }}
+  {{- if .values.persistence.storageClassName }}
+  {{- if (eq "-" .values.persistence.storageClassName) }}
+    storageClassName: ""
+  {{- else }}
+    storageClassName: "{{ .values.persistence.storageClassName }}"
+  {{- end }}
+  {{- end }}
+    resources:
+      requests:
+        storage: {{ .values.persistence.size }}
+{{- end }}

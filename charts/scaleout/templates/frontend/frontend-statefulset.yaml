@@ -14,11 +14,7 @@ spec:
   serviceName: {{ include "ignition.name" . }}-frontend-headless
   replicas: {{ .Values.frontend.redundancy.replicas }}
   updateStrategy:
-    type: {{ .Values.frontend.updateStrategy.type }}
-    {{- if eq .Values.frontend.updateStrategy.type "RollingUpdate" }}
-    rollingUpdate:
-      partition: 0
-    {{- end }}
+    {{- include "ignition-common.updateStrategy" (dict "values" .Values.frontend) | nindent 4 }}
   template:
     metadata:
       labels:
@@ -26,37 +22,14 @@ spec:
         app.kubernetes.io/component: frontend
     spec:
       serviceAccountName: {{ include "ignition.serviceAccountName" . }}
-      securityContext:
-        fsGroup: {{ .Values.frontend.securityContext.fsGroup }}
-        runAsGroup: {{ .Values.frontend.securityContext.runAsGroup }}
-        runAsNonRoot: {{ .Values.frontend.securityContext.runAsNonRoot }}
-        runAsUser: {{ .Values.frontend.securityContext.runAsUser }}
-        seccompProfile:
-          type: RuntimeDefault
+      {{- include "ignition-common.podSecurityContext" (dict "values" .Values.frontend) | nindent 6 }}
       {{- include "ignition-common.affinity" (dict "affinity" .Values.affinity "context" .) | nindent 6 }}
       {{- with .Values.image.imagePullSecrets }}
       imagePullSecrets:
       {{- toYaml . | nindent 6 }}
       {{- end }}
       containers:
-      - name: gateway
-        securityContext:
-          allowPrivilegeEscalation: false
-          capabilities:
-            drop:
-              - ALL
-          readOnlyRootFilesystem: false
-        image: {{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}
-        imagePullPolicy: {{ .Values.image.pullPolicy }}
-        resources: {{ .Values.frontend.resources | toYaml | nindent 10 }}
-        {{- include "ignition-common.args" (dict "values" .Values.frontend) | nindent 8 }}
-        ports:
-        - name: http
-          containerPort: {{ .Values.frontend.service.ports.http }}
-        - name: https
-          containerPort: {{ .Values.frontend.service.ports.https }}
-        - name: gan
-          containerPort: {{ .Values.frontend.service.ports.gan }}
+      {{- include "ignition-common.gatewayContainer" (dict "image" .Values.image "values" .Values.frontend "context" .) | nindent 6 }}
         envFrom:
         - configMapRef:
             name: {{ include "ignition.name" . }}-frontend-config
