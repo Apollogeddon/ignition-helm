@@ -8,9 +8,9 @@ on:
         value: ${{ jobs.version.outputs.pr_number }}
   workflow_dispatch:
 
+# each job asks for what it needs
 permissions:
-  contents: write
-  pull-requests: write
+  contents: read
 
 jobs:
   # This job creates each chart version's tag and release, with the packaged chart
@@ -20,6 +20,11 @@ jobs:
   version:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    # id-token signs each chart with cosign, keyless, as this workflow
+    permissions:
+      contents: write
+      pull-requests: write
+      id-token: write
     outputs:
       # the release pull request release-please opened or updated, if any
       pr_number: ${{ steps.release-please.outputs.pr && fromJSON(steps.release-please.outputs.pr).number || '' }}
@@ -44,6 +49,10 @@ jobs:
       # chart changed in this push
       - name: Package the charts
         run: ./.github/scripts/ci/package-charts.sh
+
+      # the installer's tag pins the cosign version, so Dependabot updates both
+      - name: Install cosign
+        uses: sigstore/cosign-installer@v4.1.2
 
       - name: Release the new chart versions
         id: release

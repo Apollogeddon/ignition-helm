@@ -134,6 +134,7 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
+      id-token: write
 
   # a pull request opened with the workflow token starts no workflow, so the release
   # pull request asks for its review here
