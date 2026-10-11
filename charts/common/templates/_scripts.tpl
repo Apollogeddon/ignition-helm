@@ -9,11 +9,16 @@ stringData:
   seed-data-volume.sh: |-
     #!/usr/bin/env bash
     set -eo pipefail
+    DATA_DIR="${DATA_DIR:-/data}"
+    SEED_DIR="${SEED_DIR:-/usr/local/bin/ignition/data}"
+    marker="${DATA_DIR}/.ignition-seed-complete"
 
-    if [ ! -f /data/.ignition-seed-complete ]; then
+    # The marker is written only after a full copy, so a failed or interrupted
+    # seed fails the init container and is copied again on the next start.
+    if [ ! -f "${marker}" ]; then
         echo "Seeding Ignition Data Volume"
-        touch /data/.ignition-seed-complete
-        cp -dpR /usr/local/bin/ignition/data/* /data/
+        cp -dpR "${SEED_DIR}"/* "${DATA_DIR}"/
+        touch "${marker}"
     fi
   seed-redundancy.sh: |-
     #!/usr/bin/env bash
