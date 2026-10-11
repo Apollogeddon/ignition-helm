@@ -1,5 +1,13 @@
 # Changelog
 
+## [4.3.1](https://github.com/Apollogeddon/ignition-helm/compare/ignition-scaleout-v4.3.0...ignition-scaleout-v4.3.1) (2026-10-11)
+
+
+### Bug Fixes
+
+* Redo an interrupted data volume seed, and describe the scaleout chart ([94d56a1](https://github.com/Apollogeddon/ignition-helm/commit/94d56a162e865b9df0a65dd0d46550827c93e1ec))
+* **scaleout:** Describe the scaleout chart rather than the failover one ([c7680c3](https://github.com/Apollogeddon/ignition-helm/commit/c7680c340f15c439504f773e700a34a86d89896c))
+
 ## [4.3.0](https://github.com/Apollogeddon/ignition-helm/compare/ignition-scaleout-v4.2.2...ignition-scaleout-v4.3.0) (2026-10-11)
 
 

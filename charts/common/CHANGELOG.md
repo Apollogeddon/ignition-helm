@@ -1,5 +1,13 @@
 # Changelog
 
+## [3.3.1](https://github.com/Apollogeddon/ignition-helm/compare/ignition-common-v3.3.0...ignition-common-v3.3.1) (2026-10-11)
+
+
+### Bug Fixes
+
+* **common:** Mark the data volume seeded only after the copy completes ([af959bc](https://github.com/Apollogeddon/ignition-helm/commit/af959bcc630c15013df9a2f2f0c7394c0c6eda45))
+* Redo an interrupted data volume seed, and describe the scaleout chart ([94d56a1](https://github.com/Apollogeddon/ignition-helm/commit/94d56a162e865b9df0a65dd0d46550827c93e1ec))
+
 ## [3.3.0](https://github.com/Apollogeddon/ignition-helm/compare/ignition-common-v3.2.1...ignition-common-v3.3.0) (2026-10-11)
 
 
