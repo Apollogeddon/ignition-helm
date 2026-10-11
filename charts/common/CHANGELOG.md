@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.3.0](https://github.com/Apollogeddon/ignition-helm/compare/ignition-common-v3.2.1...ignition-common-v3.3.0) (2026-10-11)
+
+
+### Features
+
+* **scaleout:** Leave the frontend's replicas to its HPA and refuse a backend HPA ([#76](https://github.com/Apollogeddon/ignition-helm/issues/76)) ([893c8f8](https://github.com/Apollogeddon/ignition-helm/commit/893c8f80000f51db59fa44ecf94a8fbee1a6276a))
+
 ## [3.2.1](https://github.com/Apollogeddon/ignition-helm/compare/ignition-common-3.2.0...ignition-common-3.2.1) (2026-10-09)
 
 
