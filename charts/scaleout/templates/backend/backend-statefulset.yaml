@@ -14,11 +14,7 @@ spec:
   serviceName: {{ include "ignition.name" . }}-backend-headless
   replicas: {{ if .Values.backend.redundancy.enabled }}2{{ else }}1{{ end }}
   updateStrategy:
-    type: {{ .Values.backend.updateStrategy.type }}
-    {{- if eq .Values.backend.updateStrategy.type "RollingUpdate" }}
-    rollingUpdate:
-      partition: 0
-    {{- end }}
+    {{- include "ignition-common.updateStrategy" (dict "values" .Values.backend) | nindent 4 }}
   template:
     metadata:
       labels:
@@ -30,37 +26,14 @@ spec:
         checksum/redundancy: {{ .Values.backend.redundancy | toJson | sha256sum }}
     spec:
       serviceAccountName: {{ include "ignition.serviceAccountName" . }}
-      securityContext:
-        fsGroup: {{ .Values.backend.securityContext.fsGroup }}
-        runAsGroup: {{ .Values.backend.securityContext.runAsGroup }}
-        runAsNonRoot: {{ .Values.backend.securityContext.runAsNonRoot }}
-        runAsUser: {{ .Values.backend.securityContext.runAsUser }}
-        seccompProfile:
-          type: RuntimeDefault
+      {{- include "ignition-common.podSecurityContext" (dict "values" .Values.backend) | nindent 6 }}
       {{- include "ignition-common.affinity" (dict "affinity" .Values.affinity "context" .) | nindent 6 }}
       {{- with .Values.image.imagePullSecrets }}
       imagePullSecrets:
       {{- toYaml . | nindent 6 }}
       {{- end }}
       containers:
-      - name: gateway
-        securityContext:
-          allowPrivilegeEscalation: false
-          capabilities:
-            drop:
-              - ALL
-          readOnlyRootFilesystem: false
-        image: {{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}
-        imagePullPolicy: {{ .Values.image.pullPolicy }}
-        resources: {{ .Values.backend.resources | toYaml | nindent 10 }}
-        {{- include "ignition-common.args" (dict "values" .Values.backend) | nindent 8 }}
-        ports:
-        - name: http
-          containerPort: {{ .Values.backend.service.ports.http }}
-        - name: https
-          containerPort: {{ .Values.backend.service.ports.https }}
-        - name: gan
-          containerPort: {{ .Values.backend.service.ports.gan }}
+      {{- include "ignition-common.gatewayContainer" (dict "image" .Values.image "values" .Values.backend "context" .) | nindent 6 }}
         envFrom:
         - configMapRef:
             name: {{ include "ignition.name" . }}-backend-config
@@ -89,18 +62,4 @@ spec:
       volumes:
 {{ include "ignition-common.volumes" (dict "name" (include "ignition.name" .) "values" .Values.backend "ganTlsSecretName" (printf "%s-backend-gan-tls" (include "ignition.name" .)) "commonScriptsConfigMapName" (include "ignition-common.scriptsName" .)) | nindent 6 }}
 
-  volumeClaimTemplates:
-  - metadata:
-      name: data
-    spec:
-      accessModes: {{- toYaml .Values.backend.persistence.accessModes | nindent 8 }}
-    {{- if .Values.backend.persistence.storageClassName }}
-    {{- if (eq "-" .Values.backend.persistence.storageClassName) }}
-      storageClassName: ""
-    {{- else }}
-      storageClassName: "{{ .Values.backend.persistence.storageClassName }}"
-    {{- end }}
-    {{- end }}
-      resources:
-        requests:
-          storage: {{ .Values.backend.persistence.size }}
+{{ include "ignition-common.volumeClaimTemplates" (dict "values" .Values.backend) | indent 2 }}

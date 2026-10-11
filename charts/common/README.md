@@ -40,6 +40,10 @@
 | `ignition-common.volumes` / `ignition-common.volumeMounts` | The gateway's volumes and mounts. |
 | `ignition-common.initContainer.preconfigure` | The init container that prepares the data volume before the gateway starts. |
 | `ignition-common.containerProbes` | The readiness, liveness and startup probes and lifecycle hooks. |
+| `ignition-common.updateStrategy` | The body of a gateway StatefulSet's `updateStrategy`. |
+| `ignition-common.podSecurityContext` | The gateway pod's `securityContext`, with the `RuntimeDefault` seccomp profile. |
+| `ignition-common.gatewayContainer` | The start of the gateway container: its name, `securityContext`, image, resources, args and ports. |
+| `ignition-common.volumeClaimTemplates` | The StatefulSet's claim template for the gateway's data volume. |
 
 ### Scripts (`_scripts.tpl`)
 
