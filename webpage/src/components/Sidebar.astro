@@ -29,10 +29,10 @@ const isActive = (id: string) => {
 };
 ---
 
-<nav class="sidebar">
+<nav class="sidebar" aria-label="Documentation">
   {sections.map(section => (
     <div class="section">
-      <h4 class="section-title">{section.label}</h4>
+      <h2 class="section-title">{section.label}</h2>
       <ul class="section-items">
         {section.items.map(item => (
           <li>
@@ -65,6 +65,7 @@ const isActive = (id: string) => {
     text-transform: uppercase;
     letter-spacing: 0.1em;
     color: var(--sl-color-text-muted);
+    margin-top: 1.33em;
     margin-bottom: 1rem;
     padding-left: 1rem;
   }
