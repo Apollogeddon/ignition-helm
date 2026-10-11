@@ -10,6 +10,10 @@ Report security vulnerabilities privately using [GitHub's private vulnerability 
 
 You should expect an initial response within a few days. If the issue is confirmed, a fix is released as a patch version of the affected charts and credited in the advisory unless you request otherwise.
 
+## Verifying the charts
+
+Every chart release carries a Sigstore bundle that cosign made keyless in the release workflow, before the release was published. See [Verifying a chart](../README.md#verifying-a-chart) for the command that checks a downloaded chart against it.
+
 ## Automated security tooling
 
 This repository runs the following on every change:
