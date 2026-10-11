@@ -1,1 +1,6 @@
-{{- include "ignition-common.hpa" (dict "name" "backend" "values" .Values.backend "context" .) }}
+{{- /* A backend is a Standalone gateway or a fixed Master/Backup pair, each with
+its own data volume, redundancy role and device connections: extra pods would be
+neither Master nor Backup, so the backend doesn't autoscale. */}}
+{{- if dig "hpa" "enabled" false .Values.backend }}
+{{- fail "backend.hpa.enabled: the backend can't autoscale (it is one gateway or a Master/Backup pair); scale the frontend with frontend.hpa instead" }}
+{{- end }}

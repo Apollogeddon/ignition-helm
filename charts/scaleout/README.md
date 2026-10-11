@@ -4,7 +4,7 @@
 
 ## Features
 
-- **Independent scaling**: scale the frontend gateways, manually or with a HorizontalPodAutoscaler, without touching the backend.
+- **Independent scaling**: scale the frontend gateways, manually or with a HorizontalPodAutoscaler on CPU and memory, without touching the backend.
 - **Backend redundancy**: the backend can run as a Master/Backup pair with `backend.redundancy.enabled`.
 - **Gateway Network setup**: cert-manager issues each layer's Gateway Network certificates from a CA the chart creates, and the frontends are configured to connect to the backend gateways.
 
@@ -71,6 +71,31 @@ See [Verifying a chart](../../README.md#verifying-a-chart) for what this checks.
 - **External modules**: set `backend.externalModules.enabled` and `backend.externalModules.pvcName` (or the `frontend.` equivalents) to mount a PersistentVolumeClaim of `.modl` files, instead of building a custom image.
 - **Certificate rotation and renewal**: `certManager.rotation.enabled` adds CronJobs that refresh the Gateway Network keystore on each gateway's volume. A running gateway only loads renewed certificates when it restarts, so pair it with `certManager.restartOnRenewal.enabled`, which restarts the gateways (Backup first) when the certificate secrets change.
 
+## Autoscaling the frontend
+
+Set `frontend.hpa.enabled` to scale the frontend gateways with an `autoscaling/v2` HorizontalPodAutoscaler on CPU and/or memory utilization. It needs the [metrics server](https://github.com/kubernetes-sigs/metrics-server) (or another provider of the resource metrics API) in the cluster.
+
+```yaml
+frontend:
+  hpa:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 6
+    targetCPUUtilizationPercentage: 70
+    behavior:
+      scaleDown:
+        stabilizationWindowSeconds: 600
+        policies:
+          - type: Pods
+            value: 1
+            periodSeconds: 300
+```
+
+- While the autoscaler is enabled, the frontend StatefulSet leaves out `replicas`, so `helm upgrade` doesn't reset the count it has set. When you enable it on an existing release, Helm removes the field and Kubernetes briefly scales the StatefulSet to one gateway, until the autoscaler raises it to `minReplicas`. Enable it in a quiet period.
+- A new frontend gateway takes minutes to start and commission, and scaling down ends the Perspective sessions on the gateways it removes, so scale down slowly with `behavior.scaleDown`.
+- A PodDisruptionBudget (`minAvailable: 1`) protects the frontend while the autoscaler is enabled.
+- The backend doesn't autoscale, and `backend.hpa.enabled` is refused. A backend is one gateway, or a Master/Backup pair, each with its own data volume, redundancy role and device connections: an extra backend pod would be neither Master nor Backup, and would open its own connections to the same devices and databases. Scale user load on the frontend instead.
+
 ## Upgrading from 4.0.0 or earlier
 
 From 4.1.0 the frontend and backend StatefulSets are governed by the `<name>-frontend-headless` and `<name>-backend-headless` Services. Kubernetes does not allow `serviceName` to change on an existing StatefulSet, so `helm upgrade` from 4.0.0 or earlier is rejected. Delete only the StatefulSet objects first. Their pods and volumes keep running, and the upgraded StatefulSets adopt them:
@@ -102,7 +127,10 @@ The most commonly changed values are below. Most `frontend.*` and `backend.*` va
 | `frontend.config.GATEWAY_MODULES_ENABLED` | Modules enabled on the frontend. | `perspective,symbol-factory` |
 | `backend.config.GATEWAY_MODULES_ENABLED` | Modules enabled on the backend. | drivers, SQL Bridge, tag historian, reporting, alarm notification |
 | `frontend.redundancy.replicas` | Number of frontend gateways. | `1` |
-| `frontend.hpa.enabled` | Scale the frontend with a HorizontalPodAutoscaler (`minReplicas` 1, `maxReplicas` 10, `targetCPUUtilizationPercentage` 80). | `false` |
+| `frontend.hpa.enabled` | Scale the frontend with a HorizontalPodAutoscaler. The StatefulSet then leaves out `replicas`, so `frontend.redundancy.replicas` is ignored and the autoscaler owns the count. See [Autoscaling the frontend](#autoscaling-the-frontend). | `false` |
+| `frontend.hpa.minReplicas` / `frontend.hpa.maxReplicas` | Fewest and most frontend gateways. | `1` / `10` |
+| `frontend.hpa.targetCPUUtilizationPercentage` / `frontend.hpa.targetMemoryUtilizationPercentage` | Target average utilization, as a percentage of `frontend.resources.requests`; at least one is needed. Empty leaves that metric out. | `80` / `""` |
+| `frontend.hpa.behavior` | The HPA's scaling `behavior` (`scaleUp`/`scaleDown` policies and stabilization windows), rendered as-is. | `{}` (Kubernetes defaults) |
 | `backend.redundancy.enabled` | Run the backend as a Master/Backup pair. | `false` |
 | `backend.activeRouting.enabled` | Route user traffic only to the active backend gateway of a redundant pair: a labeller keeps `redundancy-active=true` on the active pod and the `<name>-backend-active` Service (which takes the configured service type, node ports and annotations) selects it. A Backup must also be in sync to be Ready. | `false` |
 | `backend.persistence.size` | Size of each backend gateway's persistent volume. | `3Gi` |

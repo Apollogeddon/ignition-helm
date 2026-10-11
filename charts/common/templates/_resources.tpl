@@ -396,14 +396,24 @@ spec:
 {{- end }}
 
 {{/*
-Standard HorizontalPodAutoscaler
+Standard HorizontalPodAutoscaler for a component's StatefulSet. While it is
+enabled, the StatefulSet must leave out spec.replicas, so the autoscaler owns it.
 Params:
   name: The component name suffix (e.g. "frontend")
-  values: The component-specific values object
+  values: The component-specific values object (hpa: enabled, minReplicas,
+    maxReplicas, targetCPUUtilizationPercentage, targetMemoryUtilizationPercentage,
+    behavior)
   context: The global context (Dot)
 */}}
 {{- define "ignition-common.hpa" -}}
 {{- if .values.hpa.enabled -}}
+{{- $hpa := .values.hpa -}}
+{{- if not (or $hpa.targetCPUUtilizationPercentage $hpa.targetMemoryUtilizationPercentage) -}}
+{{- fail (printf "%s.hpa needs targetCPUUtilizationPercentage or targetMemoryUtilizationPercentage" (.name | default "ignition")) -}}
+{{- end -}}
+{{- if gt (int ($hpa.minReplicas | default 1)) (int ($hpa.maxReplicas | default 5)) -}}
+{{- fail (printf "%s.hpa.minReplicas must not exceed maxReplicas" (.name | default "ignition")) -}}
+{{- end -}}
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
@@ -420,25 +430,29 @@ spec:
     apiVersion: apps/v1
     kind: StatefulSet
     name: {{ $fullname }}
-  minReplicas: {{ .values.hpa.minReplicas | default 1 }}
-  maxReplicas: {{ .values.hpa.maxReplicas | default 5 }}
+  minReplicas: {{ $hpa.minReplicas | default 1 }}
+  maxReplicas: {{ $hpa.maxReplicas | default 5 }}
   metrics:
-    {{- if .values.hpa.targetCPUUtilizationPercentage }}
+    {{- if $hpa.targetCPUUtilizationPercentage }}
     - type: Resource
       resource:
         name: cpu
         target:
           type: Utilization
-          averageUtilization: {{ .values.hpa.targetCPUUtilizationPercentage }}
+          averageUtilization: {{ $hpa.targetCPUUtilizationPercentage }}
     {{- end }}
-    {{- if .values.hpa.targetMemoryUtilizationPercentage }}
+    {{- if $hpa.targetMemoryUtilizationPercentage }}
     - type: Resource
       resource:
         name: memory
         target:
           type: Utilization
-          averageUtilization: {{ .values.hpa.targetMemoryUtilizationPercentage }}
+          averageUtilization: {{ $hpa.targetMemoryUtilizationPercentage }}
     {{- end }}
+  {{- with $hpa.behavior }}
+  behavior:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
 {{- end }}
 {{- end }}
 

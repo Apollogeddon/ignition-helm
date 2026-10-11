@@ -98,13 +98,31 @@ frontend:
     # -- Additional labels for the ServiceMonitor
     additionalLabels: {}
 
-  # -- Horizontal Pod Autoscaler configuration
+  # -- Horizontal Pod Autoscaler for the frontend gateways. While it is enabled
+  # the StatefulSet leaves out replicas (redundancy.replicas is ignored), so the
+  # autoscaler owns the count. Utilization targets are a share of resources.requests.
   hpa:
+    # -- Scale the frontend with an autoscaling/v2 HorizontalPodAutoscaler
     enabled: false
+    # -- Fewest frontend gateways
     minReplicas: 1
+    # -- Most frontend gateways
     maxReplicas: 10
+    # -- Target average CPU utilization (%); empty for none
     targetCPUUtilizationPercentage: 80
-    # targetMemoryUtilizationPercentage: 80
+    # -- Target average memory utilization (%); empty for none. The gateway's JVM
+    # heap rarely shrinks, so memory alone scales up more readily than down
+    targetMemoryUtilizationPercentage: ""
+    # -- Scaling behavior (HorizontalPodAutoscalerBehavior), rendered as-is. A new
+    # gateway takes minutes to start, and scaling down ends the Perspective sessions
+    # on the gateways it removes, so scale down slowly, e.g.:
+    # scaleDown:
+    #   stabilizationWindowSeconds: 600
+    #   policies:
+    #     - type: Pods
+    #       value: 1
+    #       periodSeconds: 300
+    behavior: {}
 
   logging:
     # -- Log level for the Frontend Gateway (INFO, DEBUG, WARN, ERROR)
@@ -324,13 +342,8 @@ backend:
     # -- Additional labels for the ServiceMonitor
     additionalLabels: {}
 
-  # -- Horizontal Pod Autoscaler configuration
-  hpa:
-    enabled: false
-    minReplicas: 1
-    maxReplicas: 10
-    targetCPUUtilizationPercentage: 80
-    # targetMemoryUtilizationPercentage: 80
+  # The backend doesn't autoscale: it is one gateway or a fixed Master/Backup
+  # pair, each with its own data volume and redundancy role. Scale the frontend.
 
   logging:
     # -- Log level for the Backend Gateway (INFO, DEBUG, WARN, ERROR)
