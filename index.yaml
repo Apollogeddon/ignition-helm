@@ -2,6 +2,19 @@ apiVersion: v1
 entries:
   ignition-common:
   - apiVersion: v2
+    created: "2026-10-12T04:32:27.085404964Z"
+    description: Shared library chart for Ignition Helm Charts
+    digest: a5ed011966c37bae79b4c5c6362c13bb91da7ebe9f72ec9a20119123ab2136bb
+    keywords:
+    - ignition
+    - scada
+    - library
+    name: ignition-common
+    type: library
+    urls:
+    - https://github.com/Apollogeddon/ignition-helm/releases/download/ignition-common-v3.3.2/ignition-common-3.3.2.tgz
+    version: 3.3.2
+  - apiVersion: v2
     created: "2026-10-12T00:14:56.510224096Z"
     description: Shared library chart for Ignition Helm Charts
     digest: f8decce799edfeef8845e489b22fe724ec7c9bb7059d7b9e5c6e8d1cd4be024c
@@ -163,6 +176,25 @@ entries:
     - https://github.com/Apollogeddon/ignition-helm/releases/download/ignition-common-0.2.0/ignition-common-0.2.0.tgz
     version: 0.2.0
   ignition-failover:
+  - apiVersion: v2
+    appVersion: 8.3.10
+    created: "2026-10-12T04:32:27.267614008Z"
+    dependencies:
+    - name: ignition-common
+      repository: file://../common
+      version: ^3.3.1
+    description: A Helm chart for failover Ignition Gateway with combined frontend/backend
+      functionality
+    digest: e4d28f478c3a1022a7da14738227a628d2ae4079f9dfc14296661bf04fbb5cfe
+    keywords:
+    - ignition
+    - scada
+    - failover
+    name: ignition-failover
+    type: application
+    urls:
+    - https://github.com/Apollogeddon/ignition-helm/releases/download/ignition-failover-v4.2.4/ignition-failover-4.2.4.tgz
+    version: 4.2.4
   - apiVersion: v2
     appVersion: 8.3.1
     created: "2026-10-12T01:06:18.743530092Z"
@@ -439,6 +471,25 @@ entries:
     - https://github.com/Apollogeddon/ignition-helm/releases/download/ignition-failover-1.1.0/ignition-failover-1.1.0.tgz
     version: 1.1.0
   ignition-scaleout:
+  - apiVersion: v2
+    appVersion: 8.3.10
+    created: "2026-10-12T04:32:27.414184863Z"
+    dependencies:
+    - name: ignition-common
+      repository: file://../common
+      version: ^3.3.1
+    description: A Helm chart for scaleout Ignition Gateways, with backend gateways
+      for devices and history and scalable frontend gateways for Perspective
+    digest: 288e89acb40203c2fc67e93578cc6808d390561ded607553cdad077a8cd2db26
+    keywords:
+    - ignition
+    - scada
+    - scaleout
+    name: ignition-scaleout
+    type: application
+    urls:
+    - https://github.com/Apollogeddon/ignition-helm/releases/download/ignition-scaleout-v4.3.3/ignition-scaleout-4.3.3.tgz
+    version: 4.3.3
   - apiVersion: v2
     appVersion: 8.3.1
     created: "2026-10-12T01:06:18.921033481Z"
@@ -738,4 +789,4 @@ entries:
     urls:
     - https://github.com/Apollogeddon/ignition-helm/releases/download/ignition-scaleout-1.1.0/ignition-scaleout-1.1.0.tgz
     version: 1.1.0
-generated: "2026-10-12T01:06:18.921320528Z"
+generated: "2026-10-12T04:32:27.41449357Z"
