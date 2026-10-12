@@ -5,7 +5,6 @@
 # common release never reaches the charts' users. The pull request's fix commit touches
 # each chart, so merging it releases them with the new common.
 set -euo pipefail
-HELM="${HELM:-helm}"
 
 common=$(sed -n 's/^version: *//p' charts/common/Chart.yaml | tr -d '"')
 want="^$common"
@@ -31,12 +30,13 @@ if git ls-remote --exit-code --heads origin "$branch" >/dev/null 2>&1; then
   exit 0
 fi
 
-# the release job's earlier steps rewrote the Chart.lock files in place
+# the release job's earlier steps rewrote the Chart.lock files in place. The pull request
+# leaves them alone: main's Index job commits fresh ones, which would conflict with its own,
+# and every job that uses a chart runs helm dependency update first
 git switch --quiet --discard-changes -c "$branch"
 for dir in "${stale[@]}"; do
   sed -i "/- name: ignition-common/{n;s/version: .*/version: \"$want\"/;}" "$dir/Chart.yaml"
-  "$HELM" dependency update "$dir" >/dev/null
-  git add "$dir/Chart.yaml" "$dir/Chart.lock"
+  git add "$dir/Chart.yaml"
 done
 title="fix: require ignition-common $want in the charts that bundle it"
 git commit --quiet -m "$title"
