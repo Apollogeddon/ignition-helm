@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.2.5](https://github.com/Apollogeddon/ignition-helm/compare/ignition-failover-v4.2.4...ignition-failover-v4.2.5) (2026-10-12)
+
+
+### Bug Fixes
+
+* Require ignition-common ^3.3.2 in the charts that bundle it ([#91](https://github.com/Apollogeddon/ignition-helm/issues/91)) ([5fe8a51](https://github.com/Apollogeddon/ignition-helm/commit/5fe8a519e99823e828681faa7898afc9e531dd95))
+
 ## [4.2.4](https://github.com/Apollogeddon/ignition-helm/compare/ignition-failover-v4.2.3...ignition-failover-v4.2.4) (2026-10-12)
 
 
