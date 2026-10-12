@@ -14,6 +14,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
       - name: Set up Helm
         uses: ./.github/actions/setup-helm
@@ -39,6 +41,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
       # Trivy renders the charts itself; without the ignition-common dependency
       # in charts/*/charts it cannot render failover or scaleout and finds nothing
@@ -62,6 +66,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
       - name: Run Checkov action
         uses: bridgecrewio/checkov-action@v12
