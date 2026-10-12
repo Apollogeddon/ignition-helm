@@ -157,9 +157,12 @@ if [ -n "${THEN_SET:-}" ]; then
   rolled_out
   log "second upgrade rolled out and healthy in $(( $(date +%s) - start2 ))s"
 fi
-sleep 30
 kill "$rec" 2>/dev/null; wait "$rec" 2>/dev/null || true
-e2e_require_served "$E2E_OUT/$run-upgrade.log"
+# the samples before the upgrade come from the old chart, which had no NetworkPolicy:
+# the settled 30s after the rollout must be served through the upgraded chart's
+"$(dirname "$0")/record.sh" 30 "$E2E_OUT/$run-settled.log" via="http://$NODE_IP:$nodeport/system/gwinfo"
+cat "$E2E_OUT/$run-settled.log" >> "$E2E_OUT/$run-upgrade.log"
+e2e_require_served "$E2E_OUT/$run-settled.log"
 
 after=$(pods)
 while IFS='=' read -r pod uid; do
