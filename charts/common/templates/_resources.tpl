@@ -412,8 +412,11 @@ Params:
 {{- if not (or $hpa.targetCPUUtilizationPercentage $hpa.targetMemoryUtilizationPercentage) -}}
 {{- fail (printf "%s.hpa needs targetCPUUtilizationPercentage or targetMemoryUtilizationPercentage" (.name | default "ignition")) -}}
 {{- end -}}
-{{- if gt (int ($hpa.minReplicas | default 1)) (int ($hpa.maxReplicas | default 5)) -}}
-{{- fail (printf "%s.hpa.minReplicas must not exceed maxReplicas" (.name | default "ignition")) -}}
+{{- $path := printf "%s.hpa" (.name | default "ignition") -}}
+{{- $min := include "ignition-common.positiveInt" (dict "name" (printf "%s.minReplicas" $path) "value" (ternary (get $hpa "minReplicas") 1 (hasKey $hpa "minReplicas"))) | int -}}
+{{- $max := include "ignition-common.positiveInt" (dict "name" (printf "%s.maxReplicas" $path) "value" (ternary (get $hpa "maxReplicas") 5 (hasKey $hpa "maxReplicas"))) | int -}}
+{{- if gt $min $max -}}
+{{- fail (printf "%s.minReplicas must not exceed maxReplicas" $path) -}}
 {{- end -}}
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
@@ -431,8 +434,8 @@ spec:
     apiVersion: apps/v1
     kind: StatefulSet
     name: {{ $fullname }}
-  minReplicas: {{ $hpa.minReplicas | default 1 }}
-  maxReplicas: {{ $hpa.maxReplicas | default 5 }}
+  minReplicas: {{ $min }}
+  maxReplicas: {{ $max }}
   metrics:
     {{- if $hpa.targetCPUUtilizationPercentage }}
     - type: Resource
