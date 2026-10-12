@@ -135,11 +135,11 @@ stringData:
       cp "${GAN_SECRETS_DIR}/keystore.p12" "${IGNITION_DATA_DIR}/local/metro-keystore"
 
       # Modify the GAN client keystore to use the alias "metro-key" to align with Ignition defaults
-      existing_alias=$(keytool -list -keystore "${IGNITION_DATA_DIR}/local/metro-keystore" -storepass ${METRO_KEYSTORE_PASSPHRASE} | grep PrivateKeyEntry | cut -d, -f 1)
+      existing_alias=$(keytool -list -keystore "${IGNITION_DATA_DIR}/local/metro-keystore" -storepass "${METRO_KEYSTORE_PASSPHRASE}" | grep PrivateKeyEntry | cut -d, -f 1)
       target_alias="${METRO_KEYSTORE_ALIAS}"
       if [ "${existing_alias}" != "${target_alias}" ]; then
         keytool -changealias -alias "${existing_alias}" -destalias "${target_alias}" \
-          -keystore "${IGNITION_DATA_DIR}/local/metro-keystore" -storepass ${METRO_KEYSTORE_PASSPHRASE}
+          -keystore "${IGNITION_DATA_DIR}/local/metro-keystore" -storepass "${METRO_KEYSTORE_PASSPHRASE}"
       fi
     }
 
@@ -314,7 +314,7 @@ stringData:
     existing_alias=$(keytool -list -keystore /data/local/ssl.pfx -storepass "${TLS_KEYSTORE_PASSWORD}" | grep PrivateKeyEntry | cut -d, -f 1)
     target_alias="ignition"
     if [ "${existing_alias}" != "${target_alias}" ]; then
-      keytool -changealias -alias "${existing_alias}" -destalias ${target_alias} \
+      keytool -changealias -alias "${existing_alias}" -destalias "${target_alias}" \
         -keystore /data/local/ssl.pfx -storepass "${TLS_KEYSTORE_PASSWORD}"
     fi
   invoke-args.sh: |-
