@@ -13,6 +13,9 @@ git init --quiet --bare "$work/origin.git"
 git init --quiet -b main "$work/repo"
 cp -r "$root/charts" "$work/repo/"
 rm -rf "$work/repo"/charts/*/charts
+# start in step with common, as a release pull request moves common on before the charts follow
+common=$(sed -n 's/^version: *//p' "$work/repo/charts/common/Chart.yaml" | tr -d '"')
+sed -i "/- name: ignition-common/{n;s/version: .*/version: \"^$common\"/;}" "$work/repo"/charts/{failover,scaleout}/Chart.yaml
 mkdir "$work/bin"
 printf '%s\n' '#!/bin/sh' 'echo "$@" >> "$GH_LOG"' > "$work/bin/gh"
 chmod +x "$work/bin/gh"
@@ -29,7 +32,6 @@ range() { sed -n '/- name: ignition-common/{n;s/^ *version: *//p;}' "$1" | tr -d
 on() { git show "origin/$1:charts/$2/Chart.yaml" > "$work/c.yaml" 2>/dev/null && range "$work/c.yaml"; }
 ok() { if eval "$2"; then echo "ok   $1"; else echo "FAIL $1"; sed 's/^/     /' "$work/out"; fails=$((fails + 1)); fi; }
 
-common=$(sed -n 's/^version: *//p' charts/common/Chart.yaml | tr -d '"')
 run
 ok "charts that already require common's version are left alone" '[ "$(rc)" = 0 ] && [ ! -s "$GH_LOG" ] && grep -q "every chart requires" "$work/out"'
 
