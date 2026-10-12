@@ -6,7 +6,7 @@ This page describes the GitHub Actions workflows that test, scan, release and do
 
 The [`.index.yaml`](./workflows/.index.yaml) workflow is the primary entry point. It runs on pushes to `main` that change the charts and on every pull request, and orchestrates the other workflows in this order:
 
-1. **Changes**: On a pull request, works out whether the charts, or the scripts and workflows that test and release them, changed, and whether any shell script changed.
+1. **Changes**: On a pull request, works out whether the charts, their examples, or the scripts and workflows that test and release them, changed, and whether any shell script changed.
 2. **shellcheck**: Lints every shell script, when a script changed.
 3. **Updates**: Synchronizes `Chart.lock` files by running `helm dependency update`, and commits any change on `main`.
 4. **Testing & Quality**: Runs the testing and quality suites in parallel, when the charts changed.
@@ -29,7 +29,7 @@ The [`quality.yaml`](./workflows/quality.yaml) workflow focuses on static analys
 The [`testing.yaml`](./workflows/testing.yaml) workflow ensures the functional integrity of the charts:
 
 - **Unit tests**: `helm-unittest` checks the templates against the tests in `charts/*/tests`.
-- **Script tests**: runs `test/scripts/*_test.sh` against the shell scripts the charts ship.
+- **Script tests**: runs `test/scripts/*_test.sh` against the shell scripts the charts ship. `examples_test.sh` also renders every values file in `examples/` with its chart, and fails when an example exposes a gateway beyond its namespace (a LoadBalancer, an Ingress, a ServiceMonitor or a NodePort it asks for) without a NetworkPolicy rule that lets the traffic in.
 - **Linting**: `chart-testing` (`ct lint`) checks the charts' structure, with each chart's default values and its `ci/deploy-values.yaml`.
 - **Integration tests**:
   - Creates a kind cluster and installs cert-manager with a self-signed `cluster-issuer` (`.github/scripts/ci/install-cert-manager.sh`).

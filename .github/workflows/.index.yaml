@@ -39,7 +39,7 @@ jobs:
         env:
           EVENT: ${{ github.event_name }}
           BASE: ${{ github.event.pull_request.base.sha }}
-          CHART_INPUTS: '^(charts/|\.github/(actions|kind|scripts/ci)/|\.github/release\.json$|\.github/workflows/(\.index|quality|release|testing)\.yaml$)'
+          CHART_INPUTS: '^(charts/|examples/|test/scripts/|ct\.yaml$|\.github/(actions|kind|scripts/(ci|tests))/|\.github/release\.json$|\.github/workflows/(\.index|quality|release|testing)\.yaml$)'
           SCRIPT_INPUTS: '(\.sh$|^\.shellcheckrc$|^\.github/workflows/\.index\.yaml$)'
         run: |
           # a push or a manual run releases, so it runs the whole chart pipeline
