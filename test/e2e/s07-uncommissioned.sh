@@ -3,10 +3,10 @@
 # become Ready, and liveness must not restart it in a loop. Records the
 # /StatusPing body each second for each Ignition version.
 #
-# Env: IMAGE_TAGS (default "8.3.1 8.1.53"), OBSERVE (seconds, default 240), WATCH_URL (optional)
+# Env: IMAGE_TAGS (default "8.3.10 8.1.55"), OBSERVE (seconds, default 240), WATCH_URL (optional)
 source "$(dirname "$0")/lib.sh"
 CHART="$(dirname "$0")/../../charts/failover"
-IMAGE_TAGS="${IMAGE_TAGS:-8.3.1 8.1.53}"
+IMAGE_TAGS="${IMAGE_TAGS:-8.3.10 8.1.55}"
 OBSERVE="${OBSERVE:-240}"
 
 e2e_chart "$CHART"

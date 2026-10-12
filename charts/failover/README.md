@@ -97,7 +97,7 @@ The most commonly changed values are below. See [`values.yaml`](values.yaml) for
 | --------- | ----------- | ------- |
 | `applicationName` | Name of every resource the chart creates. | `ignition-failover` |
 | `image.repository` | Ignition image repository. | `inductiveautomation/ignition` |
-| `image.tag` | Ignition image tag. Empty uses the chart's `appVersion`; 8.1.53 and 8.3.1 are tested. | `""` (8.3.1) |
+| `image.tag` | Ignition image tag. Empty uses the chart's `appVersion`; 8.1.55 and 8.3.10 are tested. | `""` (8.3.10) |
 | `ignition.secrets.GATEWAY_ADMIN_USERNAME` | Gateway admin user name. | `admin` |
 | `ignition.secrets.GATEWAY_ADMIN_PASSWORD` | Gateway admin password. Set your own. | `admin` |
 | `ignition.secrets.IGNITION_GAN_KEYSTORE_PASSWORD` | Password for the Gateway Network keystore. | `metro` |

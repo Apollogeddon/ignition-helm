@@ -118,7 +118,7 @@ The most commonly changed values are below. Most `frontend.*` and `backend.*` va
 | Parameter | Description | Default |
 | --------- | ----------- | ------- |
 | `applicationName` | Prefix of every resource the chart creates. | `ignition-scaleout` |
-| `image.tag` | Ignition image tag for both layers. Empty uses the chart's `appVersion`. | `""` (8.3.1) |
+| `image.tag` | Ignition image tag for both layers. Empty uses the chart's `appVersion`. | `""` (8.3.10) |
 | `frontend.secrets.GATEWAY_ADMIN_PASSWORD` | Frontend gateway admin password. Set your own. | `admin` |
 | `backend.secrets.GATEWAY_ADMIN_PASSWORD` | Backend gateway admin password. Set your own. | `admin` |
 | `frontend.secrets.IGNITION_GAN_KEYSTORE_PASSWORD` | Password for both layers' Gateway Network keystores. | `metro` |
