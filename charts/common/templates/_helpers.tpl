@@ -300,6 +300,21 @@ Params:
 {{- end }}
 
 {{/*
+A whole number above 0, or the render fails naming the value; floats print
+as whole numbers (1000000, not 1e+06)
+Params:
+  name: The value's path, for the error
+  value: The value
+*/}}
+{{- define "ignition-common.positiveInt" -}}
+{{- $v := .value }}
+{{- if not (and (regexMatch "^[1-9][0-9]*$" (toString (int64 $v))) (eq (float64 (int64 $v)) (float64 $v))) }}
+{{- fail (printf "%s must be a whole number above 0, not %v" .name $v) }}
+{{- end }}
+{{- int64 $v }}
+{{- end }}
+
+{{/*
 Redundancy XML Properties
 Params:
   role: Master or Backup
@@ -313,25 +328,28 @@ Params:
 <properties>
 <comment>Redundancy Settings</comment>
 <entry key="redundancy.noderole">{{ .role }}</entry>
-<entry key="redundancy.gan.pingTimeout">{{ .redundancy.pingTimeout }}</entry>
-<entry key="redundancy.gan.pingMaxMissed">{{ .redundancy.pingMaxMissed }}</entry>
+<entry key="redundancy.gan.pingTimeout">{{ include "ignition-common.positiveInt" (dict "name" "redundancy.pingTimeout" "value" .redundancy.pingTimeout) }}</entry>
+<entry key="redundancy.gan.pingMaxMissed">{{ include "ignition-common.positiveInt" (dict "name" "redundancy.pingMaxMissed" "value" .redundancy.pingMaxMissed) }}</entry>
 <entry key="redundancy.activehistorylevel">Full</entry>
 <entry key="redundancy.standbyactivitylevel">Cold</entry>
-<entry key="redundancy.gan.pingRate">{{ .redundancy.pingRate }}</entry>
+<entry key="redundancy.gan.pingRate">{{ include "ignition-common.positiveInt" (dict "name" "redundancy.pingRate" "value" .redundancy.pingRate) }}</entry>
 <entry key="redundancy.bindinterface"></entry>
 <entry key="redundancy.gan.enableSsl">{{ .redundancy.enableSsl }}</entry>
 <entry key="redundancy.backupreconnectperiod">10000</entry>
-<entry key="redundancy.joinwaittime">{{ .redundancy.joinWaitTime }}</entry>
-<entry key="redundancy.gan.websocketTimeout">{{ .redundancy.websocketTimeout }}</entry>
+<entry key="redundancy.joinwaittime">{{ include "ignition-common.positiveInt" (dict "name" "redundancy.joinWaitTime" "value" .redundancy.joinWaitTime) }}</entry>
+<entry key="redundancy.gan.websocketTimeout">{{ include "ignition-common.positiveInt" (dict "name" "redundancy.websocketTimeout" "value" .redundancy.websocketTimeout) }}</entry>
 <entry key="redundancy.systemstaterevision">0</entry>
-<entry key="redundancy.sync.timeoutSecs">{{ .redundancy.syncTimeoutSecs }}</entry>
-<entry key="redundancy.maxdisk_mb">{{ .redundancy.maxDiskMb }}</entry>
+<entry key="redundancy.sync.timeoutSecs">{{ include "ignition-common.positiveInt" (dict "name" "redundancy.syncTimeoutSecs" "value" .redundancy.syncTimeoutSecs) }}</entry>
+<entry key="redundancy.maxdisk_mb">{{ include "ignition-common.positiveInt" (dict "name" "redundancy.maxDiskMb" "value" .redundancy.maxDiskMb) }}</entry>
 <entry key="redundancy.systemstateuid">00000000-0000-0000-0000-000000000000</entry>
+{{- if not (has .redundancy.masterRecoveryMode (list "Automatic" "Manual")) }}
+{{- fail (printf "redundancy.masterRecoveryMode must be Automatic or Manual, not %v" .redundancy.masterRecoveryMode) }}
+{{- end }}
 <entry key="redundancy.masterrecoverymode">{{ .redundancy.masterRecoveryMode }}</entry>
-<entry key="redundancy.gan.httpConnectTimeout">{{ .redundancy.httpConnectTimeout }}</entry>
-<entry key="redundancy.gan.httpReadTimeout">{{ .redundancy.httpReadTimeout }}</entry>
+<entry key="redundancy.gan.httpConnectTimeout">{{ include "ignition-common.positiveInt" (dict "name" "redundancy.httpConnectTimeout" "value" .redundancy.httpConnectTimeout) }}</entry>
+<entry key="redundancy.gan.httpReadTimeout">{{ include "ignition-common.positiveInt" (dict "name" "redundancy.httpReadTimeout" "value" .redundancy.httpReadTimeout) }}</entry>
 <entry key="redundancy.gan.host">{{ .host }}</entry>
-<entry key="redundancy.backupfailovertimeout">{{ .redundancy.backupFailoverTimeout }}</entry>
+<entry key="redundancy.backupfailovertimeout">{{ include "ignition-common.positiveInt" (dict "name" "redundancy.backupFailoverTimeout" "value" .redundancy.backupFailoverTimeout) }}</entry>
 <entry key="redundancy.gan.port">{{ .port }}</entry>
 <entry key="redundancy.autodetectlocalinterface">true</entry>
 </properties>

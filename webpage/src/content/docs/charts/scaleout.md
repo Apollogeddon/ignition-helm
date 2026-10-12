@@ -141,6 +141,8 @@ httpReadTimeout: 60000
 backupFailoverTimeout: 10000
 ```
 
+The timings, `maxDiskMb` and `pingMaxMissed`, and `backend.activeRouting.intervalSeconds` and `unknownHold`, must be whole numbers above 0, and `masterRecoveryMode` `Automatic` or `Manual`; the chart refuses to render otherwise.
+
 #### Persistence (backend)
 
 | Parameter | Type | Default |

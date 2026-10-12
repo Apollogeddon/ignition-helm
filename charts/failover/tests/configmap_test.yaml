@@ -41,3 +41,44 @@ tests:
       - matchRegex:
           path: metadata.name
           pattern: -files$
+
+  - it: should write large redundancy timeouts as whole numbers
+    template: configmap-ignition-files.yaml
+    set:
+      ignition:
+        redundancy:
+          joinWaitTime: 1000000
+    asserts:
+      - matchRegex:
+          path: stringData["redundancy-primary.xml"]
+          pattern: '<entry key="redundancy.joinwaittime">1000000</entry>'
+
+  - it: should refuse a redundancy timing that is not a whole number above 0
+    template: configmap-ignition-files.yaml
+    set:
+      ignition:
+        redundancy:
+          pingRate: 0
+    asserts:
+      - failedTemplate:
+          errorPattern: "redundancy.pingRate must be a whole number above 0, not 0"
+
+  - it: should refuse a fractional redundancy timing
+    template: configmap-ignition-files.yaml
+    set:
+      ignition:
+        redundancy:
+          httpReadTimeout: 2.5
+    asserts:
+      - failedTemplate:
+          errorPattern: "redundancy.httpReadTimeout must be a whole number above 0, not 2.5"
+
+  - it: should refuse an unknown master recovery mode
+    template: configmap-ignition-files.yaml
+    set:
+      ignition:
+        redundancy:
+          masterRecoveryMode: Sometimes
+    asserts:
+      - failedTemplate:
+          errorPattern: "redundancy.masterRecoveryMode must be Automatic or Manual, not Sometimes"

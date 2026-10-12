@@ -394,6 +394,13 @@ stringData:
       printf '[active] %s\n' "$*"
     }
 
+    # a failed sleep would poll the API and the gateways without pause
+    for n in "interval=$interval" "unknown_hold=$unknown_hold"; do
+      case "${n#*=}" in
+        '' | *[!0-9]* | 0*) log "ERROR: ${n%%=*} must be a whole number above 0, not '${n#*=}'"; exit 1 ;;
+      esac
+    done
+
     classify() {
       ip="$1"
       deleting="$2"

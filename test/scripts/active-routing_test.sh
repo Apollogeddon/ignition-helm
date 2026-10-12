@@ -69,5 +69,13 @@ check "labels a standalone gateway" "gw-0 +" \
 check "does not label a gateway that is commissioning" "" \
   PODS=$'gw-0|10.0.0.1||' GW_10_0_0_1="$COMMISSIONING"
 
+# rejects intervals that would poll without pause, rather than looping
+for bad in -1 0 abc; do
+  status=0
+  timeout 5 env PATH="$work/bin:$PATH" CALLS="$work/calls" NAMESPACE=ns POD_SELECTOR=app=gw ACTIVE_LABEL=redundancy-active \
+    INTERVAL_SECONDS="$bad" PODS='gw-0|10.0.0.1||' GW_10_0_0_1="$MASTER" sh "$work/active-routing.sh" > /dev/null 2>&1 || status=$?
+  if [ "$status" -eq 1 ]; then echo "ok   refuses INTERVAL_SECONDS='$bad'"; else echo "FAIL refuses INTERVAL_SECONDS='$bad' (exit $status)"; fails=$((fails + 1)); fi
+done
+
 if [ "$fails" -ne 0 ]; then echo "$fails failed"; exit 1; fi
 echo "all passed"
