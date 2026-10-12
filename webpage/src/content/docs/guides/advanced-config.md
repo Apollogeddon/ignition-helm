@@ -87,7 +87,7 @@ The Gateway Network carries Ignition redundancy and scaleout traffic. The charts
 2. Allows Gateway Network traffic (port `8060`) only from pods whose `app.kubernetes.io/name` label matches the chart's `applicationName`.
 3. Blocks other ingress to the gateways. Add rules with `networkPolicy.extraIngress` (`ignition.networkPolicy` in failover, `frontend.networkPolicy` and `backend.networkPolicy` in scaleout), for example for your ingress controller's namespace, Prometheus's namespace, or node CIDRs when you use NodePort or LoadBalancer Services.
 
-Under this policy the default NodePort Service serves only clients in the cluster: a NodePort or LoadBalancer reaches the gateways from the nodes' addresses, which need a rule of their own. The [examples](https://github.com/Apollogeddon/ignition-helm/tree/main/examples) that expose a gateway each carry the rule they need.
+Under this policy the default NodePort Service serves only pods in the release's namespace, through its cluster IP. Pods in other namespaces are blocked, and so is traffic through the NodePort or a LoadBalancer, which reaches the gateways from the nodes' addresses and needs a rule of its own. The [examples](https://github.com/Apollogeddon/ignition-helm/tree/main/examples) that expose a gateway each carry the rule they need.
 
 ```yaml
 ignition:
