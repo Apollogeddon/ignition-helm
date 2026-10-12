@@ -26,6 +26,9 @@ tests:
       - equal:
           path: spec.jobTemplate.spec.template.spec.automountServiceAccountToken
           value: false
+      - equal:
+          path: spec.jobTemplate.spec.activeDeadlineSeconds
+          value: 600
 
   - it: should mount the scripts from the Secret they are rendered as
     set:

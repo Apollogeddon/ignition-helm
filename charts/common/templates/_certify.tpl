@@ -78,6 +78,8 @@ spec:
   jobTemplate:
     spec:
       backoffLimit: 0
+      # with concurrencyPolicy Forbid, a run stuck on the API would hold back every later one
+      activeDeadlineSeconds: 300
       template:
         metadata:
           labels:

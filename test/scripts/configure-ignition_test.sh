@@ -17,6 +17,7 @@ work=$(mktemp -d); trap 'rm -rf "$work"' EXIT
 mkdir -p "$work/bin"
 cat > "$work/bin/curl" <<'STUB'
 #!/usr/bin/env bash
+echo "$*" >> "${CURL_LOG%.log}.args"
 out="" url=""
 while [ $# -gt 0 ]; do case "$1" in -o) out=$2; shift 2 ;; -*) shift ;; *) url=$1; shift ;; esac; done
 echo "$url" >> "${CURL_LOG:?}"
@@ -38,6 +39,7 @@ ok "no restore source stages nothing" '[ ! -e "$work/data/restore.gwbk" ]'
 fresh; run IGNITION_RESTORE_URL=http://files/a.gwbk
 ok "a URL is downloaded to restore.gwbk" '[ "$(backup)" = "backup from http://files/a.gwbk" ]'
 run IGNITION_RESTORE_URL=http://files/a.gwbk
+ok "the download gives up on a server that stalls" 'grep -q -- "--connect-timeout 30 --speed-limit 1 --speed-time 120" "$work/curl.args"'
 ok "a staged backup is not downloaded again" '[ "$(wc -l < "$work/curl.log")" -eq 1 ]'
 ok "and stays for the gateway's -r" '[ "$(backup)" = "backup from http://files/a.gwbk" ]'
 

@@ -489,6 +489,8 @@ spec:
   startingDeadlineSeconds: 60
   jobTemplate:
     spec:
+      # with concurrencyPolicy Forbid, a stuck run would hold back every later one
+      activeDeadlineSeconds: 600
       template:
         spec:
           securityContext:
