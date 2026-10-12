@@ -6,10 +6,10 @@
 # wrapper.log is absent or not growing while `kubectl logs` shows gateway
 # output; then repeats with wrapperLogToStdout=false to show the difference.
 #
-# Env: IMAGE_TAGS (default "8.3.1 8.1.53"), WATCH_URL (optional)
+# Env: IMAGE_TAGS (default "8.3.10 8.1.55"), WATCH_URL (optional)
 source "$(dirname "$0")/lib.sh"
 CHART="$(dirname "$0")/../../charts/failover"
-IMAGE_TAGS="${IMAGE_TAGS:-8.3.1 8.1.53}"
+IMAGE_TAGS="${IMAGE_TAGS:-8.3.10 8.1.55}"
 
 e2e_chart "$CHART"
 e2e_begin "${WATCH_URL:-}"

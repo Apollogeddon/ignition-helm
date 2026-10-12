@@ -246,7 +246,7 @@ e2e_watch_stop() {
 # cluster, without the test machine's network. RECORD_INTERVAL_MS and
 # RECORD_CURL_ARGS are passed through. The image needs bash, curl and GNU date;
 # the Ignition image has them and is already on the node.
-E2E_RECORD_IMAGE="${E2E_RECORD_IMAGE:-inductiveautomation/ignition:8.3.1}"
+E2E_RECORD_IMAGE="${E2E_RECORD_IMAGE:-inductiveautomation/ignition:8.3.10}"
 e2e_probe_start() {
   local ns=$1 secs=$3 pod="e2e-probe-$2"; shift 3
   e2e_retry kubectl -n "$ns" create configmap "$pod" --from-file=record.sh="$(dirname "${BASH_SOURCE[0]}")/record.sh" \

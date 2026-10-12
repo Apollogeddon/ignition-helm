@@ -5,12 +5,12 @@
 # step checks the gateways' roles from /system/gwinfo and their redundancy.xml,
 # and records how long the NodePort was not served by an Active gateway.
 #
-# Env: NODE_IP, IMAGE_TAGS (default "8.1.53 8.3.1"), WATCH_URL (optional)
+# Env: NODE_IP, IMAGE_TAGS (default "8.1.55 8.3.10"), WATCH_URL (optional)
 source "$(dirname "$0")/lib.sh"
 : "${NODE_IP:?}"
 CHART="$(dirname "$0")/../../charts/failover"
 STS=ignition-failover
-IMAGE_TAGS="${IMAGE_TAGS:-8.1.53 8.3.1}"
+IMAGE_TAGS="${IMAGE_TAGS:-8.1.55 8.3.10}"
 
 e2e_chart "$CHART"
 e2e_begin "${WATCH_URL:-}"

@@ -49,7 +49,7 @@ Resource naming and the container image.
 | --- | --- | --- |
 | `applicationName` | string | `"ignition-failover"` |
 | `image.repository` | string | `"inductiveautomation/ignition"` |
-| `image.tag` | string | `""` (the chart's `appVersion`, 8.3.1) |
+| `image.tag` | string | `""` (the chart's `appVersion`, 8.3.10) |
 | `image.pullPolicy` | string | `"IfNotPresent"` |
 | `image.imagePullSecrets` | list | unset |
 
@@ -117,7 +117,7 @@ Redundancy settings, applied to each gateway's data volume on every start.
 | --- | --- | --- |
 | `ignition.redundancy.enabled` | bool | `false` |
 | `ignition.redundancy` | object | *(See below)* |
-| `ignition.activeRouting` | object | `{"enabled":false,"image":"alpine/kubectl:1.34.1","intervalSeconds":2,"unknownHold":3,"resources":{"requests":{"cpu":"10m","memory":"32Mi"},"limits":{"cpu":"200m","memory":"128Mi"}}}` |
+| `ignition.activeRouting` | object | `{"enabled":false,"image":"alpine/kubectl:1.37.1","intervalSeconds":2,"unknownHold":3,"resources":{"requests":{"cpu":"10m","memory":"32Mi"},"limits":{"cpu":"200m","memory":"128Mi"}}}` |
 
 **Default `ignition.redundancy`:**
 
@@ -173,7 +173,7 @@ Service, Ingress and cert-manager settings.
 | `certManager.issuer.kind` | string | `"ClusterIssuer"` |
 | `certManager.rotation.enabled` | bool | `false` |
 | `certManager.rotation.schedule` | string | `"0 7 * * *"` |
-| `certManager.restartOnRenewal` | object | `{"enabled":false,"schedule":"*/15 * * * *","image":"alpine/kubectl:1.34.1"}` |
+| `certManager.restartOnRenewal` | object | `{"enabled":false,"schedule":"*/15 * * * *","image":"alpine/kubectl:1.37.1"}` |
 
 ### Resources and scheduling
 
