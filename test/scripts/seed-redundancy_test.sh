@@ -66,6 +66,10 @@ ok "the correction is logged" 'grep -q "Updating redundancy.gan.host: ignition-f
 volume Backup ignition-failover-0.ignition-failover-headless Manual; run ignition-failover-1 2
 ok "a changed value (master recovery mode) is applied" '[ "$(get redundancy.masterrecoverymode)" = Automatic ]'
 
+volume Master old Automatic
+sed -i 's|</properties>|<entry key="redundancyXganXhost">keep-me</entry>\n</properties>|' "$work/data/redundancy.xml"; run ignition-failover-0 2
+ok "the dots in a key match only dots" '[ "$(get redundancyXganXhost)" = keep-me ]'
+
 volume Master ignition-failover-1.ignition-failover-headless Automatic
 sed -i '/redundancy.gan.pingRate/d' "$work/data/redundancy.xml"; run ignition-failover-0 2
 ok "a key missing from the volume is added" '[ "$(get redundancy.gan.pingRate)" = 1000 ]'
@@ -80,6 +84,14 @@ ok "turning redundancy off keeps the other settings" '[ "$(get redundancy.gan.ho
 
 fresh; run ignition-failover-0 1
 ok "a gateway that was never redundant gets no redundancy.xml" '[ ! -e "$work/data/redundancy.xml" ]'
+
+# sed's special characters in a value are written as they are, replacing a line or adding one
+template Master 'a|b&c\d' Automatic > "$work/files/redundancy-primary.xml"
+volume Master old Automatic; run ignition-failover-0 2
+ok "a value with |, & and \\ replaces its line as written" '[ "$(get redundancy.gan.host)" = "a|b&c\d" ] && [ "$(grep -c "redundancy.gan.host" "$work/data/redundancy.xml")" = 1 ]'
+volume Master old Automatic; sed -i '/redundancy.gan.host/d' "$work/data/redundancy.xml"; run ignition-failover-0 2
+ok "a value with |, & and \\ is added as written" '[ "$(get redundancy.gan.host)" = "a|b&c\d" ]'
+template Master ignition-failover-1.ignition-failover-headless Automatic > "$work/files/redundancy-primary.xml"
 
 printf '%s\r\n' '<properties>' '<entry key="redundancy.noderole">Master</entry>' '</properties>' > "$work/files/redundancy-primary.xml"
 volume Master "" Automatic; printf '%s\n' '<properties>' '<entry key="redundancy.noderole">Master</entry>' '</properties>' > "$work/data/redundancy.xml"

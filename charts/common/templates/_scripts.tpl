@@ -52,8 +52,9 @@ stringData:
       have=$(grep -F "key=\"${key}\"" "${file}" | tr -d '\r' || true)
       [ "${have}" = "${want}" ] && return 0
       echo "Updating ${key}: $(value "${have}") -> $(value "${want}")"
-      esc=$(printf '%s' "${want}" | sed 's/[&|\]/\&/g')
-      key_re=$(printf '%s' "${key}" | sed 's/[.]/\./g')
+      # escaped for the replacement and the regex of sed's s|...|...|
+      esc=$(printf '%s' "${want}" | sed 's/[&|\]/\\&/g')
+      key_re=$(printf '%s' "${key}" | sed 's/[.]/\\./g')
       if [ -n "${have}" ]; then
         sed -i "s|^.*key=\"${key_re}\".*\$|${esc}|" "${file}"
       else
