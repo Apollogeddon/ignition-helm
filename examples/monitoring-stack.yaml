@@ -11,6 +11,18 @@ ignition:
     # Recommendation: Use the OpenTelemetry Java Agent or a custom WebDev script.
     path: "/data/metrics"
 
+  # The default NetworkPolicy admits only pods in this namespace: let
+  # Prometheus's namespace scrape the gateways (adjust the name)
+  networkPolicy:
+    extraIngress:
+      - from:
+          - namespaceSelector:
+              matchLabels:
+                kubernetes.io/metadata.name: monitoring
+        ports:
+          - protocol: TCP
+            port: 8088
+
   # 2. Production Sizing (Adjust based on project complexity)
   resources:
     requests:

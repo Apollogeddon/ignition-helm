@@ -9,10 +9,24 @@ ignition:
     IGNITION_GAN_KEYSTORE_PASSWORD: "metro-password"
     IGNITION_WEB_KEYSTORE_PASSWORD: "web-password"
 
-  # Expose via LoadBalancer (cloud) or NodePort (on-prem)
+  # Expose via LoadBalancer (cloud) or NodePort (on-prem); either needs the
+  # networkPolicy rule below
   service:
     type: LoadBalancer
     ports:
       http: 8088
       https: 8043
       gan: 8060
+  # The default NetworkPolicy admits only pods in this namespace, so let the
+  # LoadBalancer's clients reach the web ports (it delivers from the nodes' IPs
+  # with the default externalTrafficPolicy). Narrow the CIDR to your users and nodes.
+  networkPolicy:
+    extraIngress:
+      - from:
+          - ipBlock:
+              cidr: 0.0.0.0/0
+        ports:
+          - protocol: TCP
+            port: 8088
+          - protocol: TCP
+            port: 8043

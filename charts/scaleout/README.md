@@ -138,8 +138,8 @@ The most commonly changed values are below. Most `frontend.*` and `backend.*` va
 | `frontend.service.nodePorts` / `backend.service.nodePorts` | Optional static node ports (`http`, `https`, `gan`). | unset |
 | `frontend.ingress.enabled` / `backend.ingress.enabled` | Create an Ingress for the layer. | `false` |
 | `frontend.ingress.className` / `backend.ingress.className` | IngressClass name, for example `contour`; empty uses the cluster default. | `""` |
-| `frontend.networkPolicy.enabled` / `backend.networkPolicy.enabled` | Create a NetworkPolicy that limits Gateway Network traffic to the chart's gateways. | `true` |
-| `frontend.networkPolicy.extraIngress` / `backend.networkPolicy.extraIngress` | Extra NetworkPolicy ingress rules, for example the ingress controller's namespace or node CIDRs. | `[]` |
+| `frontend.networkPolicy.enabled` / `backend.networkPolicy.enabled` | Create a NetworkPolicy that limits Gateway Network traffic to the chart's gateways and web traffic to pods in the namespace. | `true` |
+| `frontend.networkPolicy.extraIngress` / `backend.networkPolicy.extraIngress` | Extra NetworkPolicy ingress rules: needed for an ingress controller, Prometheus, or a NodePort or LoadBalancer Service, as in the [examples](https://github.com/Apollogeddon/ignition-helm/tree/main/examples). | `[]` |
 | `frontend.updateStrategy.type` / `backend.updateStrategy.type` | StatefulSet update strategy (`RollingUpdate` or `OnDelete`). | `RollingUpdate` |
 | `frontend.externalModules.enabled` / `backend.externalModules.enabled` | Mount the layer's `externalModules.pvcName` PersistentVolumeClaim of modules. | `false` |
 | `backend.restore.enabled` | Restore a gateway backup from `backend.restore.url`, or a mounted `backend.restore.path`, on the backend gateway's first start. The backup is staged on the data volume once and the gateway starts with `-r`; later restarts keep the gateway's own changes. To restore again, start from an empty data volume. | `false` |

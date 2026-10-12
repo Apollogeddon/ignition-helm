@@ -31,6 +31,20 @@ ignition:
         hosts:
           - ignition.example.com
 
+  # The default NetworkPolicy admits only pods in this namespace: let the
+  # ingress controller's namespace reach the web ports (adjust the name)
+  networkPolicy:
+    extraIngress:
+      - from:
+          - namespaceSelector:
+              matchLabels:
+                kubernetes.io/metadata.name: ingress-nginx
+        ports:
+          - protocol: TCP
+            port: 8088
+          - protocol: TCP
+            port: 8043
+
   secrets:
     GATEWAY_ADMIN_PASSWORD: "strong-password"
     IGNITION_GAN_KEYSTORE_PASSWORD: "metro-password"

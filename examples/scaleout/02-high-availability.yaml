@@ -15,6 +15,20 @@ frontend:
     # stickiness at the load balancer or Ingress if you have it.
     sessionAffinity: ClientIP
 
+  # The default NetworkPolicy admits only pods in this namespace, so let the
+  # LoadBalancer's clients reach the web ports (it delivers from the nodes' IPs
+  # with the default externalTrafficPolicy). Narrow the CIDR to your users and nodes.
+  networkPolicy:
+    extraIngress:
+      - from:
+          - ipBlock:
+              cidr: 0.0.0.0/0
+        ports:
+          - protocol: TCP
+            port: 8088
+          - protocol: TCP
+            port: 8043
+
   secrets:
     GATEWAY_ADMIN_PASSWORD: "strong-password"
     IGNITION_GAN_KEYSTORE_PASSWORD: "metro-password"

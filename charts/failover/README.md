@@ -115,8 +115,8 @@ The most commonly changed values are below. See [`values.yaml`](values.yaml) for
 | `ignition.ingress.className` | IngressClass name, for example `contour`; empty uses the cluster default. | `""` |
 | `ignition.ssl.enabled` | Serve HTTPS with your own PKCS#12 keystore from the `ignition.ssl.secretName` Secret (default `<name>-web-tls`). | `false` |
 | `ignition.restore.enabled` | Restore a gateway backup (`.gwbk`) from `ignition.restore.url`, or a mounted `ignition.restore.path`, on the gateway's first start. The backup is staged on the data volume once and the gateway starts with `-r`; later restarts keep the gateway's own changes. To restore again, start from an empty data volume. | `false` |
-| `ignition.networkPolicy.enabled` | Create a NetworkPolicy that limits Gateway Network traffic to the chart's gateways. | `true` |
-| `ignition.networkPolicy.extraIngress` | Extra NetworkPolicy ingress rules, for example the ingress controller's namespace or node CIDRs. | `[]` |
+| `ignition.networkPolicy.enabled` | Create a NetworkPolicy that limits Gateway Network traffic to the chart's gateways and web traffic to pods in the namespace. | `true` |
+| `ignition.networkPolicy.extraIngress` | Extra NetworkPolicy ingress rules: needed for an ingress controller, Prometheus, or a NodePort or LoadBalancer Service, as in the [examples](https://github.com/Apollogeddon/ignition-helm/tree/main/examples). | `[]` |
 | `ignition.serviceMonitor.enabled` | Create a Prometheus Operator ServiceMonitor. | `false` |
 | `ignition.updateStrategy.type` | StatefulSet update strategy (`RollingUpdate` or `OnDelete`). | `RollingUpdate` |
 | `ignition.externalModules.enabled` | Mount the `ignition.externalModules.pvcName` PersistentVolumeClaim of modules. | `false` |

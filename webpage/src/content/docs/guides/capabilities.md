@@ -149,7 +149,7 @@ To keep a gateway available during voluntary disruptions such as node drains, th
 * **Non-root user**: the gateways run as UID `2003` with `runAsNonRoot: true`, no privilege escalation and all capabilities dropped. The charts' pods meet the Kubernetes restricted Pod Security level (except the optional `fixDataOwnership` init container).
 * **No API token**: the gateways never call the Kubernetes API, so their pods don't mount a service account token (`serviceAccount.automountServiceAccountToken: false`). Only the optional active-routing and certificate-restart pods, which run kubectl, get one, each for a service account of its own.
 * **SealedSecrets**: `sealedSecrets: true` renders the `secrets` map as a Bitnami SealedSecret, so you can keep encrypted values in Git.
-* **Network isolation**: a NetworkPolicy, on by default, allows Gateway Network traffic (port `8060`) only from the chart's own gateways.
+* **Network isolation**: a NetworkPolicy, on by default, allows web traffic only from pods in the release's namespace and Gateway Network traffic (port `8060`) only from the chart's own gateways. An ingress controller, Prometheus, or a NodePort or LoadBalancer Service needs a rule in `networkPolicy.extraIngress` (see [Network security](../advanced-config/#network-security-gateway-network-isolation)).
 
 ```yaml
 ignition:
@@ -183,6 +183,13 @@ frontend:
     annotations:
       nginx.ingress.kubernetes.io/affinity: "cookie"
       nginx.ingress.kubernetes.io/session-cookie-name: "route"
+  # the default NetworkPolicy admits only this namespace's pods: let the controller in
+  networkPolicy:
+    extraIngress:
+      - from:
+          - namespaceSelector:
+              matchLabels:
+                kubernetes.io/metadata.name: ingress-nginx
 ```
 
 ### Custom web server certificate
@@ -217,6 +224,13 @@ ignition:
     enabled: true
     interval: "30s"
     path: "/data/metrics" # Update this to match your endpoint (e.g., /metrics)
+  # the default NetworkPolicy admits only this namespace's pods: let Prometheus in
+  networkPolicy:
+    extraIngress:
+      - from:
+          - namespaceSelector:
+              matchLabels:
+                kubernetes.io/metadata.name: monitoring
 ```
 
 ### Horizontal pod autoscaling

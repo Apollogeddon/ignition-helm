@@ -16,7 +16,7 @@
 | `ignition-common.ganCertificate` | A cert-manager Certificate, with a PKCS#12 keystore, for one component's Gateway Network identity. |
 | `ignition-common.pdb` | A PodDisruptionBudget. |
 | `ignition-common.redundancyServices` | The `-primary` and `-backup` headless Services that target pod ordinals 0 and 1. |
-| `ignition-common.networkPolicy` | A NetworkPolicy that limits Gateway Network traffic to the chart's gateways. |
+| `ignition-common.networkPolicy` | A NetworkPolicy that limits Gateway Network traffic to the chart's gateways and web traffic to pods in the namespace. |
 | `ignition-common.serviceMonitor` | A Prometheus Operator ServiceMonitor. |
 | `ignition-common.hpa` | An `autoscaling/v2` HorizontalPodAutoscaler for a component's StatefulSet, on CPU and/or memory utilization, with optional scaling `behavior`. The StatefulSet must leave out `replicas` while it is enabled. |
 | `ignition-common.ganRotationCronJob` | CronJobs that refresh the Gateway Network keystore on each gateway's volume. |
