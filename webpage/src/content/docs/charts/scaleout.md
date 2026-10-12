@@ -58,6 +58,7 @@ Settings that apply to both layers. `affinity.enabled` spreads each layer's pods
 | `serviceAccount.create` | bool | `false` |
 | `serviceAccount.name` | string | `""` |
 | `serviceAccount.annotations` | object | `{}` |
+| `serviceAccount.automountServiceAccountToken` | bool | `false` (the gateways never call the Kubernetes API) |
 
 ### Backend
 

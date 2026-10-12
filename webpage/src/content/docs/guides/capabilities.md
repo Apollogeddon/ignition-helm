@@ -147,6 +147,7 @@ To keep a gateway available during voluntary disruptions such as node drains, th
 ## Security
 
 * **Non-root user**: the gateways run as UID `2003` with `runAsNonRoot: true`, no privilege escalation and all capabilities dropped. The charts' pods meet the Kubernetes restricted Pod Security level (except the optional `fixDataOwnership` init container).
+* **No API token**: the gateways never call the Kubernetes API, so their pods don't mount a service account token (`serviceAccount.automountServiceAccountToken: false`). Only the optional active-routing and certificate-restart pods, which run kubectl, get one, each for a service account of its own.
 * **SealedSecrets**: `sealedSecrets: true` renders the `secrets` map as a Bitnami SealedSecret, so you can keep encrypted values in Git.
 * **Network isolation**: a NetworkPolicy, on by default, allows Gateway Network traffic (port `8060`) only from the chart's own gateways.
 

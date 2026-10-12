@@ -65,6 +65,12 @@ tests:
       - failedTemplate:
           errorPattern: "affinity.type must be soft or hard, not strict"
 
+  - it: should not mount a service account token in the frontend gateways
+    asserts:
+      - equal:
+          path: spec.template.spec.automountServiceAccountToken
+          value: false
+
   - it: should configure resources
     set:
       frontend:

@@ -17,6 +17,7 @@ metadata:
   annotations:
     {{- toYaml . | nindent 4 }}
   {{- end }}
+automountServiceAccountToken: {{ .values.serviceAccount.automountServiceAccountToken | default false }}
 {{- end }}
 {{ end }}
 
@@ -498,6 +499,8 @@ spec:
             seccompProfile:
               type: RuntimeDefault
           restartPolicy: Never
+          # rotation only touches the gateway's volume, never the Kubernetes API
+          automountServiceAccountToken: false
           affinity:
             podAffinity:
               requiredDuringSchedulingIgnoredDuringExecution:

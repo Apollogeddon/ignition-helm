@@ -60,6 +60,14 @@ Create the name of the service account to use
 {{- end }}
 
 {{/*
+The gateway pods' service account and whether its API token is mounted
+*/}}
+{{- define "ignition-common.podServiceAccount" -}}
+serviceAccountName: {{ include "ignition.serviceAccountName" . }}
+automountServiceAccountToken: {{ .Values.serviceAccount.automountServiceAccountToken | default false }}
+{{- end }}
+
+{{/*
 Create a default fully qualified app name for common resources.
 */}}
 {{- define "ignition-common.fullname" -}}

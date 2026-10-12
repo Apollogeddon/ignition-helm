@@ -24,7 +24,7 @@ spec:
         {{- include "ignition.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/component: frontend
     spec:
-      serviceAccountName: {{ include "ignition.serviceAccountName" . }}
+      {{- include "ignition-common.podServiceAccount" . | nindent 6 }}
       {{- include "ignition-common.podSecurityContext" (dict "values" .Values.frontend) | nindent 6 }}
       {{- include "ignition-common.affinity" (dict "affinity" .Values.affinity "context" . "component" "frontend") | nindent 6 }}
       {{- with .Values.image.imagePullSecrets }}

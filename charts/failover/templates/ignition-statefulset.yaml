@@ -24,7 +24,7 @@ spec:
         # applies them to the data volume on start
         checksum/redundancy: {{ .Values.ignition.redundancy | toJson | sha256sum }}
     spec:
-      serviceAccountName: {{ include "ignition.serviceAccountName" . }}
+      {{- include "ignition-common.podServiceAccount" . | nindent 6 }}
       terminationGracePeriodSeconds: 60
       {{- include "ignition-common.podSecurityContext" (dict "values" .Values.ignition) | nindent 6 }}
       {{- include "ignition-common.affinity" (dict "affinity" .Values.affinity "context" .) | nindent 6 }}

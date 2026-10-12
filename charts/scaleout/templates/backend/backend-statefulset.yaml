@@ -25,7 +25,7 @@ spec:
         # applies them to the data volume on start
         checksum/redundancy: {{ .Values.backend.redundancy | toJson | sha256sum }}
     spec:
-      serviceAccountName: {{ include "ignition.serviceAccountName" . }}
+      {{- include "ignition-common.podServiceAccount" . | nindent 6 }}
       {{- include "ignition-common.podSecurityContext" (dict "values" .Values.backend) | nindent 6 }}
       {{- include "ignition-common.affinity" (dict "affinity" .Values.affinity "context" . "component" "backend") | nindent 6 }}
       {{- with .Values.image.imagePullSecrets }}

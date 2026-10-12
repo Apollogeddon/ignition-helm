@@ -242,3 +242,4 @@ Security context, secrets and the ServiceAccount. With `ignition.sealedSecrets`,
 | `serviceAccount.create` | bool | `false` |
 | `serviceAccount.name` | string | `""` |
 | `serviceAccount.annotations` | object | `{}` |
+| `serviceAccount.automountServiceAccountToken` | bool | `false` (the gateways never call the Kubernetes API) |
