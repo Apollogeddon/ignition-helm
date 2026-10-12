@@ -165,6 +165,25 @@ entries:
   ignition-failover:
   - apiVersion: v2
     appVersion: 8.3.1
+    created: "2026-10-12T01:06:18.743530092Z"
+    dependencies:
+    - name: ignition-common
+      repository: file://../common
+      version: ^3.3.1
+    description: A Helm chart for failover Ignition Gateway with combined frontend/backend
+      functionality
+    digest: c3a483710d3900f3b0aa04698319d94718126aac31b1ab5f32e74c8c07bfa207
+    keywords:
+    - ignition
+    - scada
+    - failover
+    name: ignition-failover
+    type: application
+    urls:
+    - https://github.com/Apollogeddon/ignition-helm/releases/download/ignition-failover-v4.2.3/ignition-failover-4.2.3.tgz
+    version: 4.2.3
+  - apiVersion: v2
+    appVersion: 8.3.1
     created: "2026-10-09T02:30:36.378844388Z"
     dependencies:
     - name: ignition-common
@@ -420,6 +439,25 @@ entries:
     - https://github.com/Apollogeddon/ignition-helm/releases/download/ignition-failover-1.1.0/ignition-failover-1.1.0.tgz
     version: 1.1.0
   ignition-scaleout:
+  - apiVersion: v2
+    appVersion: 8.3.1
+    created: "2026-10-12T01:06:18.921033481Z"
+    dependencies:
+    - name: ignition-common
+      repository: file://../common
+      version: ^3.3.1
+    description: A Helm chart for scaleout Ignition Gateways, with backend gateways
+      for devices and history and scalable frontend gateways for Perspective
+    digest: 73060c52df00b09c54ad510c355cd378045f11ea1a948c9baef543b071b251e4
+    keywords:
+    - ignition
+    - scada
+    - scaleout
+    name: ignition-scaleout
+    type: application
+    urls:
+    - https://github.com/Apollogeddon/ignition-helm/releases/download/ignition-scaleout-v4.3.2/ignition-scaleout-4.3.2.tgz
+    version: 4.3.2
   - apiVersion: v2
     appVersion: 8.3.1
     created: "2026-10-12T00:14:56.645044741Z"
@@ -700,4 +738,4 @@ entries:
     urls:
     - https://github.com/Apollogeddon/ignition-helm/releases/download/ignition-scaleout-1.1.0/ignition-scaleout-1.1.0.tgz
     version: 1.1.0
-generated: "2026-10-12T00:14:56.64520036Z"
+generated: "2026-10-12T01:06:18.921320528Z"
