@@ -1,5 +1,14 @@
 # Changelog
 
+## [3.3.2](https://github.com/Apollogeddon/ignition-helm/compare/ignition-common-v3.3.1...ignition-common-v3.3.2) (2026-10-12)
+
+
+### Bug Fixes
+
+* **common:** Mount the gan ca and keystore passphrase in the certificate rotation cronjob ([6f2b77d](https://github.com/Apollogeddon/ignition-helm/commit/6f2b77dc97be8699ba11627c3251a5bc203a7db7))
+* **common:** Quote the gan keystore passphrase passed to keytool ([7cb7859](https://github.com/Apollogeddon/ignition-helm/commit/7cb7859c1dc910cea5de890ae997db0903ab191e))
+* Rotation cronjob mounts, keystore passphrase quoting, ignition version drift and kubectl docs ([dc35a00](https://github.com/Apollogeddon/ignition-helm/commit/dc35a00fda1d47db830a438c51394517470795a2))
+
 ## [3.3.1](https://github.com/Apollogeddon/ignition-helm/compare/ignition-common-v3.3.0...ignition-common-v3.3.1) (2026-10-11)
 
 

@@ -1,5 +1,14 @@
 # Changelog
 
+## [4.2.4](https://github.com/Apollogeddon/ignition-helm/compare/ignition-failover-v4.2.3...ignition-failover-v4.2.4) (2026-10-12)
+
+
+### Bug Fixes
+
+* **common:** Mount the gan ca and keystore passphrase in the certificate rotation cronjob ([6f2b77d](https://github.com/Apollogeddon/ignition-helm/commit/6f2b77dc97be8699ba11627c3251a5bc203a7db7))
+* Default both charts to ignition 8.3.10 and test 8.1.55 and 8.3.10, as ignition-demo runs ([dd5994e](https://github.com/Apollogeddon/ignition-helm/commit/dd5994e812996e4ad7b6360e9ab0784b78c5f47c))
+* Rotation cronjob mounts, keystore passphrase quoting, ignition version drift and kubectl docs ([dc35a00](https://github.com/Apollogeddon/ignition-helm/commit/dc35a00fda1d47db830a438c51394517470795a2))
+
 ## [4.2.3](https://github.com/Apollogeddon/ignition-helm/compare/ignition-failover-v4.2.2...ignition-failover-v4.2.3) (2026-10-12)
 
 
