@@ -1,5 +1,13 @@
 # Changelog
 
+## [4.2.3](https://github.com/Apollogeddon/ignition-helm/compare/ignition-failover-v4.2.2...ignition-failover-v4.2.3) (2026-10-12)
+
+
+### Bug Fixes
+
+* Release both charts with ignition-common 3.3.1, and with every common release after it ([bb3079d](https://github.com/Apollogeddon/ignition-helm/commit/bb3079d377a5017d920ed007653949c71b51c9cc))
+* Require ignition-common ^3.3.1 in both charts, so they ship the data volume seed fix ([08b25c0](https://github.com/Apollogeddon/ignition-helm/commit/08b25c0f6ce856e867066512e1d6f71c0568d037))
+
 ## [4.2.2](https://github.com/Apollogeddon/ignition-helm/compare/ignition-failover-4.2.1...ignition-failover-4.2.2) (2026-10-09)
 
 
