@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.3.4](https://github.com/Apollogeddon/ignition-helm/compare/ignition-scaleout-v4.3.3...ignition-scaleout-v4.3.4) (2026-10-12)
+
+
+### Bug Fixes
+
+* Require ignition-common ^3.3.2 in the charts that bundle it ([#91](https://github.com/Apollogeddon/ignition-helm/issues/91)) ([5fe8a51](https://github.com/Apollogeddon/ignition-helm/commit/5fe8a519e99823e828681faa7898afc9e531dd95))
+
 ## [4.3.3](https://github.com/Apollogeddon/ignition-helm/compare/ignition-scaleout-v4.3.2...ignition-scaleout-v4.3.3) (2026-10-12)
 
 
