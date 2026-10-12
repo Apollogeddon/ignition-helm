@@ -69,7 +69,7 @@ See [Verifying a chart](../../README.md#verifying-a-chart) for what this checks.
 
 - **Controlled rollouts**: set `frontend.updateStrategy.type` or `backend.updateStrategy.type` to `OnDelete` so a `helm upgrade` does not restart running gateways. Each pod then picks up the change when you delete it, in your own maintenance window.
 - **External modules**: set `backend.externalModules.enabled` and `backend.externalModules.pvcName` (or the `frontend.` equivalents) to mount a PersistentVolumeClaim of `.modl` files, instead of building a custom image.
-- **Certificate rotation and renewal**: `certManager.rotation.enabled` adds CronJobs that refresh the Gateway Network keystore on each gateway's volume. A running gateway only loads renewed certificates when it restarts, so pair it with `certManager.restartOnRenewal.enabled`, which restarts the gateways (Backup first) when the certificate secrets change.
+- **Certificate rotation and renewal**: `certManager.rotation.enabled` adds CronJobs that refresh the Gateway Network keystore on each backend gateway's volume. The frontends need none: their data volume is an emptyDir, rebuilt from the current certificate on every start, including autoscaled ones. A running gateway only loads renewed certificates when it restarts, so pair it with `certManager.restartOnRenewal.enabled`, which restarts the gateways (Backup first) when the certificate secrets change.
 
 ## Autoscaling the frontend
 
@@ -153,6 +153,6 @@ The most commonly changed values are below. Most `frontend.*` and `backend.*` va
 | `frontend.logging.*` / `backend.logging.*` | `level`, per-logger `loggers`, SQLite log database maintenance (`sqlite`) and `wrapperLogToStdout`, as in the failover chart. | `INFO`, `{}`, `{}`, `true` |
 | `frontend.emptyDirSizeLimit` / `backend.emptyDirSizeLimit` | Optional `sizeLimit` for the `logs`, `temp` and `dotIgnition` emptyDir volumes. | `""` each (no limit) |
 | `certManager.issuer.name` / `certManager.issuer.kind` | The cert-manager issuer that signs the Gateway Network CA. | `cluster-issuer` / `ClusterIssuer` |
-| `certManager.rotation.enabled` | CronJobs that refresh the Gateway Network keystore on each gateway's volume; renewed certificates load on the next restart (see `certManager.restartOnRenewal.enabled`). | `false` |
+| `certManager.rotation.enabled` | CronJobs that refresh the Gateway Network keystore on each backend gateway's volume (the frontends rebuild theirs on every start); renewed certificates load on the next restart (see `certManager.restartOnRenewal.enabled`). | `false` |
 | `certManager.restartOnRenewal.enabled` | CronJob that starts a rolling restart (Backup first) when the Gateway Network or web certificate secrets change, so renewed certificates are loaded. | `false` |
 | `affinity.enabled` | Pod anti-affinity between this release's gateways of one layer (frontends apart, backends apart); `affinity.type` is `soft` (preferred, the default) or `hard` (required). | `false` |

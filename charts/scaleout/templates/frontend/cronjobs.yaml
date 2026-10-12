@@ -1,1 +1,5 @@
-{{- include "ignition-common.ganRotationCronJob" (dict "name" "frontend" "values" .Values.frontend "replicas" .Values.frontend.redundancy.replicas "image" .Values.image "ganTlsSecretName" (printf "%s-frontend-gan-tls" (include "ignition.name" .)) "context" .) }}
+{{- /*
+No GAN rotation CronJobs for the frontend: its data volume is an emptyDir, so
+there is no claim for a job to mount, and every start (including one from
+certManager.restartOnRenewal) rebuilds the keystore from the current certificate.
+*/ -}}

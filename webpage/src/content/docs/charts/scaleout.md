@@ -38,7 +38,7 @@ The tables below list the chart's values and defaults, grouped by layer and area
 
 ### General
 
-Settings that apply to both layers. `affinity.enabled` spreads each layer's pods of this release apart: frontends from frontends and backends from backends, so a frontend and a backend may share a node. `affinity.type` is `soft` (preferred) or `hard` (required).
+Settings that apply to both layers. `affinity.enabled` spreads each layer's pods of this release apart: frontends from frontends and backends from backends, so a frontend and a backend may share a node. `affinity.type` is `soft` (preferred) or `hard` (required). `certManager.rotation.enabled` refreshes the Gateway Network keystore on each backend gateway's volume; the frontends rebuild theirs from the current certificate on every start, as their data volume is an emptyDir.
 
 | Parameter | Type | Default |
 | --- | --- | --- |
