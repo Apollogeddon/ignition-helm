@@ -130,7 +130,7 @@ The most commonly changed values are below. Most `frontend.*` and `backend.*` va
 | `backend.config.GATEWAY_MODULES_ENABLED` | Modules enabled on the backend. | drivers, SQL Bridge, tag historian, reporting, alarm notification |
 | `frontend.redundancy.replicas` | Number of frontend gateways. | `1` |
 | `frontend.hpa.enabled` | Scale the frontend with a HorizontalPodAutoscaler. The StatefulSet then leaves out `replicas`, so `frontend.redundancy.replicas` is ignored and the autoscaler owns the count. See [Autoscaling the frontend](#autoscaling-the-frontend). | `false` |
-| `frontend.hpa.minReplicas` / `frontend.hpa.maxReplicas` | Fewest and most frontend gateways: whole numbers above 0, with the minimum no higher than the maximum. | `1` / `10` |
+| `frontend.hpa.minReplicas` / `frontend.hpa.maxReplicas` | Fewest and most frontend gateways: whole numbers from 1 to 2147483647, with the minimum no higher than the maximum. | `1` / `10` |
 | `frontend.hpa.targetCPUUtilizationPercentage` / `frontend.hpa.targetMemoryUtilizationPercentage` | Target average utilization, as a percentage of `frontend.resources.requests`; at least one is needed. Empty leaves that metric out. | `80` / `""` |
 | `frontend.hpa.behavior` | The HPA's scaling `behavior` (`scaleUp`/`scaleDown` policies and stabilization windows), rendered as-is. | `{}` (Kubernetes defaults) |
 | `backend.redundancy.enabled` | Run the backend as a Master/Backup pair. | `false` |

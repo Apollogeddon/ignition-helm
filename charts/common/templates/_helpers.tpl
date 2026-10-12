@@ -300,8 +300,8 @@ Params:
 {{- end }}
 
 {{/*
-A whole number above 0, or the render fails naming the value; floats print
-as whole numbers (1000000, not 1e+06)
+A whole number from 1 to 2147483647 (an int32, as Kubernetes takes), or the
+render fails naming the value; floats print as whole numbers (1000000, not 1e+06)
 Params:
   name: The value's path, for the error
   value: The value
@@ -310,6 +310,9 @@ Params:
 {{- $v := .value }}
 {{- if or (kindIs "bool" $v) (not (and (regexMatch "^[1-9][0-9]*$" (toString (int64 $v))) (eq (float64 (int64 $v)) (float64 $v)))) }}
 {{- fail (printf "%s must be a whole number above 0, not %v" .name $v) }}
+{{- end }}
+{{- if gt (int64 $v) 2147483647 }}
+{{- fail (printf "%s must be at most 2147483647 (Kubernetes' int32), not %v" .name $v) }}
 {{- end }}
 {{- int64 $v }}
 {{- end }}

@@ -92,3 +92,13 @@ tests:
     asserts:
       - failedTemplate:
           errorPattern: "redundancy.pingRate must be a whole number above 0, not true"
+
+  - it: should refuse a redundancy timing beyond an int32
+    template: configmap-ignition-files.yaml
+    set:
+      ignition:
+        redundancy:
+          joinWaitTime: 3000000000
+    asserts:
+      - failedTemplate:
+          errorPattern: "redundancy.joinWaitTime must be at most 2147483647"

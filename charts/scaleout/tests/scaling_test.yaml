@@ -148,6 +148,17 @@ tests:
       - failedTemplate:
           errorPattern: "frontend.hpa.maxReplicas must be a whole number above 0, not -2"
 
+  - it: should refuse an HPA maxReplicas beyond Kubernetes' int32
+    template: templates/frontend/hpa.yaml
+    set:
+      frontend:
+        hpa:
+          enabled: true
+          maxReplicas: 3000000000
+    asserts:
+      - failedTemplate:
+          errorPattern: "frontend.hpa.maxReplicas must be at most 2147483647"
+
   - it: should keep the HPA bounds it is given
     template: templates/frontend/hpa.yaml
     set:
