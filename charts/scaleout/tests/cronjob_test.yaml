@@ -21,3 +21,47 @@ tests:
             secret:
               secretName: ignition-scaleout-common-scripts
               defaultMode: 0755
+
+  - it: should mount the GAN CA and pass the backend's keystore passphrase
+    template: backend/cronjobs.yaml
+    set:
+      certManager:
+        rotation:
+          enabled: true
+    asserts:
+      - contains:
+          path: spec.jobTemplate.spec.template.spec.containers[0].volumeMounts
+          content:
+            mountPath: /run/secrets/ignition-gan-ca
+            name: gan-ca
+            readOnly: true
+      - contains:
+          path: spec.jobTemplate.spec.template.spec.volumes
+          content:
+            name: gan-ca
+            secret:
+              secretName: ignition-scaleout-gan-ca
+      - contains:
+          path: spec.jobTemplate.spec.template.spec.containers[0].env
+          content:
+            name: METRO_KEYSTORE_PASSPHRASE
+            valueFrom:
+              secretKeyRef:
+                name: ignition-scaleout-backend-secrets
+                key: IGNITION_GAN_KEYSTORE_PASSWORD
+
+  - it: should pass the frontend's keystore passphrase
+    template: frontend/cronjobs.yaml
+    set:
+      certManager:
+        rotation:
+          enabled: true
+    asserts:
+      - contains:
+          path: spec.jobTemplate.spec.template.spec.containers[0].env
+          content:
+            name: METRO_KEYSTORE_PASSPHRASE
+            valueFrom:
+              secretKeyRef:
+                name: ignition-scaleout-frontend-secrets
+                key: IGNITION_GAN_KEYSTORE_PASSWORD

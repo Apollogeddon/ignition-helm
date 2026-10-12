@@ -464,6 +464,7 @@ Params:
   replicas: The number of pod instances
   image: The image repo/tag reference
   ganTlsSecretName: The secret containing the GAN key/cert
+  secretName: The component's secrets (default "<name>[-<component>]-secrets")
   context: The global context (Dot)
 */}}
 {{- define "ignition-common.ganRotationCronJob" -}}
@@ -519,6 +520,12 @@ spec:
               capabilities:
                 drop:
                   - ALL
+            env:
+            - name: METRO_KEYSTORE_PASSPHRASE
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $.secretName | default (printf "%s-secrets" $fullname) }}
+                  key: IGNITION_GAN_KEYSTORE_PASSWORD
             command:
             - /config/scripts/invoke-args.sh
             args:
@@ -532,6 +539,9 @@ spec:
             - mountPath: /run/secrets/gan-tls
               name: gan-tls
               readOnly: true
+            - mountPath: /run/secrets/ignition-gan-ca
+              name: gan-ca
+              readOnly: true
           volumes:
           - name: config-scripts
             secret:
@@ -540,6 +550,9 @@ spec:
           - name: gan-tls
             secret:
               secretName: {{ $.ganTlsSecretName }}
+          - name: gan-ca
+            secret:
+              secretName: {{ include "ignition.name" $.context }}-gan-ca
           - name: data
             persistentVolumeClaim:
               claimName: {{ printf "data-%s-%v" $fullname $i }}

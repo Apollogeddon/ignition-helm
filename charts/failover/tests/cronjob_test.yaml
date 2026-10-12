@@ -50,3 +50,30 @@ tests:
       - hasDocuments:
           count: 2
       - matchSnapshot: {}
+
+  - it: should mount the GAN CA and pass the keystore passphrase the script needs
+    set:
+      certManager:
+        rotation:
+          enabled: true
+    asserts:
+      - contains:
+          path: spec.jobTemplate.spec.template.spec.containers[0].volumeMounts
+          content:
+            mountPath: /run/secrets/ignition-gan-ca
+            name: gan-ca
+            readOnly: true
+      - contains:
+          path: spec.jobTemplate.spec.template.spec.volumes
+          content:
+            name: gan-ca
+            secret:
+              secretName: ignition-failover-gan-ca
+      - contains:
+          path: spec.jobTemplate.spec.template.spec.containers[0].env
+          content:
+            name: METRO_KEYSTORE_PASSPHRASE
+            valueFrom:
+              secretKeyRef:
+                name: ignition-failover-secrets
+                key: IGNITION_GAN_KEYSTORE_PASSWORD
