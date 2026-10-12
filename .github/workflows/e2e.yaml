@@ -8,6 +8,9 @@ on:
         description: Scenarios to run (test/e2e script names without .sh)
         default: s07-uncommissioned s08-wrapper-log s01-ingress-failover s06-restart-on-renewal s10-partition
 
+permissions:
+  contents: read
+
 jobs:
   e2e:
     runs-on: ubuntu-latest
@@ -15,6 +18,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
       - name: Set up Helm
         uses: ./.github/actions/setup-helm

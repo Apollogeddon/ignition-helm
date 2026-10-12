@@ -8,9 +8,9 @@ The [`.index.yaml`](./workflows/.index.yaml) workflow is the primary entry point
 
 1. **Changes**: On a pull request, works out whether the charts, their examples, or the scripts and workflows that test and release them, changed, and whether any shell script changed.
 2. **shellcheck**: Lints every shell script, when a script changed.
-3. **Updates**: Synchronizes `Chart.lock` files by running `helm dependency update`, and commits any change on `main`.
+3. **Updates**: Synchronizes `Chart.lock` files by running `helm dependency update`, and commits any change on `main`. The checkout keeps no token, as the script is the pull request's own code; only the push step gets one.
 4. **Testing & Quality**: Runs the testing and quality suites in parallel, when the charts changed.
-5. **Release**: On `main` only, after testing and quality checks pass.
+5. **Release**: On `main` only, after testing and quality checks pass. It is passed no secrets: it needs only the workflow's own token.
 6. **Webpage**: On a pull request, the site's checks and build; on `main`, updates the site after a successful release.
 7. **Auto-merge**: Merges a Dependabot pull request through [forgejs](https://github.com/apollogeddon/forgejs)'s `merge.yml`, once every job above has passed or been skipped.
 
@@ -33,9 +33,9 @@ The [`testing.yaml`](./workflows/testing.yaml) workflow ensures the functional i
 - **Linting**: `chart-testing` (`ct lint`) checks the charts' structure, with each chart's default values and its `ci/deploy-values.yaml`.
 - **Integration tests**:
   - Creates a kind cluster and installs cert-manager with a self-signed `cluster-issuer` (`.github/scripts/ci/install-cert-manager.sh`).
-  - Runs `.github/scripts/tests/deploy-test.sh` for each changed chart (both, when the common chart changes). It installs the chart with its `ci/deploy-values.yaml` and checks the running gateways: RUNNING without restarts, the NetworkPolicy blocking another namespace, the scaleout frontend reaching its backend, and the chart options in effect. It then installs the `main` branch's chart and upgrades it to this one.
+  - Runs `.github/scripts/tests/deploy-test.sh` for each changed chart (both, when the common chart, the deploy test, the kind or cert-manager setup, `ct.yaml` or this workflow changes). It installs the chart with its `ci/deploy-values.yaml` and checks the running gateways: RUNNING without restarts, the NetworkPolicy blocking another namespace, the scaleout frontend reaching its backend, and the chart options in effect. It then installs the `main` branch's chart and upgrades it to this one.
 
-The [`e2e.yaml`](./workflows/e2e.yaml) workflow, run manually, runs the end-to-end scenarios in [`test/e2e`](../test/e2e/README.md) on a disposable kind cluster.
+The [`e2e.yaml`](./workflows/e2e.yaml) workflow, run manually with a read-only token, runs the end-to-end scenarios in [`test/e2e`](../test/e2e/README.md) on a disposable kind cluster.
 
 ## Release
 
