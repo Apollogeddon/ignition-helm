@@ -132,4 +132,4 @@ The most commonly changed values are below. See [`values.yaml`](values.yaml) for
 | `certManager.issuer.name` / `certManager.issuer.kind` | The cert-manager issuer that signs the Gateway Network CA. | `cluster-issuer` / `ClusterIssuer` |
 | `certManager.rotation.enabled` | CronJobs that refresh the Gateway Network keystore on each gateway's volume; renewed certificates load on the next restart (see `certManager.restartOnRenewal.enabled`). | `false` |
 | `certManager.restartOnRenewal.enabled` | CronJob that starts a rolling restart (Backup first) when the Gateway Network or web certificate secrets change, so renewed certificates are loaded. | `false` |
-| `affinity.enabled` | Pod anti-affinity between the gateways; `affinity.type` is `soft` (preferred) or `hard` (required). | `false` |
+| `affinity.enabled` | Pod anti-affinity between this release's gateways; `affinity.type` is `soft` (preferred) or `hard` (required). | `false` |

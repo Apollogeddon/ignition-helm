@@ -50,6 +50,9 @@ certManager:
 affinity:
   # -- Enable or disable pod anti-affinity
   enabled: false
+  # -- Type of anti-affinity: "soft" (preferred) or "hard" (required). Each
+  # component's pods are spread apart; frontends and backends may share a node
+  type: "soft"
   # -- Topology key for anti-affinity (e.g., kubernetes.io/hostname)
   topologyKey: "kubernetes.io/hostname"
 

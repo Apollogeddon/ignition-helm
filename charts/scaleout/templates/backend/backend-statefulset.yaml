@@ -27,7 +27,7 @@ spec:
     spec:
       serviceAccountName: {{ include "ignition.serviceAccountName" . }}
       {{- include "ignition-common.podSecurityContext" (dict "values" .Values.backend) | nindent 6 }}
-      {{- include "ignition-common.affinity" (dict "affinity" .Values.affinity "context" .) | nindent 6 }}
+      {{- include "ignition-common.affinity" (dict "affinity" .Values.affinity "context" . "component" "backend") | nindent 6 }}
       {{- with .Values.image.imagePullSecrets }}
       imagePullSecrets:
       {{- toYaml . | nindent 6 }}

@@ -655,34 +655,34 @@ Params:
 
 {{/*
 Standard Affinity
+Spreads the release's pods of one component (all its pods when no component
+is given), so scaleout's frontends and backends don't repel each other.
 Params:
   affinity: The affinity values object
   context: The global context (Dot)
+  component: The pods' app.kubernetes.io/component label (optional)
 */}}
 {{- define "ignition-common.affinity" -}}
 {{- if .affinity.enabled }}
+{{- $type := .affinity.type | default "soft" }}
+{{- if not (has $type (list "soft" "hard")) }}
+{{- fail (printf "affinity.type must be soft or hard, not %v" $type) }}
+{{- end }}
+{{- $selector := include "ignition.selectorLabels" .context | fromYaml }}
+{{- if .component }}
+{{- $_ := set $selector "app.kubernetes.io/component" .component }}
+{{- end }}
+{{- $term := dict "labelSelector" (dict "matchLabels" $selector) "topologyKey" .affinity.topologyKey }}
 affinity:
   podAntiAffinity:
-    {{- if eq .affinity.type "soft" }}
+    {{- if eq $type "soft" }}
     preferredDuringSchedulingIgnoredDuringExecution:
     - weight: 100
       podAffinityTerm:
-        labelSelector:
-          matchExpressions:
-          - key: app.kubernetes.io/name
-            operator: In
-            values:
-            - {{ include "ignition.name" .context }}
-        topologyKey: {{ .affinity.topologyKey }}
+        {{- toYaml $term | nindent 8 }}
     {{- else }}
     requiredDuringSchedulingIgnoredDuringExecution:
-    - labelSelector:
-        matchExpressions:
-        - key: app.kubernetes.io/name
-          operator: In
-          values:
-          - {{ include "ignition.name" .context }}
-      topologyKey: {{ .affinity.topologyKey }}
+    - {{ toYaml $term | indent 6 | trim }}
     {{- end }}
 {{- end }}
 {{- end }}

@@ -38,7 +38,7 @@ The tables below list the chart's values and defaults, grouped by layer and area
 
 ### General
 
-Settings that apply to both layers. `affinity.type` is not set by default, which gives required (hard) anti-affinity when `affinity.enabled` is on; set it to `soft` for preferred.
+Settings that apply to both layers. `affinity.enabled` spreads each layer's pods of this release apart: frontends from frontends and backends from backends, so a frontend and a backend may share a node. `affinity.type` is `soft` (preferred) or `hard` (required).
 
 | Parameter | Type | Default |
 | --- | --- | --- |
@@ -48,7 +48,7 @@ Settings that apply to both layers. `affinity.type` is not set by default, which
 | `image.pullPolicy` | string | `"IfNotPresent"` |
 | `image.imagePullSecrets` | list | unset |
 | `affinity.enabled` | bool | `false` |
-| `affinity.type` | string | unset (hard) |
+| `affinity.type` | string | `"soft"` |
 | `affinity.topologyKey` | string | `"kubernetes.io/hostname"` |
 | `certManager.issuer.name` | string | `"cluster-issuer"` |
 | `certManager.issuer.kind` | string | `"ClusterIssuer"` |

@@ -131,7 +131,7 @@ Failover then takes a few seconds: about 4-5 s for a graceful stop of the Master
 
 ### Pod anti-affinity
 
-Keep the Master and Backup on different nodes with pod anti-affinity:
+Keep the Master and Backup on different nodes with pod anti-affinity. It applies to one release's gateways, and in scaleout to each layer on its own, so a frontend and a backend may share a node:
 
 ```yaml
 affinity:
