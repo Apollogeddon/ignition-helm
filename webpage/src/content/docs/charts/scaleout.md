@@ -44,7 +44,7 @@ Settings that apply to both layers. `affinity.type` is not set by default, which
 | --- | --- | --- |
 | `applicationName` | string | `"ignition-scaleout"` |
 | `image.repository` | string | `"inductiveautomation/ignition"` |
-| `image.tag` | string | `""` (the chart's `appVersion`, 8.3.1) |
+| `image.tag` | string | `""` (the chart's `appVersion`, 8.3.10) |
 | `image.pullPolicy` | string | `"IfNotPresent"` |
 | `image.imagePullSecrets` | list | unset |
 | `affinity.enabled` | bool | `false` |
@@ -54,7 +54,7 @@ Settings that apply to both layers. `affinity.type` is not set by default, which
 | `certManager.issuer.kind` | string | `"ClusterIssuer"` |
 | `certManager.rotation.enabled` | bool | `false` |
 | `certManager.rotation.schedule` | string | `"0 7 * * *"` |
-| `certManager.restartOnRenewal` | object | `{"enabled":false,"schedule":"*/15 * * * *","image":"alpine/kubectl:1.34.1"}` |
+| `certManager.restartOnRenewal` | object | `{"enabled":false,"schedule":"*/15 * * * *","image":"alpine/kubectl:1.37.1"}` |
 | `serviceAccount.create` | bool | `false` |
 | `serviceAccount.name` | string | `""` |
 | `serviceAccount.annotations` | object | `{}` |
@@ -120,7 +120,7 @@ GATEWAY_MODULES_ENABLED: alarm-notification,modbus-driver-v2,opc-ua,reporting,si
 | --- | --- | --- |
 | `backend.redundancy.enabled` | bool | `false` |
 | `backend.redundancy` | object | *(See below)* |
-| `backend.activeRouting` | object | `{"enabled":false,"image":"alpine/kubectl:1.34.1","intervalSeconds":2,"unknownHold":3,"resources":{"requests":{"cpu":"10m","memory":"32Mi"},"limits":{"cpu":"200m","memory":"128Mi"}}}` |
+| `backend.activeRouting` | object | `{"enabled":false,"image":"alpine/kubectl:1.37.1","intervalSeconds":2,"unknownHold":3,"resources":{"requests":{"cpu":"10m","memory":"32Mi"},"limits":{"cpu":"200m","memory":"128Mi"}}}` |
 
 **Default `backend.redundancy`:**
 
