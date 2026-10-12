@@ -159,6 +159,7 @@ if [ -n "${THEN_SET:-}" ]; then
 fi
 sleep 30
 kill "$rec" 2>/dev/null; wait "$rec" 2>/dev/null || true
+e2e_require_served "$E2E_OUT/$run-upgrade.log"
 
 after=$(pods)
 while IFS='=' read -r pod uid; do

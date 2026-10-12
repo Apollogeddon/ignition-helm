@@ -76,6 +76,8 @@ $spec
 EOF
   wait "$rec" "$st" 2>/dev/null || true
   kubectl -n "$ns" delete networkchaos "s10-$name" --wait=true >/dev/null || true
+  # traffic that never got through would make the routing checks below pass vacuously
+  e2e_require_served "$E2E_OUT/s10-$name-traffic.log"
 }
 
 # A. split-brain

@@ -87,6 +87,7 @@ done
 wait_pair
 log "rolling restart finished in $(( $(date +%s) - start ))s"
 kill "$rec" 2>/dev/null; wait "$rec" 2>/dev/null || true
+e2e_require_served "$E2E_OUT/s06-restart.log"
 
 t0=$(kubectl -n "$ns" get pod $STS-0 -o jsonpath='{.metadata.creationTimestamp}')
 t1=$(kubectl -n "$ns" get pod $STS-1 -o jsonpath='{.metadata.creationTimestamp}')

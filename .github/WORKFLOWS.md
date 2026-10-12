@@ -29,7 +29,7 @@ The [`quality.yaml`](./workflows/quality.yaml) workflow focuses on static analys
 The [`testing.yaml`](./workflows/testing.yaml) workflow ensures the functional integrity of the charts:
 
 - **Unit tests**: `helm-unittest` checks the templates against the tests in `charts/*/tests`.
-- **Script tests**: runs `test/scripts/*_test.sh` against the shell scripts the charts ship. `examples_test.sh` also renders every values file in `examples/` with its chart, and fails when an example exposes a gateway beyond its namespace (a LoadBalancer, an Ingress, a ServiceMonitor or a NodePort it asks for) without a NetworkPolicy rule that lets the traffic in.
+- **Script tests**: runs `test/scripts/*_test.sh` against the shell scripts the charts ship. `examples_test.sh` also renders every values file in `examples/` with its chart, and fails when an example exposes a gateway beyond its namespace (a LoadBalancer, an Ingress, a ServiceMonitor or a NodePort it asks for) without a NetworkPolicy rule that lets the traffic in. It checks the e2e values in `test/e2e/values` the same way, for the Ingress and NodePort paths the scenarios measure.
 - **Linting**: `chart-testing` (`ct lint`) checks the charts' structure, with each chart's default values and its `ci/deploy-values.yaml`.
 - **Integration tests**:
   - Creates a kind cluster and installs cert-manager with a self-signed `cluster-issuer` (`.github/scripts/ci/install-cert-manager.sh`).

@@ -5,6 +5,7 @@
 # rule letting that traffic in, as the default policy admits only pods in the
 # namespace. The charts' own default NodePort Service is left out: it serves
 # in-cluster clients under the default policy, as the docs say.
+# It checks test/e2e/values the same way, for the paths the scenarios measure.
 # Usage: test/scripts/examples_test.sh
 set -uo pipefail
 root="$(cd "$(dirname "$0")/../.." && pwd)"
@@ -47,5 +48,28 @@ while IFS= read -r example; do
 done < <(find "$root/examples" -name '*.yaml' | sort)
 
 [ "$count" -gt 0 ] || fail "no examples found"
+
+# The e2e values: the scenarios reach the failover gateways and the scaleout
+# frontend through the NodePort and Contour's Envoy, so each needs a rule for
+# node addresses (ipBlock) and one for the ingress controller (namespaceSelector).
+count=0
+while IFS= read -r values; do
+  count=$((count + 1))
+  name="${values#"$root"/}"
+  case "$name" in
+    *scaleout*) chart=scaleout; layer=templates/frontend/ ;;
+    *) chart=failover; layer=templates/ ;;
+  esac
+  if ! "$HELM" template e2e "$root/charts/$chart" -f "$values" > "$work/out.yaml" 2> "$work/err"; then
+    fail "$name does not render with the $chart chart"; sed 's/^/     /' "$work/err"; continue
+  fi
+  policy=$(docs "/${layer}networkpolicy[.]yaml$")
+  if printf '%s\n' "$policy" | grep -q "ipBlock:" && printf '%s\n' "$policy" | grep -q "namespaceSelector:"; then
+    echo "ok   $name"
+  else
+    fail "$name: ${layer} NetworkPolicy needs rules for the NodePort's nodes (ipBlock) and the ingress controller (namespaceSelector)"
+  fi
+done < <(find "$root/test/e2e/values" -name '*.yaml' | sort)
+[ "$count" -gt 0 ] || fail "no e2e values found"
 if [ "$fails" -ne 0 ]; then echo "$fails failed"; exit 1; fi
 echo "all passed"
