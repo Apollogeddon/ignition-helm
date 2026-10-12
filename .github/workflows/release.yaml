@@ -98,3 +98,11 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           config-file: .github/release.json
           manifest-file: .github/.release.json
+
+      # a chart ships the common it was released with, and release-please only releases
+      # a chart whose own files changed: once common has a new version, open the pull
+      # request that raises the charts to it, so merging it releases them with it
+      - name: Raise the charts to the new ignition-common
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: ./.github/scripts/ci/require-common.sh

@@ -97,7 +97,7 @@ The [`examples/`](examples/README.md) directory has values files for common setu
 
 ## Contributing
 
-Pull requests are welcome. Run `npm ci` once per clone to install the commit hook. Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/), which release-please uses to version the charts. Installing needs a GitHub token with `read:packages` in your user `~/.npmrc`, for `@apollogeddon/forgejs`.
+Pull requests are welcome. Run `npm ci` once per clone to install the commit hook. Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/), which release-please uses to version the charts. The failover and scaleout charts each ship the ignition-common they were released with, so when common is released the release workflow opens a pull request raising both to require it; merging that pull request releases them with it. Installing needs a GitHub token with `read:packages` in your user `~/.npmrc`, for `@apollogeddon/forgejs`.
 
 ## License
 
