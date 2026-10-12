@@ -308,7 +308,7 @@ Params:
 */}}
 {{- define "ignition-common.positiveInt" -}}
 {{- $v := .value }}
-{{- if not (and (regexMatch "^[1-9][0-9]*$" (toString (int64 $v))) (eq (float64 (int64 $v)) (float64 $v))) }}
+{{- if or (kindIs "bool" $v) (not (and (regexMatch "^[1-9][0-9]*$" (toString (int64 $v))) (eq (float64 (int64 $v)) (float64 $v)))) }}
 {{- fail (printf "%s must be a whole number above 0, not %v" .name $v) }}
 {{- end }}
 {{- int64 $v }}
