@@ -120,7 +120,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: active
-          image: {{ $ar.image | default "alpine/kubectl:1.34.1" }}
+          image: {{ $ar.image | default "alpine/kubectl:1.37.1" }}
           command: ["/bin/sh", "/config/scripts/active-routing.sh"]
           securityContext:
             allowPrivilegeEscalation: false

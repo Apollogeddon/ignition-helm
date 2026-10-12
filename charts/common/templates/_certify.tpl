@@ -94,7 +94,7 @@ spec:
               type: RuntimeDefault
           containers:
             - name: certify
-              image: {{ $r.image | default "alpine/kubectl:1.34.1" }}
+              image: {{ $r.image | default "alpine/kubectl:1.37.1" }}
               command: ["/bin/sh", "/config/scripts/certify.sh"]
               securityContext:
                 allowPrivilegeEscalation: false
