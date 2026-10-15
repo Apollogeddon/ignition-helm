@@ -69,7 +69,7 @@ See [Verifying a chart](../../README.md#verifying-a-chart) for what this checks.
 
 - **Controlled rollouts**: set `frontend.updateStrategy.type` or `backend.updateStrategy.type` to `OnDelete` so a `helm upgrade` does not restart running gateways. Each pod then picks up the change when you delete it, in your own maintenance window.
 - **External modules**: set `backend.externalModules.enabled` and `backend.externalModules.pvcName` (or the `frontend.` equivalents) to mount a PersistentVolumeClaim of `.modl` files, instead of building a custom image.
-- **Certificate rotation and renewal**: `certManager.rotation.enabled` adds CronJobs that refresh the Gateway Network keystore on each gateway's volume. A running gateway only loads renewed certificates when it restarts, so pair it with `certManager.restartOnRenewal.enabled`, which restarts the gateways (Backup first) when the certificate secrets change.
+- **Certificate rotation and renewal**: `certManager.rotation.enabled` adds CronJobs that refresh the Gateway Network keystore on each backend gateway's volume. The frontends need none: their data volume is an emptyDir, rebuilt from the current certificate on every start, including autoscaled ones. A running gateway only loads renewed certificates when it restarts, so pair it with `certManager.restartOnRenewal.enabled`, which restarts the gateways (Backup first) when the certificate secrets change.
 
 ## Autoscaling the frontend
 
@@ -107,6 +107,8 @@ helm upgrade <release> ignition-charts/ignition-scaleout -n <namespace> ...
 
 Turn on `backend.activeRouting.enabled` in a separate, later upgrade, once every pod has been replaced. Until the Master's pod is replaced it is only reachable under the old Service name, so the new Backup cannot sync with it. With active routing a Backup must be in sync to be Ready, so a combined upgrade would wait indefinitely (the Master keeps serving meanwhile).
 
+Charts up to 4.0.0 created no NetworkPolicy, and this chart creates one by default that admits web traffic only from pods in the release's namespace. In the same upgrade, add `frontend.networkPolicy.extraIngress` (and `backend.networkPolicy.extraIngress`, if the backend is reached from outside) rules for the traffic you rely on (an ingress controller's or Prometheus's namespace, or the node addresses behind a NodePort or LoadBalancer), as in the [examples](https://github.com/Apollogeddon/ignition-helm/tree/main/examples), or set `frontend.networkPolicy.enabled=false` and `backend.networkPolicy.enabled=false`. Otherwise the upgrade cuts that traffic off.
+
 Charts up to 3.1.0 ran the gateway as root by default. On storage that does not apply `fsGroup` (for example local-path), their data volumes are owned by root, and the upgraded gateway, which runs as `securityContext.runAsUser` (2003), cannot update them: the `preconfigure` init container fails with `Permission denied`. If your 3.x install did not set `securityContext.runAsUser`, also set `frontend.fixDataOwnership=true` and `backend.fixDataOwnership=true` for the upgrade, and set them back to `false` once the pods are running. They add an init container that changes the volume's owner as root, so the namespace must allow the baseline Pod Security level while they are on.
 
 The [upgrading guide](https://apollogeddon.github.io/ignition-helm/docs/guides/upgrading/) covers both charts.
@@ -128,7 +130,7 @@ The most commonly changed values are below. Most `frontend.*` and `backend.*` va
 | `backend.config.GATEWAY_MODULES_ENABLED` | Modules enabled on the backend. | drivers, SQL Bridge, tag historian, reporting, alarm notification |
 | `frontend.redundancy.replicas` | Number of frontend gateways. | `1` |
 | `frontend.hpa.enabled` | Scale the frontend with a HorizontalPodAutoscaler. The StatefulSet then leaves out `replicas`, so `frontend.redundancy.replicas` is ignored and the autoscaler owns the count. See [Autoscaling the frontend](#autoscaling-the-frontend). | `false` |
-| `frontend.hpa.minReplicas` / `frontend.hpa.maxReplicas` | Fewest and most frontend gateways. | `1` / `10` |
+| `frontend.hpa.minReplicas` / `frontend.hpa.maxReplicas` | Fewest and most frontend gateways: whole numbers from 1 to 2147483647, with the minimum no higher than the maximum. | `1` / `10` |
 | `frontend.hpa.targetCPUUtilizationPercentage` / `frontend.hpa.targetMemoryUtilizationPercentage` | Target average utilization, as a percentage of `frontend.resources.requests`; at least one is needed. Empty leaves that metric out. | `80` / `""` |
 | `frontend.hpa.behavior` | The HPA's scaling `behavior` (`scaleUp`/`scaleDown` policies and stabilization windows), rendered as-is. | `{}` (Kubernetes defaults) |
 | `backend.redundancy.enabled` | Run the backend as a Master/Backup pair. | `false` |
@@ -138,8 +140,8 @@ The most commonly changed values are below. Most `frontend.*` and `backend.*` va
 | `frontend.service.nodePorts` / `backend.service.nodePorts` | Optional static node ports (`http`, `https`, `gan`). | unset |
 | `frontend.ingress.enabled` / `backend.ingress.enabled` | Create an Ingress for the layer. | `false` |
 | `frontend.ingress.className` / `backend.ingress.className` | IngressClass name, for example `contour`; empty uses the cluster default. | `""` |
-| `frontend.networkPolicy.enabled` / `backend.networkPolicy.enabled` | Create a NetworkPolicy that limits Gateway Network traffic to the chart's gateways. | `true` |
-| `frontend.networkPolicy.extraIngress` / `backend.networkPolicy.extraIngress` | Extra NetworkPolicy ingress rules, for example the ingress controller's namespace or node CIDRs. | `[]` |
+| `frontend.networkPolicy.enabled` / `backend.networkPolicy.enabled` | Create a NetworkPolicy that limits Gateway Network traffic to the chart's gateways and web traffic to pods in the namespace. | `true` |
+| `frontend.networkPolicy.extraIngress` / `backend.networkPolicy.extraIngress` | Extra NetworkPolicy ingress rules: needed for an ingress controller, Prometheus, or a NodePort or LoadBalancer Service, as in the [examples](https://github.com/Apollogeddon/ignition-helm/tree/main/examples). | `[]` |
 | `frontend.updateStrategy.type` / `backend.updateStrategy.type` | StatefulSet update strategy (`RollingUpdate` or `OnDelete`). | `RollingUpdate` |
 | `frontend.externalModules.enabled` / `backend.externalModules.enabled` | Mount the layer's `externalModules.pvcName` PersistentVolumeClaim of modules. | `false` |
 | `backend.restore.enabled` | Restore a gateway backup from `backend.restore.url`, or a mounted `backend.restore.path`, on the backend gateway's first start. The backup is staged on the data volume once and the gateway starts with `-r`; later restarts keep the gateway's own changes. To restore again, start from an empty data volume. | `false` |
@@ -151,6 +153,6 @@ The most commonly changed values are below. Most `frontend.*` and `backend.*` va
 | `frontend.logging.*` / `backend.logging.*` | `level`, per-logger `loggers`, SQLite log database maintenance (`sqlite`) and `wrapperLogToStdout`, as in the failover chart. | `INFO`, `{}`, `{}`, `true` |
 | `frontend.emptyDirSizeLimit` / `backend.emptyDirSizeLimit` | Optional `sizeLimit` for the `logs`, `temp` and `dotIgnition` emptyDir volumes. | `""` each (no limit) |
 | `certManager.issuer.name` / `certManager.issuer.kind` | The cert-manager issuer that signs the Gateway Network CA. | `cluster-issuer` / `ClusterIssuer` |
-| `certManager.rotation.enabled` | CronJobs that refresh the Gateway Network keystore on each gateway's volume; renewed certificates load on the next restart (see `certManager.restartOnRenewal.enabled`). | `false` |
+| `certManager.rotation.enabled` | CronJobs that refresh the Gateway Network keystore on each backend gateway's volume (the frontends rebuild theirs on every start); renewed certificates load on the next restart (see `certManager.restartOnRenewal.enabled`). | `false` |
 | `certManager.restartOnRenewal.enabled` | CronJob that starts a rolling restart (Backup first) when the Gateway Network or web certificate secrets change, so renewed certificates are loaded. | `false` |
-| `affinity.enabled` | Pod anti-affinity between the gateways. `affinity.type` is not set in this chart's defaults, which gives required (hard) anti-affinity; set it to `soft` for preferred. | `false` |
+| `affinity.enabled` | Pod anti-affinity between this release's gateways of one layer (frontends apart, backends apart); `affinity.type` is `soft` (preferred, the default) or `hard` (required). | `false` |

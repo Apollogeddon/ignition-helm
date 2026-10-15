@@ -38,7 +38,7 @@ The tables below list the chart's values and defaults, grouped by layer and area
 
 ### General
 
-Settings that apply to both layers. `affinity.type` is not set by default, which gives required (hard) anti-affinity when `affinity.enabled` is on; set it to `soft` for preferred.
+Settings that apply to both layers. `affinity.enabled` spreads each layer's pods of this release apart: frontends from frontends and backends from backends, so a frontend and a backend may share a node. `affinity.type` is `soft` (preferred) or `hard` (required). `certManager.rotation.enabled` refreshes the Gateway Network keystore on each backend gateway's volume; the frontends rebuild theirs from the current certificate on every start, as their data volume is an emptyDir.
 
 | Parameter | Type | Default |
 | --- | --- | --- |
@@ -48,7 +48,7 @@ Settings that apply to both layers. `affinity.type` is not set by default, which
 | `image.pullPolicy` | string | `"IfNotPresent"` |
 | `image.imagePullSecrets` | list | unset |
 | `affinity.enabled` | bool | `false` |
-| `affinity.type` | string | unset (hard) |
+| `affinity.type` | string | `"soft"` |
 | `affinity.topologyKey` | string | `"kubernetes.io/hostname"` |
 | `certManager.issuer.name` | string | `"cluster-issuer"` |
 | `certManager.issuer.kind` | string | `"ClusterIssuer"` |
@@ -58,6 +58,7 @@ Settings that apply to both layers. `affinity.type` is not set by default, which
 | `serviceAccount.create` | bool | `false` |
 | `serviceAccount.name` | string | `""` |
 | `serviceAccount.annotations` | object | `{}` |
+| `serviceAccount.automountServiceAccountToken` | bool | `false` (the gateways never call the Kubernetes API) |
 
 ### Backend
 
@@ -139,6 +140,8 @@ httpConnectTimeout: 10000
 httpReadTimeout: 60000
 backupFailoverTimeout: 10000
 ```
+
+The timings, `maxDiskMb` and `pingMaxMissed`, and `backend.activeRouting.intervalSeconds` and `unknownHold`, must be whole numbers from 1 to 2147483647, and `masterRecoveryMode` `Automatic` or `Manual`; the chart refuses to render otherwise.
 
 #### Persistence (backend)
 

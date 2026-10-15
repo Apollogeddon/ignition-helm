@@ -83,6 +83,8 @@ helm upgrade <release> ignition-charts/ignition-failover -n <namespace> ...
 
 On start the gateways apply the chart's redundancy settings to their volumes, including the peer address under the new Service name, so the pair reconnects once both pods have been replaced.
 
+Charts up to 4.0.0 created no NetworkPolicy, and this chart creates one by default that admits web traffic only from pods in the release's namespace. In the same upgrade, add `ignition.networkPolicy.extraIngress` rules for the traffic you rely on (an ingress controller's or Prometheus's namespace, or the node addresses behind a NodePort or LoadBalancer), as in the [examples](https://github.com/Apollogeddon/ignition-helm/tree/main/examples), or set `ignition.networkPolicy.enabled=false`. Otherwise the upgrade cuts that traffic off.
+
 Turn on `ignition.activeRouting.enabled` in a separate, later upgrade, once every pod has been replaced. Until the Master's pod is replaced it is only reachable under the old Service name, so the new Backup cannot sync with it. With active routing a Backup must be in sync to be Ready, so a combined upgrade would wait indefinitely (the Master keeps serving meanwhile).
 
 Charts up to 3.1.0 ran the gateway as root by default. On storage that does not apply `fsGroup` (for example local-path), their data volumes are owned by root, and the upgraded gateway, which runs as `securityContext.runAsUser` (2003), cannot update them: the `preconfigure` init container fails with `Permission denied`. If your 3.x install did not set `securityContext.runAsUser`, also set `ignition.fixDataOwnership=true` for the upgrade, and set it back to `false` once the pods are running. It adds an init container that changes the volume's owner as root, so the namespace must allow the baseline Pod Security level while it is on.
@@ -114,9 +116,9 @@ The most commonly changed values are below. See [`values.yaml`](values.yaml) for
 | `ignition.ingress.enabled` | Create an Ingress. | `false` |
 | `ignition.ingress.className` | IngressClass name, for example `contour`; empty uses the cluster default. | `""` |
 | `ignition.ssl.enabled` | Serve HTTPS with your own PKCS#12 keystore from the `ignition.ssl.secretName` Secret (default `<name>-web-tls`). | `false` |
-| `ignition.restore.enabled` | Restore a gateway backup (`.gwbk`) from `ignition.restore.url`, or a mounted `ignition.restore.path`, on the gateway's first start. The backup is staged on the data volume once and the gateway starts with `-r`; later restarts keep the gateway's own changes. To restore again, start from an empty data volume. | `false` |
-| `ignition.networkPolicy.enabled` | Create a NetworkPolicy that limits Gateway Network traffic to the chart's gateways. | `true` |
-| `ignition.networkPolicy.extraIngress` | Extra NetworkPolicy ingress rules, for example the ingress controller's namespace or node CIDRs. | `[]` |
+| `ignition.restore.enabled` | Restore a gateway backup (`.gwbk`) from `ignition.restore.url`, or a mounted `ignition.restore.path`, on the gateway's first start. The backup is staged on the data volume once (a download that stalls for two minutes fails the init container, which then retries) and the gateway starts with `-r`; later restarts keep the gateway's own changes. To restore again, start from an empty data volume. | `false` |
+| `ignition.networkPolicy.enabled` | Create a NetworkPolicy that limits Gateway Network traffic to the chart's gateways and web traffic to pods in the namespace. | `true` |
+| `ignition.networkPolicy.extraIngress` | Extra NetworkPolicy ingress rules: needed for an ingress controller, Prometheus, or a NodePort or LoadBalancer Service, as in the [examples](https://github.com/Apollogeddon/ignition-helm/tree/main/examples). | `[]` |
 | `ignition.serviceMonitor.enabled` | Create a Prometheus Operator ServiceMonitor. | `false` |
 | `ignition.updateStrategy.type` | StatefulSet update strategy (`RollingUpdate` or `OnDelete`). | `RollingUpdate` |
 | `ignition.externalModules.enabled` | Mount the `ignition.externalModules.pvcName` PersistentVolumeClaim of modules. | `false` |
@@ -132,4 +134,4 @@ The most commonly changed values are below. See [`values.yaml`](values.yaml) for
 | `certManager.issuer.name` / `certManager.issuer.kind` | The cert-manager issuer that signs the Gateway Network CA. | `cluster-issuer` / `ClusterIssuer` |
 | `certManager.rotation.enabled` | CronJobs that refresh the Gateway Network keystore on each gateway's volume; renewed certificates load on the next restart (see `certManager.restartOnRenewal.enabled`). | `false` |
 | `certManager.restartOnRenewal.enabled` | CronJob that starts a rolling restart (Backup first) when the Gateway Network or web certificate secrets change, so renewed certificates are loaded. | `false` |
-| `affinity.enabled` | Pod anti-affinity between the gateways; `affinity.type` is `soft` (preferred) or `hard` (required). | `false` |
+| `affinity.enabled` | Pod anti-affinity between this release's gateways; `affinity.type` is `soft` (preferred) or `hard` (required). | `false` |

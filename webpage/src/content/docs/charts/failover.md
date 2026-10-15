@@ -137,6 +137,8 @@ httpReadTimeout: 60000
 backupFailoverTimeout: 10000
 ```
 
+The timings, `maxDiskMb` and `pingMaxMissed`, and `ignition.activeRouting.intervalSeconds` and `unknownHold`, must be whole numbers from 1 to 2147483647, and `masterRecoveryMode` `Automatic` or `Manual`; the chart refuses to render otherwise.
+
 ### Persistence and storage
 
 | Parameter | Type | Default |
@@ -242,3 +244,4 @@ Security context, secrets and the ServiceAccount. With `ignition.sealedSecrets`,
 | `serviceAccount.create` | bool | `false` |
 | `serviceAccount.name` | string | `""` |
 | `serviceAccount.annotations` | object | `{}` |
+| `serviceAccount.automountServiceAccountToken` | bool | `false` (the gateways never call the Kubernetes API) |

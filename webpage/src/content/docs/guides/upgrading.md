@@ -44,6 +44,29 @@ ignition:
 
 It adds an init container that chowns the volume as root (with only the `CHOWN`, `DAC_OVERRIDE` and `FOWNER` capabilities), so the namespace must allow the baseline Pod Security level while it is on.
 
+## 4. Let your traffic through the NetworkPolicy
+
+Charts up to 4.0.0 created no NetworkPolicy. The current charts create one by default, and it admits web traffic only from pods in the release's namespace. So the upgrade cuts off traffic that reaches the gateways through a NodePort or LoadBalancer Service, an ingress controller in another namespace, or Prometheus, unless you allow it **in the same upgrade**. Add a rule for each of those, as the [examples](https://github.com/Apollogeddon/ignition-helm/tree/main/examples) do:
+
+```yaml
+ignition:                  # scaleout: frontend (and backend, if reached from outside)
+  networkPolicy:
+    extraIngress:
+      - from:
+          # an ingress controller or Prometheus: its namespace
+          - namespaceSelector:
+              matchLabels:
+                kubernetes.io/metadata.name: ingress-nginx
+          # a NodePort or LoadBalancer Service: the nodes' (or your clients') addresses
+          - ipBlock:
+              cidr: 10.0.0.0/8
+        ports:
+          - {protocol: TCP, port: 8088}
+          - {protocol: TCP, port: 8043}
+```
+
+Or keep the old behaviour with `networkPolicy.enabled: false` (`ignition.networkPolicy` in failover, `frontend.networkPolicy` and `backend.networkPolicy` in scaleout). See [Network security](../advanced-config/#network-security-gateway-network-isolation).
+
 ## Chart 4.1.0
 
 4.1.0 has been withdrawn. Its pods ran `gwcmd.sh -p` as a shutdown hook, which resets the gateway login password whenever a pod stops. Upgrade from 4.0.0 or earlier straight to a later version.

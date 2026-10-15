@@ -301,6 +301,24 @@ e2e_probe_collect() {
   kubectl -n "$ns" delete "pod/$pod" "configmap/$pod" --wait=false >/dev/null 2>&1 || true
 }
 
+# e2e_require_served <log> [target...]: stop unless each target (default: every
+# target in the record.sh log) was served at least once. A blocked path, such as
+# one the NetworkPolicy denies, would otherwise pass as a long outage.
+# Served is an HTTP 2xx/3xx, or gwinfo from an Active or Independent gateway.
+e2e_require_served() {
+  local f=$1 missing; shift
+  [ -f "$f" ] || die "$f: no recording"
+  missing=$(awk -v want="$*" '
+    BEGIN { n = split(want, w, " "); for (i = 1; i <= n; i++) seen[w[i]] = 1 }
+    { for (i = 2; i <= NF; i++) {
+        k = substr($i, 1, index($i, "=") - 1); v = substr($i, index($i, "=") + 1)
+        if (n == 0) seen[k] = 1
+        if (v ~ /^[23][0-9][0-9]$/ || v ~ /\/Active$/ || v == "Independent") ok[k] = 1
+    } }
+    END { for (k in seen) { any = 1; if (!ok[k]) printf "%s ", k }; if (!any) printf "(no samples) " }' "$f")
+  [ -z "$missing" ] || die "$f: never served through: ${missing% }"
+}
+
 # e2e_teardown: delete every e2e namespace and wait until they are gone
 e2e_teardown() {
   e2e_watch_stop

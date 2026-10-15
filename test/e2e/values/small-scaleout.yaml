@@ -3,6 +3,20 @@ frontend:
   resources:
     requests: {cpu: 100m, memory: 200Mi}
     limits: {cpu: "2", memory: 2Gi}
+  networkPolicy:
+    # the default policy admits only pods in the namespace; the scenarios measure
+    # through Contour's Envoy and through NodePorts, which arrive from node addresses
+    extraIngress:
+      - from:
+          - namespaceSelector:
+              matchLabels:
+                kubernetes.io/metadata.name: projectcontour
+          - ipBlock: {cidr: 10.0.0.0/8}
+          - ipBlock: {cidr: 172.16.0.0/12}
+          - ipBlock: {cidr: 192.168.0.0/16}
+        ports:
+          - {protocol: TCP, port: 8088}
+          - {protocol: TCP, port: 8043}
 backend:
   resources:
     requests: {cpu: 100m, memory: 200Mi}

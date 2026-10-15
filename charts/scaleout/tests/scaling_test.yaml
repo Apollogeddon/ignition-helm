@@ -115,6 +115,66 @@ tests:
       - failedTemplate:
           errorPattern: "frontend.hpa.minReplicas must not exceed maxReplicas"
 
+  - it: should refuse a frontend HPA minReplicas of 0 rather than replace it
+    template: templates/frontend/hpa.yaml
+    set:
+      frontend:
+        hpa:
+          enabled: true
+          minReplicas: 0
+    asserts:
+      - failedTemplate:
+          errorPattern: "frontend.hpa.minReplicas must be a whole number above 0, not 0"
+
+  - it: should refuse a frontend HPA maxReplicas of 0 rather than replace it
+    template: templates/frontend/hpa.yaml
+    set:
+      frontend:
+        hpa:
+          enabled: true
+          maxReplicas: 0
+    asserts:
+      - failedTemplate:
+          errorPattern: "frontend.hpa.maxReplicas must be a whole number above 0, not 0"
+
+  - it: should refuse a frontend HPA maxReplicas of -2 rather than replace it
+    template: templates/frontend/hpa.yaml
+    set:
+      frontend:
+        hpa:
+          enabled: true
+          maxReplicas: -2
+    asserts:
+      - failedTemplate:
+          errorPattern: "frontend.hpa.maxReplicas must be a whole number above 0, not -2"
+
+  - it: should refuse an HPA maxReplicas beyond Kubernetes' int32
+    template: templates/frontend/hpa.yaml
+    set:
+      frontend:
+        hpa:
+          enabled: true
+          maxReplicas: 3000000000
+    asserts:
+      - failedTemplate:
+          errorPattern: "frontend.hpa.maxReplicas must be at most 2147483647"
+
+  - it: should keep the HPA bounds it is given
+    template: templates/frontend/hpa.yaml
+    set:
+      frontend:
+        hpa:
+          enabled: true
+          minReplicas: 2
+          maxReplicas: 2
+    asserts:
+      - equal:
+          path: spec.minReplicas
+          value: 2
+      - equal:
+          path: spec.maxReplicas
+          value: 2
+
   - it: should set the frontend replicas while the HPA is off
     template: templates/frontend/frontend-statefulset.yaml
     set:

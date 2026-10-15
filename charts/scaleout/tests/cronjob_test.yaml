@@ -9,6 +9,7 @@ tests:
           count: 0
 
   - it: should mount the scripts from the Secret they are rendered as
+    template: backend/cronjobs.yaml
     set:
       certManager:
         rotation:
@@ -50,18 +51,24 @@ tests:
                 name: ignition-scaleout-backend-secrets
                 key: IGNITION_GAN_KEYSTORE_PASSWORD
 
-  - it: should pass the frontend's keystore passphrase
-    template: frontend/cronjobs.yaml
+  - it: should rotate only the backend, as the frontend's data volume is an emptyDir
     set:
       certManager:
         rotation:
           enabled: true
+      frontend:
+        hpa:
+          enabled: true
+        redundancy:
+          replicas: 3
     asserts:
-      - contains:
-          path: spec.jobTemplate.spec.template.spec.containers[0].env
-          content:
-            name: METRO_KEYSTORE_PASSPHRASE
-            valueFrom:
-              secretKeyRef:
-                name: ignition-scaleout-frontend-secrets
-                key: IGNITION_GAN_KEYSTORE_PASSWORD
+      - hasDocuments:
+          count: 0
+        template: frontend/cronjobs.yaml
+      - hasDocuments:
+          count: 1
+        template: backend/cronjobs.yaml
+      - equal:
+          path: spec.jobTemplate.spec.template.spec.volumes[3].persistentVolumeClaim.claimName
+          value: data-ignition-scaleout-backend-0
+        template: backend/cronjobs.yaml

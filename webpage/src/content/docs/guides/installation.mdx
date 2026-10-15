@@ -130,4 +130,4 @@ The gateways take a few minutes to start. Watch the pods until they are Ready:
 kubectl get pods -w
 ```
 
-The Services are `NodePort` by default. See the [chart reference](../../charts/failover/) for the Service, Ingress and other options.
+The Services are `NodePort` by default. The default NetworkPolicy admits only pods in the release's namespace, so to reach the gateways from outside it, through the NodePort, a LoadBalancer or an Ingress, add a rule in `networkPolicy.extraIngress` (see [Network security](../advanced-config/#network-security-gateway-network-isolation)). See the [chart reference](../../charts/failover/) for the Service, Ingress and other options.

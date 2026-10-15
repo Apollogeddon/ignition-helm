@@ -13,6 +13,7 @@ jobs:
         uses: actions/checkout@v7
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Set up Helm
         uses: ./.github/actions/setup-helm
@@ -31,8 +32,16 @@ jobs:
       # chart as changed (and the release job would be skipped)
       - name: Run chart-testing (list-changed)
         id: list-changed
+        env:
+          TARGET: ${{ github.event.repository.default_branch || 'main' }}
         run: |
-          changed=$(ct list-changed --target-branch ${{ github.event.repository.default_branch || 'main' }})
+          changed=$(ct list-changed --target-branch "$TARGET")
+          # what installs and checks the charts changed: deploy both
+          if ! git diff --quiet "origin/$TARGET...HEAD" -- \
+              ct.yaml .github/kind .github/scripts/tests .github/scripts/ci/install-cert-manager.sh \
+              .github/workflows/testing.yaml; then
+            changed="charts/failover charts/scaleout"
+          fi
           if [[ -n "$changed" ]]; then
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi

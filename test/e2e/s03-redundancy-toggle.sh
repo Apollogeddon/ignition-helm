@@ -95,6 +95,7 @@ for tag in $IMAGE_TAGS; do
   wait_rollout 2
   wait_roles Master/Good/Active Backup/Good/Cold || true
   gap=$(stop_recording on)
+  e2e_require_served "$E2E_OUT/s03-$tag-on.log"
   check "$tag" 2 "pod 0 restarted" [ "$(uid $STS-0)" != "$u0" ]
   check "$tag" 2 "pair formed ($(role $STS-0), $(role $STS-1))" wait_roles Master/Good/Active Backup/Good/Cold
   check "$tag" 2 "longest unserved ${gap}s; pod 0 init: $(init_log $STS-0)" true
@@ -105,6 +106,7 @@ for tag in $IMAGE_TAGS; do
   wait_rollout 2
   wait_roles Master/Good/Active Backup/Good/Cold || true
   gap=$(stop_recording value)
+  e2e_require_served "$E2E_OUT/s03-$tag-value.log"
   check "$tag" 3 "both pods restarted" [ "$(uid $STS-0)" != "$u0" -a "$(uid $STS-1)" != "$u1" ]
   check "$tag" 3 "both redundancy.xml say Manual" [ "$(setting $STS-0 masterrecoverymode)/$(setting $STS-1 masterrecoverymode)" = Manual/Manual ]
   check "$tag" 3 "pair healthy ($(role $STS-0), $(role $STS-1)); longest unserved ${gap}s" wait_roles Master/Good/Active Backup/Good/Cold
@@ -115,6 +117,7 @@ for tag in $IMAGE_TAGS; do
   wait_rollout 1
   wait_roles Independent || true
   gap=$(stop_recording off)
+  e2e_require_served "$E2E_OUT/s03-$tag-off.log"
   check "$tag" 4 "pod 1 removed" [ -z "$(uid $STS-1)" ]
   check "$tag" 4 "pod 0 restarted" [ "$(uid $STS-0)" != "$u0" ]
   check "$tag" 4 "pod 0 reports Independent ($(role $STS-0)); longest unserved ${gap}s" wait_roles Independent
@@ -128,6 +131,7 @@ for tag in $IMAGE_TAGS; do
   wait_rollout 2
   wait_roles Master/Good/Active Backup/Good/Cold || true
   gap=$(stop_recording again)
+  e2e_require_served "$E2E_OUT/s03-$tag-again.log"
   check "$tag" 5 "pair formed again ($(role $STS-0), $(role $STS-1)); longest unserved ${gap}s" wait_roles Master/Good/Active Backup/Good/Cold
 
   e2e_watch_check

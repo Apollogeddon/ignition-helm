@@ -64,3 +64,14 @@ tests:
             secret:
               secretName: ignition-failover-common-scripts
               defaultMode: 0755
+
+  - it: should end a run that hangs, so it can't hold back the next ones
+    set:
+      certManager:
+        restartOnRenewal:
+          enabled: true
+    asserts:
+      - documentIndex: 3
+        equal:
+          path: spec.jobTemplate.spec.activeDeadlineSeconds
+          value: 300

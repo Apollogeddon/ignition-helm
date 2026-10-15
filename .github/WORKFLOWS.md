@@ -6,11 +6,11 @@ This page describes the GitHub Actions workflows that test, scan, release and do
 
 The [`.index.yaml`](./workflows/.index.yaml) workflow is the primary entry point. It runs on pushes to `main` that change the charts and on every pull request, and orchestrates the other workflows in this order:
 
-1. **Changes**: On a pull request, works out whether the charts, or the scripts and workflows that test and release them, changed, and whether any shell script changed.
+1. **Changes**: On a pull request, works out whether the charts, their examples, or the scripts and workflows that test and release them, changed, and whether any shell script changed.
 2. **shellcheck**: Lints every shell script, when a script changed.
-3. **Updates**: Synchronizes `Chart.lock` files by running `helm dependency update`, and commits any change on `main`.
+3. **Updates**: Synchronizes `Chart.lock` files by running `helm dependency update`, and commits any change on `main`. The checkout keeps no token, as the script is the pull request's own code; only the push step gets one.
 4. **Testing & Quality**: Runs the testing and quality suites in parallel, when the charts changed.
-5. **Release**: On `main` only, after testing and quality checks pass.
+5. **Release**: On `main` only, after testing and quality checks pass. It is passed no secrets: it needs only the workflow's own token.
 6. **Webpage**: On a pull request, the site's checks and build; on `main`, updates the site after a successful release.
 7. **Auto-merge**: Merges a Dependabot pull request through [forgejs](https://github.com/apollogeddon/forgejs)'s `merge.yml`, once every job above has passed or been skipped.
 
@@ -29,13 +29,13 @@ The [`quality.yaml`](./workflows/quality.yaml) workflow focuses on static analys
 The [`testing.yaml`](./workflows/testing.yaml) workflow ensures the functional integrity of the charts:
 
 - **Unit tests**: `helm-unittest` checks the templates against the tests in `charts/*/tests`.
-- **Script tests**: runs `test/scripts/*_test.sh` against the shell scripts the charts ship.
+- **Script tests**: runs `test/scripts/*_test.sh` against the shell scripts the charts ship. `examples_test.sh` also renders every values file in `examples/` with its chart, and fails when an example exposes a gateway beyond its namespace (a LoadBalancer, an Ingress, a ServiceMonitor or a NodePort it asks for) without a NetworkPolicy rule that lets the traffic in. It checks the e2e values in `test/e2e/values` the same way, for the Ingress and NodePort paths the scenarios measure.
 - **Linting**: `chart-testing` (`ct lint`) checks the charts' structure, with each chart's default values and its `ci/deploy-values.yaml`.
 - **Integration tests**:
   - Creates a kind cluster and installs cert-manager with a self-signed `cluster-issuer` (`.github/scripts/ci/install-cert-manager.sh`).
-  - Runs `.github/scripts/tests/deploy-test.sh` for each changed chart (both, when the common chart changes). It installs the chart with its `ci/deploy-values.yaml` and checks the running gateways: RUNNING without restarts, the NetworkPolicy blocking another namespace, the scaleout frontend reaching its backend, and the chart options in effect. It then installs the `main` branch's chart and upgrades it to this one.
+  - Runs `.github/scripts/tests/deploy-test.sh` for each changed chart (both, when the common chart, the deploy test, the kind or cert-manager setup, `ct.yaml` or this workflow changes). It installs the chart with its `ci/deploy-values.yaml` and checks the running gateways: RUNNING without restarts, the NetworkPolicy blocking another namespace, the scaleout frontend reaching its backend, and the chart options in effect. It then installs the `main` branch's chart and upgrades it to this one.
 
-The [`e2e.yaml`](./workflows/e2e.yaml) workflow, run manually, runs the end-to-end scenarios in [`test/e2e`](../test/e2e/README.md) on a disposable kind cluster.
+The [`e2e.yaml`](./workflows/e2e.yaml) workflow, run manually with a read-only token, runs the end-to-end scenarios in [`test/e2e`](../test/e2e/README.md) on a disposable kind cluster.
 
 ## Release
 
@@ -43,6 +43,8 @@ The [`release.yaml`](./workflows/release.yaml) workflow automates versioning and
 
 - **Chart releases**: Packages every chart, and creates a tag and GitHub Release named `<chart>-v<version>` with the chart attached for each chart version that has no release yet. Before each release exists, cosign signs the chart keyless with the workflow's GitHub OIDC identity (the `version` job is the only one with `id-token: write`) and checks the signature, writing a Sigstore bundle, `<chart>-<version>.tgz.sigstore.json`. `gh` creates each release as a draft, attaches the chart and its bundle and then publishes it, as the repository's releases are immutable once published. The [README](../README.md#verifying-a-chart) has the `cosign verify-blob` command that checks a chart. chart-releaser then adds the new versions to the Helm repository index on the `main` branch. Each release's description is the newest section of the chart's `CHANGELOG.md`.
 - **Release Please**: Parses conventional commits and opens the release pull requests that bump each chart's version and `CHANGELOG.md`. It creates no releases of its own (`skip-github-release`), so each chart version gets exactly one tag and one release, and the workflow marks a merged release pull request as released once its chart versions are released.
+
+Every checkout keeps no token (`persist-credentials: false`) except the release's, which pushes tags and the chart index.
 
 Every workflow installs Helm through [`.github/actions/setup-helm`](./actions/setup-helm/action.yml), which sets the Helm version in one place.
 

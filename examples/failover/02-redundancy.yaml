@@ -21,3 +21,16 @@ ignition:
   # The chart also creates -primary and -backup headless Services for direct access.
   service:
     type: LoadBalancer
+  # The default NetworkPolicy admits only pods in this namespace, so let the
+  # LoadBalancer's clients reach the web ports (it delivers from the nodes' IPs
+  # with the default externalTrafficPolicy). Narrow the CIDR to your users and nodes.
+  networkPolicy:
+    extraIngress:
+      - from:
+          - ipBlock:
+              cidr: 0.0.0.0/0
+        ports:
+          - protocol: TCP
+            port: 8088
+          - protocol: TCP
+            port: 8043

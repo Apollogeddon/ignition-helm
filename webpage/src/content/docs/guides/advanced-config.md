@@ -47,6 +47,13 @@ ignition:
     enabled: true
     interval: "15s"
     path: "/data/metrics" # Match the path of your chosen exporter
+  # the default NetworkPolicy admits only this namespace's pods: let Prometheus in
+  networkPolicy:
+    extraIngress:
+      - from:
+          - namespaceSelector:
+              matchLabels:
+                kubernetes.io/metadata.name: monitoring
 ```
 
 ## Horizontal scaling (scaleout)
@@ -78,12 +85,25 @@ The Gateway Network carries Ignition redundancy and scaleout traffic. The charts
 
 1. Allows HTTP and HTTPS traffic from any pod in the namespace.
 2. Allows Gateway Network traffic (port `8060`) only from pods whose `app.kubernetes.io/name` label matches the chart's `applicationName`.
-3. Blocks other ingress to the gateways. Add rules with `networkPolicy.extraIngress`, for example for your ingress controller's namespace or for node CIDRs when you use NodePort or LoadBalancer Services.
+3. Blocks other ingress to the gateways. Add rules with `networkPolicy.extraIngress` (`ignition.networkPolicy` in failover, `frontend.networkPolicy` and `backend.networkPolicy` in scaleout), for example for your ingress controller's namespace, Prometheus's namespace, or node CIDRs when you use NodePort or LoadBalancer Services.
+
+Under this policy the default NodePort Service serves only pods in the release's namespace, through its cluster IP. Pods in other namespaces are blocked, and so is traffic through the NodePort or a LoadBalancer, which reaches the gateways from the nodes' addresses and needs a rule of its own. The [examples](https://github.com/Apollogeddon/ignition-helm/tree/main/examples) that expose a gateway each carry the rule they need.
 
 ```yaml
 ignition:
   networkPolicy:
     enabled: true
+    extraIngress:
+      # the ingress controller's namespace, to the web ports
+      - from:
+          - namespaceSelector:
+              matchLabels:
+                kubernetes.io/metadata.name: ingress-nginx
+        ports:
+          - protocol: TCP
+            port: 8088
+          - protocol: TCP
+            port: 8043
 ```
 
 ## Graceful shutdown

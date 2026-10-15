@@ -122,6 +122,9 @@ summarise() {
 
 echo "$tag $(date -u +%FT%TZ) image=${IMAGE_TAG:-default}" >> "$E2E_OUT/$tag-summary.txt"
 OBSERVE=60 observe steady true
+# every path must have been served while nothing was happening, or it is blocked
+e2e_require_served "$E2E_OUT/$tag-steady.log"
+[ "$IN_CLUSTER" != true ] || e2e_require_served "$E2E_OUT/$tag-steady-incluster.log"
 echo "graceful (delete master $master):" >> "$E2E_OUT/$tag-summary.txt"
 observe graceful kubectl -n "$ns" delete pod "$master" --wait=false
 wait_pair

@@ -52,8 +52,9 @@ stringData:
       have=$(grep -F "key=\"${key}\"" "${file}" | tr -d '\r' || true)
       [ "${have}" = "${want}" ] && return 0
       echo "Updating ${key}: $(value "${have}") -> $(value "${want}")"
-      esc=$(printf '%s' "${want}" | sed 's/[&|\]/\&/g')
-      key_re=$(printf '%s' "${key}" | sed 's/[.]/\./g')
+      # escaped for the replacement and the regex of sed's s|...|...|
+      esc=$(printf '%s' "${want}" | sed 's/[&|\]/\\&/g')
+      key_re=$(printf '%s' "${key}" | sed 's/[.]/\\./g')
       if [ -n "${have}" ]; then
         sed -i "s|^.*key=\"${key_re}\".*\$|${esc}|" "${file}"
       else
@@ -341,10 +342,11 @@ stringData:
         echo "Gateway Backup already staged at $backup."
     elif [ -n "$IGNITION_RESTORE_URL" ]; then
         echo "Downloading Gateway Backup from $IGNITION_RESTORE_URL..."
+        # a stalled server fails the init container, to be retried, rather than holding the pod
         if command -v curl &> /dev/null; then
-            curl -fsSL -o "$backup.part" "$IGNITION_RESTORE_URL"
+            curl -fsSL --connect-timeout 30 --speed-limit 1 --speed-time 120 -o "$backup.part" "$IGNITION_RESTORE_URL"
         elif command -v wget &> /dev/null; then
-            wget -q -O "$backup.part" "$IGNITION_RESTORE_URL"
+            wget -q -T 120 -O "$backup.part" "$IGNITION_RESTORE_URL"
         else
             echo "Error: Neither curl nor wget found. Cannot download Gateway Backup."
             exit 1
@@ -393,6 +395,13 @@ stringData:
       printf '[active] %s\n' "$*"
     }
 
+    # a failed sleep would poll the API and the gateways without pause
+    for n in "interval=$interval" "unknown_hold=$unknown_hold"; do
+      case "${n#*=}" in
+        '' | *[!0-9]* | 0*) log "ERROR: ${n%%=*} must be a whole number above 0, not '${n#*=}'"; exit 1 ;;
+      esac
+    done
+
     classify() {
       ip="$1"
       deleting="$2"
@@ -430,7 +439,7 @@ stringData:
     loops=0
     while :; do
       loops=$((loops + 1))
-      pods=$(kubectl get pods -n "$namespace" -l "$selector" \
+      pods=$(kubectl get pods --request-timeout=10s -n "$namespace" -l "$selector" \
         -o jsonpath="{range .items[*]}{.metadata.name}|{.status.podIP}|{.metadata.deletionTimestamp}|{.metadata.labels.${label}}{\"\n\"}{end}" 2>/dev/null)
       if [ -z "$pods" ]; then
         log "WARN: no gateway pods listed"
@@ -467,10 +476,10 @@ stringData:
         printf '%s\n' "$pods" | while IFS='|' read -r name ip deleting has; do
           [ -n "$name" ] || continue
           if [ "$name" = "$want" ] && [ "$has" != "true" ]; then
-            kubectl label pod "$name" -n "$namespace" "${label}=true" --overwrite >/dev/null &&
+            kubectl label pod "$name" --request-timeout=10s -n "$namespace" "${label}=true" --overwrite >/dev/null &&
               log "routing to ${name} (states:${states})"
           elif [ "$name" != "$want" ] && [ "$has" = "true" ]; then
-            kubectl label pod "$name" -n "$namespace" "${label}-" >/dev/null &&
+            kubectl label pod "$name" --request-timeout=10s -n "$namespace" "${label}-" >/dev/null &&
               log "no longer routing to ${name} (states:${states})"
           fi
         done

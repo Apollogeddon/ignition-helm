@@ -7,6 +7,18 @@ frontend:
     replicas: 1
   service:
     type: NodePort
+  # The default NetworkPolicy admits only pods in this namespace, so let the
+  # nodes reach the web ports through the NodePort. Narrow the CIDR to your nodes.
+  networkPolicy:
+    extraIngress:
+      - from:
+          - ipBlock:
+              cidr: 0.0.0.0/0
+        ports:
+          - protocol: TCP
+            port: 8088
+          - protocol: TCP
+            port: 8043
 
   secrets:
     GATEWAY_ADMIN_PASSWORD: "admin"

@@ -39,7 +39,7 @@ jobs:
         env:
           EVENT: ${{ github.event_name }}
           BASE: ${{ github.event.pull_request.base.sha }}
-          CHART_INPUTS: '^(charts/|\.github/(actions|kind|scripts/ci)/|\.github/release\.json$|\.github/workflows/(\.index|quality|release|testing)\.yaml$)'
+          CHART_INPUTS: '^(charts/|examples/|test/(scripts|e2e)/|ct\.yaml$|\.github/(actions|kind|scripts/(ci|tests))/|\.github/release\.json$|\.github/workflows/(\.index|quality|release|testing)\.yaml$)'
           SCRIPT_INPUTS: '(\.sh$|^\.shellcheckrc$|^\.github/workflows/\.index\.yaml$)'
         run: |
           # a push or a manual run releases, so it runs the whole chart pipeline
@@ -86,10 +86,13 @@ jobs:
     permissions:
       contents: write
     steps:
+      # no stored token: update-dependencies.sh is the pull request's own code, and only
+      # the push step below gets the token
       - name: Checkout
         uses: actions/checkout@v7
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Set up Helm
         uses: ./.github/actions/setup-helm
@@ -106,6 +109,8 @@ jobs:
 
       - name: Commit and Push Changes
         if: steps.git_diff.outputs.changes_detected == 'true' && github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           git config user.name "Apollogeddon"
           git config user.email "214195771+Apollogeddon@users.noreply.github.com"
@@ -113,7 +118,7 @@ jobs:
           git add charts/**
           if ! git diff --cached --quiet; then
             git commit -m "chore(helm): update chart lock and yaml files"
-            git push
+            git push "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "HEAD:${GITHUB_REF}"
           else
             echo "No changes staged for commit."
           fi
@@ -129,8 +134,8 @@ jobs:
   release:
     needs: [testing, quality]
     if: github.event_name != 'pull_request'
+    # the release uses only the workflow's own token, so it gets no other secret
     uses: ./.github/workflows/release.yaml
-    secrets: inherit
     permissions:
       contents: write
       pull-requests: write

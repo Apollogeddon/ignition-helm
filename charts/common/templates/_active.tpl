@@ -120,7 +120,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: active
-          image: {{ $ar.image | default "alpine/kubectl:1.34.1" }}
+          image: {{ $ar.image | default "alpine/kubectl:1.37.1" }}
           command: ["/bin/sh", "/config/scripts/active-routing.sh"]
           securityContext:
             allowPrivilegeEscalation: false
@@ -141,9 +141,9 @@ spec:
             - name: HTTP_PORT
               value: {{ .values.service.ports.http | quote }}
             - name: INTERVAL_SECONDS
-              value: {{ $ar.intervalSeconds | default 2 | quote }}
+              value: {{ include "ignition-common.positiveInt" (dict "name" "activeRouting.intervalSeconds" "value" (ternary (get $ar "intervalSeconds") 2 (hasKey $ar "intervalSeconds"))) | quote }}
             - name: UNKNOWN_HOLD
-              value: {{ $ar.unknownHold | default 3 | quote }}
+              value: {{ include "ignition-common.positiveInt" (dict "name" "activeRouting.unknownHold" "value" (ternary (get $ar "unknownHold") 3 (hasKey $ar "unknownHold"))) | quote }}
           resources:
             {{- toYaml ($ar.resources | default (dict "requests" (dict "cpu" "10m" "memory" "32Mi") "limits" (dict "cpu" "200m" "memory" "128Mi"))) | nindent 12 }}
           volumeMounts:

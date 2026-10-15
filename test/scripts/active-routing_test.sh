@@ -16,6 +16,7 @@ mkdir "$work/bin"
 # "label pod <name> ... <label>=true|<label>-" is recorded in $CALLS
 cat > "$work/bin/kubectl" <<'STUB'
 #!/usr/bin/env bash
+echo "$*" >> "${CALLS%calls}kubectl.args"
 case "$1 $2" in
   "get pods") printf '%s\n' "$PODS" ;;
   "label pod") echo "$3 ${!#}" >> "$CALLS" ;;
@@ -68,6 +69,21 @@ check "labels a standalone gateway" "gw-0 +" \
   PODS=$'gw-0|10.0.0.1||' GW_10_0_0_1="$STANDALONE"
 check "does not label a gateway that is commissioning" "" \
   PODS=$'gw-0|10.0.0.1||' GW_10_0_0_1="$COMMISSIONING"
+
+: > "$work/kubectl.args"
+check "moves the label, every API call with a request timeout" "gw-0 -|gw-1 +" \
+  PODS=$'gw-0|10.0.0.1||true\ngw-1|10.0.0.2||' GW_10_0_0_1="$MASTER_COLD" GW_10_0_0_2="$BACKUP_ACTIVE"
+if [ "$(grep -vc -- "--request-timeout=10s" "$work/kubectl.args")" -eq 0 ] && [ -s "$work/kubectl.args" ]; then
+  echo "ok   no API call can hang the loop"
+else echo "FAIL no API call can hang the loop"; sed 's/^/     /' "$work/kubectl.args"; fails=$((fails + 1)); fi
+
+# rejects intervals that would poll without pause, rather than looping
+for bad in -1 0 abc; do
+  status=0
+  timeout 5 env PATH="$work/bin:$PATH" CALLS="$work/calls" NAMESPACE=ns POD_SELECTOR=app=gw ACTIVE_LABEL=redundancy-active \
+    INTERVAL_SECONDS="$bad" PODS='gw-0|10.0.0.1||' GW_10_0_0_1="$MASTER" sh "$work/active-routing.sh" > /dev/null 2>&1 || status=$?
+  if [ "$status" -eq 1 ]; then echo "ok   refuses INTERVAL_SECONDS='$bad'"; else echo "FAIL refuses INTERVAL_SECONDS='$bad' (exit $status)"; fails=$((fails + 1)); fi
+done
 
 if [ "$fails" -ne 0 ]; then echo "$fails failed"; exit 1; fi
 echo "all passed"
