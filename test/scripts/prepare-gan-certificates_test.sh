@@ -13,7 +13,8 @@ work=$(mktemp -d); trap 'rm -rf "$work"' EXIT
 [ -s "$work/gan.sh" ] || { echo "could not extract prepare-gan-certificates.sh"; exit 1; }
 
 mkdir "$work/bin" "$work/ca" "$work/tls"
-echo ca > "$work/ca/ca.crt"; echo keystore > "$work/tls/keystore.p12"
+# ca.crt is the issuer's root, tls.crt the release's own GAN CA
+echo issuer-root > "$work/ca/ca.crt"; echo release-ca > "$work/ca/tls.crt"; echo keystore > "$work/tls/keystore.p12"
 # keytool stub: fails unless -storepass is exactly $WANT; -changealias calls are recorded in $CALLS
 cat > "$work/bin/keytool" <<'STUB'
 #!/usr/bin/env bash
@@ -39,10 +40,16 @@ ok() { if eval "$2"; then echo "ok   $1"; else echo "FAIL $1"; sed 's/^/     /' 
 
 run secret
 ok "the keystore is renamed to metro-key" '[ $rc = 0 ] && grep -q -- "-destalias metro-key" "$work/calls"'
-ok "the CA is trusted for the gateway network" '[ -f "$work/data/gateway-network/server/security/pki/trusted/certs/ignition-gan-ca.crt" ]'
+trusted="$work/data/gateway-network/%s/security/pki/trusted/certs/ignition-gan-ca.crt"
+# shellcheck disable=SC2059
+ok "the release's CA is trusted for the gateway network, not the issuer's root" \
+  '[ "$(cat "$(printf "$trusted" server)")" = release-ca ] && [ "$(cat "$(printf "$trusted" client)")" = release-ca ]'
 
 run 'two words *'
 ok "a passphrase with spaces and globs reaches keytool whole" '[ $rc = 0 ] && grep -q -- "-destalias metro-key" "$work/calls"'
+
+rm "$work/ca/tls.crt"; run secret
+ok "a CA secret without tls.crt fails the init container" '[ $rc -ne 0 ] && grep -q "tls.crt" "$work/out"'
 
 if [ "$fails" -ne 0 ]; then echo "$fails failed"; exit 1; fi
 echo "all passed"

@@ -11,6 +11,9 @@ spec:
   selector:
     matchLabels:
       {{- include "ignition.selectorLabels" . | nindent 6 }}
+      {{- if .Values.componentSelectors }}
+      app.kubernetes.io/component: backend
+      {{- end }}
   serviceName: {{ include "ignition.name" . }}-backend-headless
   replicas: {{ if .Values.backend.redundancy.enabled }}2{{ else }}1{{ end }}
   updateStrategy:

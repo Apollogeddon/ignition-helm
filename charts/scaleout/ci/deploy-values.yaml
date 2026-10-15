@@ -1,5 +1,7 @@
 # Values for the deployment test (.github/scripts/tests/deploy-test.sh) and for
 # chart-testing's lint: options that only show on a running gateway.
+# frontend.hpa needs componentSelectors, which a fresh install sets
+componentSelectors: true
 frontend:
   networkPolicy:
     enabled: true

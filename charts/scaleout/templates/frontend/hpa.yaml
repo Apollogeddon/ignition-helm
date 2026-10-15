@@ -1,1 +1,6 @@
+{{- /* The autoscaler averages over the pods its StatefulSet selects, and without
+componentSelectors that selector also matches the backend's pods */}}
+{{- if and .Values.frontend.hpa.enabled (not .Values.componentSelectors) }}
+{{- fail "frontend.hpa.enabled needs componentSelectors=true: without it the frontend StatefulSet also selects the backend pods, and the autoscaler would count them. A StatefulSet's selector can't change, so an existing release must first delete its StatefulSets with --cascade=orphan (see the chart README, \"Autoscaling the frontend\")" }}
+{{- end }}
 {{- include "ignition-common.hpa" (dict "name" "frontend" "values" .Values.frontend "context" .) }}

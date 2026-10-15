@@ -43,6 +43,7 @@ Settings that apply to both layers. `affinity.enabled` spreads each layer's pods
 | Parameter | Type | Default |
 | --- | --- | --- |
 | `applicationName` | string | `"ignition-scaleout"` |
+| `componentSelectors` | bool | `false` |
 | `image.repository` | string | `"inductiveautomation/ignition"` |
 | `image.tag` | string | `""` (the chart's `appVersion`, 8.3.10) |
 | `image.pullPolicy` | string | `"IfNotPresent"` |

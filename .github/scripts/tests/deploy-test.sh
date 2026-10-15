@@ -7,8 +7,10 @@
 #      reach RUNNING without restarting, the NetworkPolicy blocks another
 #      namespace (and still lets the release's own namespace in), and the
 #      chart options in the values file are in effect in the pod.
-#   2. The chart from TARGET_BRANCH, installed and upgraded to this one with the
-#      same values; skipped when the major version changes or the chart is new.
+#   2. The chart from TARGET_BRANCH, installed and upgraded to this one with
+#      charts/<chart>/ci/upgrade-values.yaml if there is one (values the old
+#      chart can be upgraded from), else the same values; skipped when the major
+#      version changes or the chart is new.
 #
 # Usage: deploy-test.sh <failover|scaleout>
 # Env: TARGET_BRANCH (default main), CURL_IMAGE, TIMEOUT (helm --timeout, default 15m)
@@ -17,6 +19,8 @@ set -euo pipefail
 chart=$1
 dir="charts/$chart"
 values="$dir/ci/deploy-values.yaml"
+upgrade_values="$dir/ci/upgrade-values.yaml"
+[ -f "$upgrade_values" ] || upgrade_values=$values
 target="${TARGET_BRANCH:-main}"
 curl_image="${CURL_IMAGE:-curlimages/curl:8.11.1}"
 timeout="${TIMEOUT:-15m}"
@@ -123,8 +127,8 @@ if [ "$(major "$old/$dir")" != "$(major "$dir")" ]; then
 fi
 helm dependency build "$old/$dir" >/dev/null
 begin "deploy-$chart-upgrade"
-helm install "$chart" "$old/$dir" -n "$ns" -f "$values" --wait --timeout "$timeout" || die "install of the $target chart failed"
-helm upgrade "$chart" "$dir" -n "$ns" -f "$values" --wait --timeout "$timeout" || die "upgrade failed"
+helm install "$chart" "$old/$dir" -n "$ns" -f "$upgrade_values" --wait --timeout "$timeout" || die "install of the $target chart failed"
+helm upgrade "$chart" "$dir" -n "$ns" -f "$upgrade_values" --wait --timeout "$timeout" || die "upgrade failed"
 case "$chart" in
   failover) check_running ignition-failover-0 ;;
   scaleout) check_running ignition-scaleout-frontend-0; check_running ignition-scaleout-backend-0 ;;

@@ -33,7 +33,7 @@ The [`testing.yaml`](./workflows/testing.yaml) workflow ensures the functional i
 - **Linting**: `chart-testing` (`ct lint`) checks the charts' structure, with each chart's default values and its `ci/deploy-values.yaml`.
 - **Integration tests**:
   - Creates a kind cluster and installs cert-manager with a self-signed `cluster-issuer` (`.github/scripts/ci/install-cert-manager.sh`).
-  - Runs `.github/scripts/tests/deploy-test.sh` for each changed chart (both, when the common chart, the deploy test, the kind or cert-manager setup, `ct.yaml` or this workflow changes). It installs the chart with its `ci/deploy-values.yaml` and checks the running gateways: RUNNING without restarts, the NetworkPolicy blocking another namespace, the scaleout frontend reaching its backend, and the chart options in effect. It then installs the `main` branch's chart and upgrades it to this one.
+  - Runs `.github/scripts/tests/deploy-test.sh` for each changed chart (both, when the common chart, the deploy test, the kind or cert-manager setup, `ct.yaml` or this workflow changes). It installs the chart with its `ci/deploy-values.yaml` and checks the running gateways: RUNNING without restarts, the NetworkPolicy blocking another namespace, the scaleout frontend reaching its backend, and the chart options in effect. It then installs the `main` branch's chart and upgrades it to this one, with the chart's `ci/upgrade-values.yaml` where it has one (the scaleout chart's leaves out the autoscaler, whose `componentSelectors` can't be turned on by an upgrade).
 
 The [`e2e.yaml`](./workflows/e2e.yaml) workflow, run manually with a read-only token, runs the end-to-end scenarios in [`test/e2e`](../test/e2e/README.md) on a disposable kind cluster.
 

@@ -11,6 +11,9 @@ spec:
   selector:
     matchLabels:
       {{- include "ignition.selectorLabels" . | nindent 6 }}
+      {{- if .Values.componentSelectors }}
+      app.kubernetes.io/component: frontend
+      {{- end }}
   serviceName: {{ include "ignition.name" . }}-frontend-headless
   {{- /* the HPA owns the replica count while it is enabled; helm would reset it on every upgrade */}}
   {{- if not .Values.frontend.hpa.enabled }}

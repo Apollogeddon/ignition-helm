@@ -6,6 +6,9 @@ templates:
   - templates/frontend/frontend-statefulset.yaml
   - templates/backend/networkpolicy.yaml
   - templates/backend/backend-statefulset.yaml
+# the frontend HPA needs component selectors (component_selector_test.yaml)
+set:
+  componentSelectors: true
 tests:
   - it: should pass the frontend HPA's minimum replicas through
     template: templates/frontend/hpa.yaml

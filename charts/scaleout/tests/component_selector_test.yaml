@@ -3,6 +3,8 @@ templates:
   - templates/frontend/frontend-service.yaml
   - templates/backend/backend-service.yaml
   - templates/frontend/frontend-statefulset.yaml
+  - templates/backend/backend-statefulset.yaml
+  - templates/frontend/hpa.yaml
   - templates/frontend/pdb.yaml
   - templates/frontend/networkpolicy.yaml
 tests:
@@ -21,6 +23,56 @@ tests:
           path: spec.selector["app.kubernetes.io/component"]
           value: backend
 
+  - it: should keep the shared StatefulSet selectors by default, as a selector can't change
+    template: templates/backend/backend-statefulset.yaml
+    asserts:
+      - equal:
+          path: spec.template.metadata.labels["app.kubernetes.io/component"]
+          value: backend
+      - notExists:
+          path: spec.selector.matchLabels["app.kubernetes.io/component"]
+
+  - it: should select only frontend pods in the frontend StatefulSet with componentSelectors
+    template: templates/frontend/frontend-statefulset.yaml
+    set:
+      componentSelectors: true
+    asserts:
+      - equal:
+          path: spec.selector.matchLabels["app.kubernetes.io/component"]
+          value: frontend
+
+  - it: should select only backend pods in the backend StatefulSet with componentSelectors
+    template: templates/backend/backend-statefulset.yaml
+    set:
+      componentSelectors: true
+    asserts:
+      - equal:
+          path: spec.selector.matchLabels["app.kubernetes.io/component"]
+          value: backend
+
+  # the autoscaler reads pods through the StatefulSet's selector, which would
+  # otherwise match the backend pods as well
+  - it: should refuse the frontend HPA while the StatefulSets share a selector
+    template: templates/frontend/hpa.yaml
+    set:
+      frontend:
+        hpa:
+          enabled: true
+    asserts:
+      - failedTemplate:
+          errorPattern: "frontend.hpa.enabled needs componentSelectors=true"
+
+  - it: should create the frontend HPA with componentSelectors
+    template: templates/frontend/hpa.yaml
+    set:
+      componentSelectors: true
+      frontend:
+        hpa:
+          enabled: true
+    asserts:
+      - isKind:
+          of: HorizontalPodAutoscaler
+
   - it: should label frontend pods without changing the immutable StatefulSet selector
     template: templates/frontend/frontend-statefulset.yaml
     asserts:
@@ -33,6 +85,7 @@ tests:
   - it: should scope the frontend PodDisruptionBudget to frontend pods
     template: templates/frontend/pdb.yaml
     set:
+      componentSelectors: true
       frontend:
         hpa:
           enabled: true

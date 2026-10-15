@@ -238,6 +238,7 @@ ignition:
 In the scaleout chart, a HorizontalPodAutoscaler can scale the frontend gateways on CPU utilization (`targetCPUUtilizationPercentage`), memory utilization (`targetMemoryUtilizationPercentage`) or both, for variable Perspective load.
 
 ```yaml
+componentSelectors: true
 frontend:
   hpa:
     enabled: true
@@ -245,6 +246,8 @@ frontend:
     maxReplicas: 10
     targetCPUUtilizationPercentage: 80
 ```
+
+The autoscaler averages over the pods its StatefulSet selects. By default the frontend and backend StatefulSets share a selector (name and instance), so it would count the backend's pods too, and the chart refuses `frontend.hpa.enabled` without `componentSelectors: true`, which adds `app.kubernetes.io/component` to both selectors. Kubernetes does not let a StatefulSet's selector change: set it at install, or for an existing release delete the two StatefulSets with `kubectl delete statefulset <name>-frontend <name>-backend --cascade=orphan` first (pods and volumes keep running, and the upgrade adopts them).
 
 ### Graceful shutdown
 

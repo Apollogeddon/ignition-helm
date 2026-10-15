@@ -67,6 +67,17 @@ ignition:                  # scaleout: frontend (and backend, if reached from ou
 
 Or keep the old behaviour with `networkPolicy.enabled: false` (`ignition.networkPolicy` in failover, `frontend.networkPolicy` and `backend.networkPolicy` in scaleout). See [Network security](../advanced-config/#network-security-gateway-network-isolation).
 
+## A scaleout frontend autoscaler
+
+From scaleout 5.0.0, `frontend.hpa.enabled` needs `componentSelectors: true`, as without it the autoscaler also counts the backend's pods. A release that has the autoscaler on fails to render until it is set, and setting it changes both StatefulSets' selectors, which Kubernetes doesn't allow on an existing object. Delete only the StatefulSet objects first, as in step 1; the upgraded StatefulSets adopt the running pods:
+
+```bash
+kubectl delete statefulset <name>-frontend <name>-backend -n <namespace> --cascade=orphan
+helm upgrade <release> ignition-charts/ignition-scaleout -n <namespace> ... --set componentSelectors=true
+```
+
+The recreated frontend StatefulSet starts at one gateway until the autoscaler raises it to `minReplicas`, so upgrade in a quiet period.
+
 ## Chart 4.1.0
 
 4.1.0 has been withdrawn. Its pods ran `gwcmd.sh -p` as a shutdown hook, which resets the gateway login password whenever a pod stops. Upgrade from 4.0.0 or earlier straight to a later version.
