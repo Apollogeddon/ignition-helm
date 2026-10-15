@@ -12,8 +12,9 @@ work=$(mktemp -d); trap 'rm -rf "$work"' EXIT
   awk '/^  seed-data-volume.sh: \|-/ {on=1; next} on && /^  [^ ]/ {on=0} on {sub(/^    /, ""); print}' > "$work/seed.sh"
 [ -s "$work/seed.sh" ] || { echo "could not extract seed-data-volume.sh"; exit 1; }
 
-# the image's data directory: a file, a nested file and a symlink
+# the image's data directory: a file, a nested file, a symlink and a dotfile
 mkdir -p "$work/image/db"
+echo hidden > "$work/image/.hidden"
 echo config > "$work/image/gateway.xml"
 echo state > "$work/image/db/config.idb"
 ln -s gateway.xml "$work/image/link.xml"
@@ -26,8 +27,14 @@ mkdir "$work/bin"
 printf '%s\n' '#!/bin/sh' "$(command -v cp)"' -p "$SEED_DIR/gateway.xml" "$DATA_DIR/"' 'echo "cp: No space left on device" >&2' 'exit 1' > "$work/bin/cp"
 chmod +x "$work/bin/cp"
 failing() { PATH="$work/bin:$PATH" run; }
+# a cp that refuses to copy onto the data directory itself, as a volume's root whose times
+# the gateway user may not set; it copies whatever else it is given
+mkdir "$work/rootbin"
+printf '%s\n' '#!/bin/sh' 'for a in "$@"; do case "$a" in */.) echo "cp: preserving times for $a: Operation not permitted" >&2; exit 1 ;; esac; done' "exec $(command -v cp) \"\$@\"" > "$work/rootbin/cp"
+chmod +x "$work/rootbin/cp"
+volume_root() { PATH="$work/rootbin:$PATH" run; }
 rc() { cat "$work/rc"; }
-seeded() { cmp -s "$work/image/gateway.xml" "$work/data/gateway.xml" && cmp -s "$work/image/db/config.idb" "$work/data/db/config.idb" && [ -L "$work/data/link.xml" ]; }
+seeded() { cmp -s "$work/image/gateway.xml" "$work/data/gateway.xml" && cmp -s "$work/image/db/config.idb" "$work/data/db/config.idb" && [ -L "$work/data/link.xml" ] && cmp -s "$work/image/.hidden" "$work/data/.hidden"; }
 ok() { if eval "$2"; then echo "ok   $1"; else echo "FAIL $1"; sed 's/^/     /' "$work/out"; fails=$((fails + 1)); fi; }
 
 fresh; run
@@ -43,6 +50,9 @@ ok "a failed copy leaves no marker" '[ ! -f "$work/data/.ignition-seed-complete"
 ok "a failed copy leaves the volume half-filled" '[ -f "$work/data/gateway.xml" ] && [ ! -e "$work/data/db" ]'
 run
 ok "the next start redoes the copy" '[ "$(rc)" = 0 ] && seeded && [ -f "$work/data/.ignition-seed-complete" ]'
+
+fresh; volume_root
+ok "the copy leaves the volume root's own times alone" '[ "$(rc)" = 0 ] && seeded'
 
 # a copy killed partway: some files there, no marker
 fresh; echo partial > "$work/data/gateway.xml"; run

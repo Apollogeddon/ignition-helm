@@ -17,6 +17,9 @@ stringData:
     # seed fails the init container and is copied again on the next start.
     if [ ! -f "${marker}" ]; then
         echo "Seeding Ignition Data Volume"
+        # dotglob: "*" also matches dotfiles. Not "${SEED_DIR}/.", which would also copy the
+        # mount point's own times, and the gateway user may not change those
+        shopt -s dotglob
         cp -dpR "${SEED_DIR}"/* "${DATA_DIR}"/
         touch "${marker}"
     fi
@@ -104,7 +107,6 @@ stringData:
     GAN_CA_SECRETS_DIR="/run/secrets/ignition-gan-ca"
     GAN_SECRETS_DIR="/run/secrets/gan-tls"
     METRO_KEYSTORE_ALIAS="metro-key"
-    GWBK_LOCATION=""
 
     ###############################################################################
     # Places GAN CA Certificate and GAN Client Keystores into place
@@ -115,11 +117,6 @@ stringData:
 
       # Update the alias in the inbound GAN PKCS#12 keystore and place into `data/local`
       populateGanKeystore
-
-      # Update the GWBK with the GAN CA Certificate trust
-      if [ -n "${GWBK_LOCATION:-}" ]; then
-        updateGwbk
-      fi
     }
 
     ###############################################################################
@@ -150,41 +147,12 @@ stringData:
     function populateGanCaCertificate() {
       info "Populating GAN CA Certificate into Ignition gateway network trusted certs folders"
 
-      # Copy the GAN Issuer CA certificate to trusted certs for server/client to establish root trust
+      # Trust the release's own GAN CA (the secret's tls.crt), not its ca.crt: that is
+      # the root of certManager.issuer, which may sign certificates across the cluster
       mkdir -v -p "${IGNITION_DATA_DIR}/gateway-network/server/security/pki/trusted/certs/"
       mkdir -v -p "${IGNITION_DATA_DIR}/gateway-network/client/security/pki/trusted/certs/"
-      cp -v "${GAN_CA_SECRETS_DIR}/ca.crt" "${IGNITION_DATA_DIR}/gateway-network/server/security/pki/trusted/certs/ignition-gan-ca.crt"
-      cp -v "${GAN_CA_SECRETS_DIR}/ca.crt" "${IGNITION_DATA_DIR}/gateway-network/client/security/pki/trusted/certs/ignition-gan-ca.crt"
-    }
-
-    ###############################################################################
-    # Updates the GWBK with the GAN CA Certificate trust
-    ###############################################################################
-    function updateGwbk() {
-      info "Updating GWBK with GAN CA Certificate trust"
-
-      if ! command -v zip &> /dev/null || ! command -v zipnote &> /dev/null; then
-        >&2 echo "WARNING: 'zip' or 'zipnote' command not found. Skipping GAN CA trust injection into GWBK."
-        >&2 echo "Ensure your Ignition image includes zip utilities for this feature."
-        return 0
-      fi
-
-      # Target destination paths for the GAN CA certificate
-      local dest_locations=(
-        "gateway-network/server/security/pki/trusted/certs/ignition-gan-ca.crt"
-        "gateway-network/client/security/pki/trusted/certs/ignition-gan-ca.crt"
-      )
-
-      # Remove existing files in destination location (if present)
-      zip -d "${GWBK_LOCATION}" "${dest_locations[@]}" || true
-      
-      # Add the GAN CA Certificate to the GWBK in client/server folders
-      for dest in "${dest_locations[@]}"; do
-        zip -j "${GWBK_LOCATION}" "${GAN_CA_SECRETS_DIR}/ca.crt" "${dest}"
-        printf "@ ca.crt\n@=%s\n" "${dest}" | zipnote -w "${GWBK_LOCATION}"
-      done
-
-      debug "Zip contents:\n$(unzip -l "${GWBK_LOCATION}")"
+      cp -v "${GAN_CA_SECRETS_DIR}/tls.crt" "${IGNITION_DATA_DIR}/gateway-network/server/security/pki/trusted/certs/ignition-gan-ca.crt"
+      cp -v "${GAN_CA_SECRETS_DIR}/tls.crt" "${IGNITION_DATA_DIR}/gateway-network/client/security/pki/trusted/certs/ignition-gan-ca.crt"
     }
 
     ###############################################################################
@@ -213,18 +181,17 @@ stringData:
     # Print usage information
     ###############################################################################
     function usage() {
-      >&2 echo "Usage: $0 -a <alias> -c <path/to/ca/secret> -s <path/to/gan/secret> -d <path/to/data/folder> [-g <path/to/gwbk>]"
+      >&2 echo "Usage: $0 -a <alias> -c <path/to/ca/secret> -s <path/to/gan/secret> -d <path/to/data/folder>"
       >&2 echo "  -a <alias> - The alias to use for the GAN client keystore (default: ${METRO_KEYSTORE_ALIAS})"
       >&2 echo "  -c <path/to/ca/secret> - The path to the mounted secret containing the GAN CA certificate (default: ${GAN_CA_SECRETS_DIR})"
       >&2 echo "  -s <path/to/gan/secret> - The path to the mounted secret containing the GAN client certs/keystore (default: ${GAN_SECRETS_DIR})"
       >&2 echo "  -d <path/to/data/folder> - The path to the Ignition data folder (default: ${IGNITION_DATA_DIR})"
-      >&2 echo "  -g <path/to/gwbk> - Supply a GWBK to attempt to update with GAN CA trust"
       >&2 echo "  -h - Print this help message"
       >&2 echo "  -v - Enable verbose output"
     }
 
     # Argument Processing
-    while getopts ":hva:c:s:d:g:" opt; do
+    while getopts ":hva:c:s:d:" opt; do
       case "$opt" in
       v) 
         verbose=1
@@ -241,9 +208,6 @@ stringData:
       d) 
         IGNITION_DATA_DIR="${OPTARG}"
         ;;
-      g)
-        GWBK_LOCATION="${OPTARG}"
-      ;;
       h) 
         usage
         exit 0
@@ -265,8 +229,8 @@ stringData:
     shift $((OPTIND-1))
 
     # Perform argument checks
-    if [ ! -f "${GAN_CA_SECRETS_DIR}/ca.crt" ]; then
-      >&2 echo "ERROR: GAN CA Certificate not found at ${GAN_CA_SECRETS_DIR}/ca.crt"
+    if [ ! -f "${GAN_CA_SECRETS_DIR}/tls.crt" ]; then
+      >&2 echo "ERROR: GAN CA Certificate not found at ${GAN_CA_SECRETS_DIR}/tls.crt"
       usage
       exit 1
     fi
@@ -281,24 +245,6 @@ stringData:
       >&2 echo "ERROR: Ignition Data Directory not found at ${IGNITION_DATA_DIR}"
       usage
       exit 1
-    fi
-
-    if [ -n "${GWBK_LOCATION:-}" ] && [ ! -f "${GWBK_LOCATION}" ]; then
-      >&2 echo "ERROR: GWBK not found at ${GWBK_LOCATION}"
-      usage
-      exit 1
-    fi
-
-    # check if zip and zipnote commands are installed and exit if gwbk is supplied
-    if [ -n "${GWBK_LOCATION:-}" ]; then
-      if ! command -v zip &> /dev/null; then
-        >&2 echo "ERROR: GWBK specified, but 'zip' command not found"
-        exit 1
-      fi
-      if ! command -v zipnote &> /dev/null; then
-        >&2 echo "ERROR: GWBK specified, but 'zipnote' command not found"
-        exit 1
-      fi
     fi
 
     main

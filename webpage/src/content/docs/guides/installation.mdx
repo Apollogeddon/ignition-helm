@@ -82,7 +82,7 @@ Apply it:
 kubectl apply -f issuer.yaml
 ```
 
-To use an existing issuer instead, set `certManager.issuer.name`, and set `certManager.issuer.kind` to `Issuer` if it is a namespaced issuer in the release's namespace.
+To use an existing issuer instead, set `certManager.issuer.name`, and set `certManager.issuer.kind` to `Issuer` if it is a namespaced issuer in the release's namespace. The gateways trust only the release's own Gateway Network CA, not the issuer's root, so another certificate that issuer signs is not accepted on the Gateway Network.
 
 ## Install a chart
 
