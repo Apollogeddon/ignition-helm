@@ -73,9 +73,10 @@ See [Verifying a chart](../../README.md#verifying-a-chart) for what this checks.
 
 ## Autoscaling the frontend
 
-Set `frontend.hpa.enabled` to scale the frontend gateways with an `autoscaling/v2` HorizontalPodAutoscaler on CPU and/or memory utilization. It needs the [metrics server](https://github.com/kubernetes-sigs/metrics-server) (or another provider of the resource metrics API) in the cluster.
+Set `frontend.hpa.enabled` to scale the frontend gateways with an `autoscaling/v2` HorizontalPodAutoscaler on CPU and/or memory utilization. It needs the [metrics server](https://github.com/kubernetes-sigs/metrics-server) (or another provider of the resource metrics API) in the cluster, and `componentSelectors: true`.
 
 ```yaml
+componentSelectors: true
 frontend:
   hpa:
     enabled: true
@@ -91,6 +92,14 @@ frontend:
             periodSeconds: 300
 ```
 
+- An autoscaler averages over the pods its StatefulSet selects. By default both StatefulSets select only on `app.kubernetes.io/name` and `app.kubernetes.io/instance`, which match the backend's pods as well, so the chart refuses `frontend.hpa.enabled` unless `componentSelectors` adds `app.kubernetes.io/component` to each selector. Kubernetes does not let a StatefulSet's selector change, so set it when you install. To turn it on for an existing release, delete only the StatefulSet objects first; their pods and volumes keep running, and the upgraded StatefulSets adopt them, as their pods already carry the component label:
+
+  ```bash
+  kubectl delete statefulset <name>-frontend <name>-backend -n <namespace> --cascade=orphan
+  helm upgrade <release> ignition-charts/ignition-scaleout -n <namespace> ... --set componentSelectors=true
+  ```
+
+  With the autoscaler already on, the recreated frontend StatefulSet starts at one gateway until the autoscaler raises it to `minReplicas`, so do it in a quiet period. Turning `componentSelectors` off again needs the same step.
 - While the autoscaler is enabled, the frontend StatefulSet leaves out `replicas`, so `helm upgrade` doesn't reset the count it has set. When you enable it on an existing release, Helm removes the field and Kubernetes briefly scales the StatefulSet to one gateway, until the autoscaler raises it to `minReplicas`. Enable it in a quiet period.
 - A new frontend gateway takes minutes to start and commission, and scaling down ends the Perspective sessions on the gateways it removes, so scale down slowly with `behavior.scaleDown`.
 - A PodDisruptionBudget (`minAvailable: 1`) protects the frontend while the autoscaler is enabled.
@@ -120,6 +129,7 @@ The most commonly changed values are below. Most `frontend.*` and `backend.*` va
 | Parameter | Description | Default |
 | --------- | ----------- | ------- |
 | `applicationName` | Prefix of every resource the chart creates. | `ignition-scaleout` |
+| `componentSelectors` | Select each StatefulSet's pods by `app.kubernetes.io/component` too. Needed by `frontend.hpa`; set it at install, as a selector can't change (see [Autoscaling the frontend](#autoscaling-the-frontend)). | `false` |
 | `image.tag` | Ignition image tag for both layers. Empty uses the chart's `appVersion`. | `""` (8.3.10) |
 | `frontend.secrets.GATEWAY_ADMIN_PASSWORD` | Frontend gateway admin password. Set your own. | `admin` |
 | `backend.secrets.GATEWAY_ADMIN_PASSWORD` | Backend gateway admin password. Set your own. | `admin` |

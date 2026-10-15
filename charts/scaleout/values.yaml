@@ -5,6 +5,13 @@
 # -- Application name used for naming resources
 applicationName: "ignition-scaleout"
 
+# -- Select each StatefulSet's pods by app.kubernetes.io/component too, not only
+# by name and instance. frontend.hpa needs it: the autoscaler reads the pods the
+# StatefulSet selects, which would otherwise include the backend's. A StatefulSet's
+# selector can't change, so set it at install; an existing release needs the
+# migration in the README's "Autoscaling the frontend"
+componentSelectors: false
+
 serviceAccount:
   # -- Specifies whether a service account should be created
   create: false

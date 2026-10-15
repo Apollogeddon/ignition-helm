@@ -62,9 +62,10 @@ The scaleout chart lets you scale the frontend gateways independently, which sui
 
 ### Configure the autoscaler
 
-The `ignition-scaleout` chart can create a HorizontalPodAutoscaler for the frontend:
+The `ignition-scaleout` chart can create a HorizontalPodAutoscaler for the frontend. It needs `componentSelectors`, which is set at install (see [Horizontal pod autoscaling](../capabilities/#horizontal-pod-autoscaling)):
 
 ```yaml
+componentSelectors: true
 frontend:
   redundancy:
     replicas: 2 # Minimum starting replicas

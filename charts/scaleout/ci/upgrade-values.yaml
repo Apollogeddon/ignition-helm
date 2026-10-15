@@ -1,0 +1,9 @@
+# Values for the deployment test's upgrade from the main branch's chart
+# (.github/scripts/tests/deploy-test.sh). Without the HPA and componentSelectors
+# of deploy-values.yaml: a StatefulSet's selector can't change on upgrade.
+frontend:
+  networkPolicy:
+    enabled: true
+backend:
+  networkPolicy:
+    enabled: true
