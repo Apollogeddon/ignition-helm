@@ -54,18 +54,18 @@ helm repo update
 
 ### Verifying a chart
 
-Each chart version's release carries a [Sigstore](https://www.sigstore.dev/) bundle beside the chart, `<chart>-<version>.tgz.sigstore.json`. The release workflow signs the chart keyless with [cosign](https://docs.sigstore.dev/cosign/) before the release is published, so the bundle ties the exact `.tgz` the Helm repository serves to this repository's release workflow on `main`, and the signature is recorded in the public Rekor transparency log. To check a chart before installing it, with [cosign](https://docs.sigstore.dev/cosign/system_config/installation/) v3 or later and the [GitHub CLI](https://cli.github.com/) (or download the bundle from the release page):
+Each chart version's release carries a [Sigstore](https://www.sigstore.dev/) bundle beside the chart, `<chart>-<version>.tgz.sigstore.json`. The release pipeline signs the chart keyless with [cosign](https://docs.sigstore.dev/cosign/) before the release is published, so the bundle ties the exact `.tgz` the Helm repository serves to this repository's release pipeline (`.github/workflows/version.yml`) on `main`, and the signature is recorded in the public Rekor transparency log. To check a chart before installing it, with [cosign](https://docs.sigstore.dev/cosign/system_config/installation/) v3 or later and the [GitHub CLI](https://cli.github.com/) (or download the bundle from the release page):
 
 ```bash
 helm pull ignition-charts/ignition-scaleout --version <version>
 gh release download ignition-scaleout-v<version> --repo Apollogeddon/ignition-helm --pattern '*.sigstore.json'
 cosign verify-blob ignition-scaleout-<version>.tgz \
   --bundle ignition-scaleout-<version>.tgz.sigstore.json \
-  --certificate-identity https://github.com/Apollogeddon/ignition-helm/.github/workflows/release.yaml@refs/heads/main \
+  --certificate-identity https://github.com/Apollogeddon/ignition-helm/.github/workflows/version.yml@refs/heads/main \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com
 ```
 
-`Verified OK` means the chart was built and released by this repository's release workflow and hasn't changed since. Chart versions released before signing was added have no bundle.
+`Verified OK` means the chart was built and released by this repository's release pipeline and hasn't changed since. Chart versions released before the pipeline was renamed were signed as `https://github.com/Apollogeddon/ignition-helm/.github/workflows/release.yaml@refs/heads/main`, so check those with that identity, and chart versions released before signing was added have no bundle.
 
 ## Quick start
 
@@ -97,7 +97,7 @@ The [`examples/`](examples/README.md) directory has values files for common setu
 
 ## Contributing
 
-Pull requests are welcome. Run `npm ci` once per clone to install the commit hook. Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/), which release-please uses to version the charts. The failover and scaleout charts each ship the ignition-common they were released with, so when common is released the release workflow opens a pull request raising both to require it; merging that pull request releases them with it. Installing needs a GitHub token with `read:packages` in your user `~/.npmrc`, for `@apollogeddon/forgejs`.
+Pull requests are welcome. Run `npm ci` once per clone to install the commit hook. Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/), which release-please uses to version the charts. The failover and scaleout charts each ship the ignition-common they were released with, so when common is released the release pipeline (`version / release`) opens a pull request raising both to require it; merging that pull request releases them with it. Installing needs a GitHub token with `read:packages` in your user `~/.npmrc`, for `@apollogeddon/forgejs`.
 
 ## License
 

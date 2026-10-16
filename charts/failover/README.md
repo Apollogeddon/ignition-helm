@@ -52,18 +52,18 @@ Resources are named after `applicationName` (default `ignition-failover`), not t
 
 ### Verifying the chart
 
-Each release carries a cosign signature bundle, `ignition-failover-<version>.tgz.sigstore.json`, made keyless by the repository's release workflow. To check a chart before installing it:
+Each release carries a cosign signature bundle, `ignition-failover-<version>.tgz.sigstore.json`, made keyless by the repository's release pipeline (`version.yml`). To check a chart before installing it:
 
 ```bash
 helm pull ignition-charts/ignition-failover --version <version>
 gh release download ignition-failover-v<version> --repo Apollogeddon/ignition-helm --pattern '*.sigstore.json'
 cosign verify-blob ignition-failover-<version>.tgz \
   --bundle ignition-failover-<version>.tgz.sigstore.json \
-  --certificate-identity https://github.com/Apollogeddon/ignition-helm/.github/workflows/release.yaml@refs/heads/main \
+  --certificate-identity https://github.com/Apollogeddon/ignition-helm/.github/workflows/version.yml@refs/heads/main \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com
 ```
 
-See [Verifying a chart](../../README.md#verifying-a-chart) for what this checks.
+A chart version released before the pipeline was renamed was signed as `.github/workflows/release.yaml`: name that in `--certificate-identity` instead. See [Verifying a chart](../../README.md#verifying-a-chart) for what this checks.
 
 ## Operations
 

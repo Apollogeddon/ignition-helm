@@ -2,5 +2,5 @@ node_modules/
 dist/
 .astro/
 
-# copied in from the repository root by webpage.yaml's pre-build command
+# copied in from the repository root by the website pipeline's pre-build command (.github/workflows/.index.yml)
 public/index.yaml

@@ -12,7 +12,7 @@ You should expect an initial response within a few days. If the issue is confirm
 
 ## Verifying the charts
 
-Every chart release carries a Sigstore bundle that cosign made keyless in the release workflow, before the release was published. See [Verifying a chart](../README.md#verifying-a-chart) for the command that checks a downloaded chart against it.
+Every chart release carries a Sigstore bundle that cosign made keyless in the release pipeline (`version / release`), before the release was published. See [Verifying a chart](../README.md#verifying-a-chart) for the command that checks a downloaded chart against it.
 
 ## Automated security tooling
 

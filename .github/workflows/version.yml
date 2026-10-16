@@ -1,35 +1,32 @@
-name: Release
+name: version
 
+# Releases each new chart version, with its signed package, then runs release-please, which opens the
+# release pull requests. It stays local rather than a forge's version.yml, as release-please creates no
+# releases here (skip-github-release): this releases each chart itself, and keeps the chart index.
 on:
   workflow_call:
-    outputs:
-      pr_number:
-        description: "The release pull request release-please opened or updated; empty if none"
-        value: ${{ jobs.version.outputs.pr_number }}
-  workflow_dispatch:
-
-# each job asks for what it needs
-permissions:
-  contents: read
 
 jobs:
-  # This job creates each chart version's tag and release, with the packaged chart
-  # attached. release-please only opens the release pull requests that bump the
-  # versions and changelogs: it creates no releases of its own, and expects the
-  # <chart>-v<version> tag names when it looks for the last release.
-  version:
+  # Creates each chart version's tag and release, with the packaged chart attached. release-please
+  # only opens the release pull requests that bump the versions and changelogs: it creates no releases
+  # of its own, and expects the <chart>-v<version> tag names when it looks for the last release.
+  release:
+    name: release
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    # one release at a time, as two would race for the same tags and the chart index; a run on main
+    # is never cancelled, so a release waits for the one before it
+    concurrency:
+      group: version-release
+      cancel-in-progress: false
     # id-token signs each chart with cosign, keyless, as this workflow
     permissions:
       contents: write
       pull-requests: write
       id-token: write
-    outputs:
-      # the release pull request release-please opened or updated, if any
-      pr_number: ${{ steps.release-please.outputs.pr && fromJSON(steps.release-please.outputs.pr).number || '' }}
     steps:
-      - name: Checkout
+      - name: Check out
         uses: actions/checkout@v7
         with:
           fetch-depth: 0
@@ -39,11 +36,26 @@ jobs:
           git config user.name "Apollogeddon"
           git config user.email "214195771+Apollogeddon@users.noreply.github.com"
 
-      - name: Install Helm
+      - name: Set up Helm
         uses: ./.github/actions/setup-helm
 
       - name: Update dependencies
         run: sh ./.github/scripts/ci/update-dependencies.sh
+
+      # the Chart.lock files helm dependency update refreshed, committed to main; if main has moved
+      # on, the next run commits them, and this one releases with them uncommitted
+      - name: Commit the chart locks
+        run: |
+          git add charts/**
+          if git diff --cached --quiet; then
+            echo "The chart locks are up to date"
+          else
+            git commit --quiet -m "chore(helm): update chart lock and yaml files"
+            if ! git push --quiet origin "HEAD:$GITHUB_REF"; then
+              echo "::warning::Couldn't push the refreshed chart locks, as main has moved on; the next run commits them"
+              git reset --quiet --soft HEAD~1
+            fi
+          fi
 
       # every chart, so a version that has no release yet is released even if no
       # chart changed in this push
@@ -51,7 +63,7 @@ jobs:
         run: ./.github/scripts/ci/package-charts.sh
 
       # the installer's tag pins the cosign version, so Dependabot updates both
-      - name: Install cosign
+      - name: Set up cosign
         uses: sigstore/cosign-installer@v4.1.2
 
       - name: Release the new chart versions
@@ -62,7 +74,7 @@ jobs:
 
       # chart-releaser's own upload publishes a release before attaching the chart, which
       # immutable releases refuse, so it only adds the new versions to index.yaml
-      - name: Install chart-releaser
+      - name: Set up chart-releaser
         if: steps.release.outputs.released == 'true'
         uses: helm/chart-releaser-action@v1.7.0
         with:
@@ -91,13 +103,34 @@ jobs:
               --remove-label "autorelease: pending" --add-label "autorelease: tagged"
           done
 
-      - name: Release Please
+      - name: Release
         id: release-please
         uses: googleapis/release-please-action@v5
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           config-file: .github/release.json
           manifest-file: .github/.release.json
+
+      # a pull request opened with the workflow token starts no workflow, and CODEOWNERS doesn't
+      # request a review on it, so the release pull request asks for one here
+      - name: Request a review
+        if: steps.release-please.outputs.pr != ''
+        uses: actions/github-script@v9
+        env:
+          PULL_REQUEST: ${{ steps.release-please.outputs.pr && fromJSON(steps.release-please.outputs.pr).number || '' }}
+        with:
+          script: |
+            const number = Number(process.env.PULL_REQUEST);
+            if (!number) return core.notice('No pull request to request a review on');
+            const { data: repo } = await github.rest.repos.get(context.repo);
+            if (repo.owner.type !== 'User') return core.notice('The owner is an organisation, so no review is requested');
+            // a review request is a courtesy, never a check: a failure here mustn't fail the release
+            try {
+              await github.rest.pulls.requestReviewers({ ...context.repo, pull_number: number, reviewers: [repo.owner.login] });
+              core.info(`Requested a review from ${repo.owner.login} on #${number}`);
+            } catch (error) {
+              core.warning(`Couldn't request a review on #${number}: ${error.message}`);
+            }
 
       # a chart ships the common it was released with, and release-please only releases
       # a chart whose own files changed: once common has a new version, open the pull

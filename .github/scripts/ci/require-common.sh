@@ -31,7 +31,7 @@ if git ls-remote --exit-code --heads origin "$branch" >/dev/null 2>&1; then
 fi
 
 # the release job's earlier steps rewrote the Chart.lock files in place. The pull request
-# leaves them alone: main's Index job commits fresh ones, which would conflict with its own,
+# leaves them alone: the release job commits fresh ones, which would conflict with its own,
 # and every job that uses a chart runs helm dependency update first
 git switch --quiet --discard-changes -c "$branch"
 for dir in "${stale[@]}"; do

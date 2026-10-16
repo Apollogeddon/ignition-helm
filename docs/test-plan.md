@@ -9,7 +9,7 @@ How the `ignition-failover` and `ignition-scaleout` charts are tested, what each
 | Unit | `charts/*/tests` (helm-unittest, run in CI) | Rendering of every option |
 | Staging e2e | `test/e2e` scripts against a shared single-node cluster | Real gateways on Ignition 8.1 and 8.3: health, redundancy, upgrades, ingress, failover timing |
 | Script | `test/scripts` (run in CI) | The shell scripts the chart ships (`health-check.sh`, `active-routing.sh`, `certify.sh`), run against stub `curl`/`kubectl` |
-| CI e2e | `.github/workflows/e2e.yaml`: disposable three-node kind cluster with cert-manager, Contour and Chaos Mesh (manual only; a full run takes about two hours) | The staging scenarios plus what a shared single node can't do safely: network partitions (S10). kind's default CNI enforces NetworkPolicy, which `testing.yaml` already checks |
+| CI e2e | `.github/workflows/.e2e.yml` (`charts / test (staging)`): disposable three-node kind cluster with cert-manager, Contour and Chaos Mesh (manual only; a full run takes about two hours) | The staging scenarios plus what a shared single node can't do safely: network partitions (S10). kind's default CNI enforces NetworkPolicy, which `charts / test (cluster)` already checks |
 | Manual | Testing environment | Avi/AKO ingress behaviour |
 
 ## Staging guardrails
@@ -50,7 +50,7 @@ Status: **Live** verified on a real deployment, **Unit** helm-unittest only, **R
 | 18 | Service (NodePort/ClusterIP/LB) serves traffic | Not tested | Live (NodePort) | LoadBalancer needs MetalLB (CI) |
 | 19 | Chart Ingress routes to the gateway | Not tested | Live | S01 via Contour with `ingress.className` |
 | 20 | Web TLS (`ssl.enabled`) | Not tested | Live (S05) | |
-| 21 | NetworkPolicy and extraIngress enforced | Rendered | CI | `testing.yaml` checks cross-namespace denial on kind (kindnet enforces NetworkPolicy) |
+| 21 | NetworkPolicy and extraIngress enforced | Rendered | CI | `charts / test (cluster)` checks cross-namespace denial on kind (kindnet enforces NetworkPolicy) |
 | 22 | Log files cannot grow without bound | Live (S08) | Live (S08) | fixed: `logging.wrapperLogToStdout` (default on) appends `wrapper.logfile=/dev/stdout`; no `wrapper.log`, gateway log in `kubectl logs` |
 | 23 | Per-logger levels, SQLite limits | Live | Live (CI deploy test) | |
 | 24 | emptyDir size limits | Live | Live (CI deploy test) | |
@@ -222,4 +222,4 @@ The watch now stops a run only after 3 failures in a row, and does not count fai
 
 ### Not yet run
 
-S10 and the CI workflow: they run on GitHub once `main` is pushed (start E2E manually from Actions).
+S10 and the CI workflow: they run on GitHub once `main` is pushed (start the e2e workflow manually from Actions).
