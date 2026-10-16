@@ -8,6 +8,9 @@ on:
       - 'charts/**'
   pull_request:
   workflow_dispatch:
+  # sent by the auto-merge job, as a merge it makes starts no push run on main
+  repository_dispatch:
+    types: [auto-merged]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -42,7 +45,7 @@ jobs:
           CHART_INPUTS: '^(charts/|examples/|test/(scripts|e2e)/|ct\.yaml$|\.github/(actions|kind|scripts/(ci|tests))/|\.github/release\.json$|\.github/workflows/(\.index|quality|release|testing)\.yaml$)'
           SCRIPT_INPUTS: '(\.sh$|^\.shellcheckrc$|^\.github/workflows/\.index\.yaml$)'
         run: |
-          # a push or a manual run releases, so it runs the whole chart pipeline
+          # a push, a manual run or an auto-merge's dispatch releases, so it runs the whole chart pipeline
           if [ "$EVENT" != pull_request ] || ! git cat-file -e "$BASE^{commit}" 2>/dev/null; then
             echo "charts=true" >> "$GITHUB_OUTPUT"
             echo "scripts=true" >> "$GITHUB_OUTPUT"
