@@ -36,7 +36,7 @@ kubectl delete ns -l e2e=ignition-helm
 - `s09-restore.sh`: a source gateway gets a marker project and takes a backup with `gwcmd -b`; a new install restores it from a URL (`restore.url`, served by a busybox pod in the test namespace) on its first start. Then the restored project is changed and the gateway restarted: the change must survive and the backup must not be downloaded again. Needs `unzip` on the test machine.
 - `s10-partition.sh` (disposable clusters only, needs Chaos Mesh): partitions the Master from the Backup (split-brain) and then isolates the Master entirely (hung Master); checks traffic is never routed to two gateways, measures the unserved time, and checks the pair settles afterwards.
 
-CI runs these on a disposable kind cluster with `.github/workflows/e2e.yaml` (manual only; a full run takes about two hours); `.github/scripts/e2e/setup-cluster.sh` installs cert-manager, Contour and Chaos Mesh.
+CI runs these on a disposable kind cluster as `charts / test (staging)`, from the `e2e` workflow, `.github/workflows/.e2e.yml` (manual only; a full run takes about two hours); `.github/scripts/e2e/setup-cluster.sh` installs cert-manager, Contour and Chaos Mesh.
 
 ## Experiments
 
