@@ -162,14 +162,25 @@ ignition:
 With the SealedSecrets controller in the cluster and the `kubeseal` CLI:
 
 1. Set `sealedSecrets: true` in your values.
-2. Provide the *encrypted* strings in the `secrets` map.
+2. Encrypt **every** key in the `secrets` map, the chart's defaults included: `GATEWAY_ADMIN_USERNAME`, `GATEWAY_ADMIN_PASSWORD`, `IGNITION_GAN_KEYSTORE_PASSWORD` and `IGNITION_WEB_KEYSTORE_PASSWORD`, plus any you add. The controller unseals all of a SealedSecret or none of it, so one plain value left in stops the gateways from starting. The chart refuses to render a value that isn't sealed.
+
+The chart's SealedSecret is namespace-wide, so seal each value for the release's namespace with that scope:
+
+```bash
+echo -n 'my-admin-password' | kubeseal --raw --scope namespace-wide --namespace <namespace>
+```
 
 ```yaml
 ignition:
   sealedSecrets: true
   secrets:
-    GATEWAY_ADMIN_PASSWORD: "AgBy38v4Sly6S..." # Encrypted via kubeseal
+    GATEWAY_ADMIN_USERNAME: "AgBhR2x0Z..."         # each value is kubeseal's output
+    GATEWAY_ADMIN_PASSWORD: "AgBy38v4Sly6S..."
+    IGNITION_GAN_KEYSTORE_PASSWORD: "AgCk9dQe1..."
+    IGNITION_WEB_KEYSTORE_PASSWORD: "AgA3Vt7mP..."
 ```
+
+The Gateway Network keystore takes its password from the unsealed Secret, so it matches what the gateway reads. For scaleout, seal `frontend.secrets` and `backend.secrets` the same way, with `frontend.sealedSecrets` and `backend.sealedSecrets`.
 
 ### Ingress and sticky sessions
 

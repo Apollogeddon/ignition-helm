@@ -175,7 +175,8 @@ ignition:
     GATEWAY_NETWORK_REQUIRETWOWAYAUTH: "true"
     GATEWAY_MODULES_ENABLED: "perspective,symbol-factory,alarm-notification,modbus-driver-v2,opc-ua,reporting,siemens-drivers,sql-bridge,tag-historian,udp-tcp-drivers"
 
-  # -- Use SealedSecrets instead of plain Kubernetes Secrets
+  # -- Use SealedSecrets instead of plain Kubernetes Secrets: every key in `secrets`,
+  # the defaults included, must then be encrypted with `kubeseal --raw --scope namespace-wide`
   sealedSecrets: false
 
   # -- Sensitive configuration values (will be mapped to Secret/SealedSecret)

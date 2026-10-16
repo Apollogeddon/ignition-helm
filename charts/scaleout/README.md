@@ -48,8 +48,6 @@ helm install my-scaleout ignition-charts/ignition-scaleout \
 
 Resources are named after `applicationName` (default `ignition-scaleout`), not the release name: the StatefulSets are `ignition-scaleout-frontend` and `ignition-scaleout-backend`.
 
-Both layers' Gateway Network keystores are created with `frontend.secrets.IGNITION_GAN_KEYSTORE_PASSWORD`, so if you change it, set `backend.secrets.IGNITION_GAN_KEYSTORE_PASSWORD` to the same value.
-
 ### Verifying the chart
 
 Each release carries a cosign signature bundle, `ignition-scaleout-<version>.tgz.sigstore.json`, made keyless by the repository's release workflow. To check a chart before installing it:
@@ -133,8 +131,7 @@ The most commonly changed values are below. Most `frontend.*` and `backend.*` va
 | `image.tag` | Ignition image tag for both layers. Empty uses the chart's `appVersion`. | `""` (8.3.10) |
 | `frontend.secrets.GATEWAY_ADMIN_PASSWORD` | Frontend gateway admin password. Set your own. | `admin` |
 | `backend.secrets.GATEWAY_ADMIN_PASSWORD` | Backend gateway admin password. Set your own. | `admin` |
-| `frontend.secrets.IGNITION_GAN_KEYSTORE_PASSWORD` | Password for both layers' Gateway Network keystores. | `metro` |
-| `backend.secrets.IGNITION_GAN_KEYSTORE_PASSWORD` | Must match `frontend.secrets.IGNITION_GAN_KEYSTORE_PASSWORD`. | `metro` |
+| `frontend.secrets.IGNITION_GAN_KEYSTORE_PASSWORD` / `backend.secrets.IGNITION_GAN_KEYSTORE_PASSWORD` | Password for each layer's Gateway Network keystore. | `metro` |
 | `frontend.secrets.IGNITION_WEB_KEYSTORE_PASSWORD` / `backend.secrets.IGNITION_WEB_KEYSTORE_PASSWORD` | Password for each layer's web server TLS keystore. | `ignition` |
 | `frontend.config.GATEWAY_MODULES_ENABLED` | Modules enabled on the frontend. | `perspective,symbol-factory` |
 | `backend.config.GATEWAY_MODULES_ENABLED` | Modules enabled on the backend. | drivers, SQL Bridge, tag historian, reporting, alarm notification |

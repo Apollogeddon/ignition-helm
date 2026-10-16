@@ -234,7 +234,7 @@ command:
 
 ### Security and accounts
 
-Security context, secrets and the ServiceAccount. With `ignition.sealedSecrets`, the `ignition.secrets` values must be encrypted with `kubeseal`.
+Security context, secrets and the ServiceAccount. With `ignition.sealedSecrets`, every `ignition.secrets` value, the defaults included, must be encrypted with `kubeseal` (see [SealedSecrets](../../guides/capabilities/#example-sealedsecrets)).
 
 | Parameter | Type | Default |
 | --- | --- | --- |

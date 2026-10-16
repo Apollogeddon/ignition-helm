@@ -12,7 +12,6 @@
 | `ignition-common.configMap` | A ConfigMap of gateway environment variables. |
 | `ignition-common.secret` | An Opaque Secret, or a Bitnami SealedSecret, of sensitive environment variables. |
 | `ignition-common.ganCA` | A cert-manager CA Certificate for the Gateway Network, issued by the configured issuer, and an Issuer that signs with it. |
-| `ignition-common.ganMetroKeystore` | The Secret holding the Gateway Network keystore password. |
 | `ignition-common.ganCertificate` | A cert-manager Certificate, with a PKCS#12 keystore, for one component's Gateway Network identity. |
 | `ignition-common.pdb` | A PodDisruptionBudget. |
 | `ignition-common.redundancyServices` | The `-primary` and `-backup` headless Services that target pod ordinals 0 and 1. |

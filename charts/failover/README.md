@@ -104,7 +104,7 @@ The most commonly changed values are below. See [`values.yaml`](values.yaml) for
 | `ignition.secrets.GATEWAY_ADMIN_PASSWORD` | Gateway admin password. Set your own. | `admin` |
 | `ignition.secrets.IGNITION_GAN_KEYSTORE_PASSWORD` | Password for the Gateway Network keystore. | `metro` |
 | `ignition.secrets.IGNITION_WEB_KEYSTORE_PASSWORD` | Password for the web server TLS keystore. | `ignition` |
-| `ignition.sealedSecrets` | Render `ignition.secrets` as a SealedSecret of already encrypted values. | `false` |
+| `ignition.sealedSecrets` | Render `ignition.secrets` as a SealedSecret of already encrypted values. Every key must then be sealed, the defaults above included. | `false` |
 | `ignition.config` | Gateway environment variables (edition, EULA, enabled modules). | see `values.yaml` |
 | `ignition.redundancy.enabled` | Deploy a Master/Backup pair (2 replicas) instead of one gateway. Changing it, or any other `ignition.redundancy.*` value, on an existing install restarts the gateways and applies the role (Master, Backup, or Independent when turned off) and settings to their data volumes on start. | `false` |
 | `ignition.activeRouting.enabled` | Route user traffic only to the active gateway of a redundant pair: a labeller keeps `redundancy-active=true` on the active pod, the `<name>-active` Service (which takes the configured service type, node ports and annotations) selects it, and the Ingress points at it. Readiness also requires a Backup to be in sync. | `false` |

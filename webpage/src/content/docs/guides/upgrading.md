@@ -73,6 +73,10 @@ From ignition-common 3.3.3 (bundled from scaleout 5.0.0, and in the failover rel
 
 With the default self-signed issuer nothing changes, as the two are the same certificate. With your own CA issuer (`certManager.issuer.name`), a gateway outside the release whose certificate that issuer signs, such as another release or an external gateway, was accepted on the Gateway Network before and is refused after the upgrade. Give each such peer trust explicitly in the gateway's Gateway Network settings. An issuer that publishes no `ca.crt` (for example ACME) now works, where the init container failed before.
 
+## SealedSecrets
+
+In the ignition-common release after 3.3.2, each Gateway Network keystore takes its password from the release's own secrets (`<name>-secrets`, or `<name>-frontend-secrets` and `<name>-backend-secrets`) instead of a separate `<name>-gan-metro-keystore` Secret, which the upgrade deletes. With plain secrets nothing changes. With `sealedSecrets: true`, that Secret held the sealed text, so the keystore didn't open and the gateways couldn't start. The keystore keeps its old password until cert-manager next issues the certificate, so once the upgrade has rendered, renew it (`cmctl renew <name>-gan`, or `<name>-frontend-gan` and `<name>-backend-gan`). Seal every value in `secrets`, the defaults included: the chart now refuses one that isn't sealed.
+
 ## A scaleout frontend autoscaler
 
 From scaleout 5.0.0, `frontend.hpa.enabled` needs `componentSelectors: true`, as without it the autoscaler also counts the backend's pods. A release that has the autoscaler on fails to render until it is set, and setting it changes both StatefulSets' selectors, which Kubernetes doesn't allow on an existing object. Delete only the StatefulSet objects first, as in step 1; the upgraded StatefulSets adopt the running pods:

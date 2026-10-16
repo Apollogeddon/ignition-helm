@@ -173,6 +173,8 @@ The timings, `maxDiskMb` and `pingMaxMissed`, and `backend.activeRouting.interva
 
 #### Resources and security (backend)
 
+With `backend.sealedSecrets`, every `backend.secrets` value, the defaults included, must be encrypted with `kubeseal` (see [SealedSecrets](../../guides/capabilities/#example-sealedsecrets)).
+
 | Parameter | Type | Default |
 | --- | --- | --- |
 | `backend.resources.requests` | object | `{"memory":"1Gi","cpu":"500m"}` |
@@ -302,6 +304,8 @@ GATEWAY_MODULES_ENABLED: perspective,symbol-factory
 | `frontend.ingress.tls` | list | `[]` |
 
 #### Resources and security (frontend)
+
+With `frontend.sealedSecrets`, every `frontend.secrets` value, the defaults included, must be encrypted with `kubeseal` (see [SealedSecrets](../../guides/capabilities/#example-sealedsecrets)).
 
 | Parameter | Type | Default |
 | --- | --- | --- |

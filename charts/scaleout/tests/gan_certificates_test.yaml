@@ -19,35 +19,43 @@ tests:
           path: metadata.name
           pattern: -gan-issuer$
 
-  - it: should create GAN Metro Keystore Secret
-    asserts:
-      - documentIndex: 2
-        isKind:
-          of: Secret
-      - documentIndex: 2
-        matchRegex:
-          path: metadata.name
-          pattern: -gan-metro-keystore$
-
   - it: should create Frontend GAN Certificate
     asserts:
-      - documentIndex: 3
+      - hasDocuments:
+          count: 4
+      - documentIndex: 2
         isKind:
           of: Certificate
-      - documentIndex: 3
+      - documentIndex: 2
         matchRegex:
           path: metadata.name
           pattern: -frontend-gan$
 
   - it: should create Backend GAN Certificate
     asserts:
-      - documentIndex: 4
+      - documentIndex: 3
         isKind:
           of: Certificate
-      - documentIndex: 4
+      - documentIndex: 3
         matchRegex:
           path: metadata.name
           pattern: -backend-gan$
+
+  # each layer's keystore takes its own layer's passphrase, the one its preconfigure container reads
+  - it: should take each keystore password from its own layer's secret
+    asserts:
+      - documentIndex: 2
+        equal:
+          path: spec.keystores.pkcs12.passwordSecretRef
+          value:
+            name: ignition-scaleout-frontend-secrets
+            key: IGNITION_GAN_KEYSTORE_PASSWORD
+      - documentIndex: 3
+        equal:
+          path: spec.keystores.pkcs12.passwordSecretRef
+          value:
+            name: ignition-scaleout-backend-secrets
+            key: IGNITION_GAN_KEYSTORE_PASSWORD
 
   - it: should keep the CA key on renewal
     asserts:
@@ -58,7 +66,7 @@ tests:
 
   - it: should rotate the GAN certificate key on renewal
     asserts:
-      - documentIndex: 3
+      - documentIndex: 2
         equal:
           path: spec.privateKey.rotationPolicy
           value: Always
