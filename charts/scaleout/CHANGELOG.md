@@ -1,5 +1,18 @@
 # Changelog
 
+## [5.0.0](https://github.com/Apollogeddon/ignition-helm/compare/ignition-scaleout-v4.3.4...ignition-scaleout-v5.0.0) (2026-10-16)
+
+
+### ⚠ BREAKING CHANGES
+
+* review 4 findings (frontend autoscaler selector, gateway network trust, dotfile seeding) ([#97](https://github.com/Apollogeddon/ignition-helm/issues/97))
+
+### Bug Fixes
+
+* Gan keystore password under sealedsecrets, and a sealedsecrets example that unseals ([#99](https://github.com/Apollogeddon/ignition-helm/issues/99)) ([96a1310](https://github.com/Apollogeddon/ignition-helm/commit/96a1310fb5722bee317ce64866db70234906c7cc))
+* Review 3 findings (examples and NetworkPolicy, redundancy escaping, anti-affinity, SA token, timeouts) ([#94](https://github.com/Apollogeddon/ignition-helm/issues/94)) ([63351f3](https://github.com/Apollogeddon/ignition-helm/commit/63351f38b8abaa01bf8dd9de504b351be0e09139))
+* Review 4 findings (frontend autoscaler selector, gateway network trust, dotfile seeding) ([#97](https://github.com/Apollogeddon/ignition-helm/issues/97)) ([baf1028](https://github.com/Apollogeddon/ignition-helm/commit/baf1028d2d6b298f9777922d08b613a9055ce4fb))
+
 ## [4.3.4](https://github.com/Apollogeddon/ignition-helm/compare/ignition-scaleout-v4.3.3...ignition-scaleout-v4.3.4) (2026-10-12)
 
 
