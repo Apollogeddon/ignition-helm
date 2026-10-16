@@ -67,6 +67,12 @@ ignition:                  # scaleout: frontend (and backend, if reached from ou
 
 Or keep the old behaviour with `networkPolicy.enabled: false` (`ignition.networkPolicy` in failover, `frontend.networkPolicy` and `backend.networkPolicy` in scaleout). See [Network security](../advanced-config/#network-security-gateway-network-isolation).
 
+## Gateway Network trust
+
+From ignition-common 3.3.3 (bundled from scaleout 5.0.0, and in the failover release after 4.2.5), each gateway trusts only its release's own Gateway Network CA, not the root of the issuer that signed it. Each pod picks this up as it is replaced, with no step of your own.
+
+With the default self-signed issuer nothing changes, as the two are the same certificate. With your own CA issuer (`certManager.issuer.name`), a gateway outside the release whose certificate that issuer signs, such as another release or an external gateway, was accepted on the Gateway Network before and is refused after the upgrade. Give each such peer trust explicitly in the gateway's Gateway Network settings. An issuer that publishes no `ca.crt` (for example ACME) now works, where the init container failed before.
+
 ## A scaleout frontend autoscaler
 
 From scaleout 5.0.0, `frontend.hpa.enabled` needs `componentSelectors: true`, as without it the autoscaler also counts the backend's pods. A release that has the autoscaler on fails to render until it is set, and setting it changes both StatefulSets' selectors, which Kubernetes doesn't allow on an existing object. Delete only the StatefulSet objects first, as in step 1; the upgraded StatefulSets adopt the running pods:
