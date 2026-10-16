@@ -78,10 +78,12 @@ spec:
   encryptedData:
     {{- range $key, $val := .secrets }}
     {{- /* the controller unseals all or nothing, so one plain value (a default left in) stops every gateway */}}
-    {{- if or (lt (len (toString $val)) 300) (not (regexMatch "^[A-Za-z0-9+/]+=*$" (toString $val))) }}
+    {{- /* trimmed: a YAML block scalar or --set-file leaves kubeseal's output with a trailing newline */}}
+    {{- $sealed := toString $val | trim }}
+    {{- if or (lt (len $sealed) 300) (not (regexMatch "^[A-Za-z0-9+/]+=*$" $sealed)) }}
     {{- fail (printf "sealedSecrets is on, but secrets.%s is not a kubeseal-encrypted value: seal every key, the chart's defaults included (kubeseal --raw --scope namespace-wide)" $key) }}
     {{- end }}
-    {{ $key }}: {{ $val | quote }}
+    {{ $key }}: {{ $sealed | quote }}
     {{- end }}
 {{- else }}
 # Plain Kubernetes Secret
