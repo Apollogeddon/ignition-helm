@@ -1,0 +1,174 @@
+name: index
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+  # sent by the merge pipeline, as a merge it makes starts no push run on main
+  repository_dispatch:
+    types: [auto-merged]
+  # weekly, for the patch pipeline; a manual run or a merge's dispatch patches too
+  schedule:
+    - cron: '23 4 * * 1'
+
+# A pull request's newer run replaces its older one; every other run has a group of its own, so a run on
+# main, running or queued, is never cancelled and the site is never left half deployed.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+# Each job calls one pipeline, or is a stage of one, so the run page reads <pipeline> / <stage>.
+jobs:
+  # What a run needs: the chart stages when the charts, their examples, or what tests and releases them
+  # changed, and shellcheck when a script changed. A manual run or a merge's dispatch checks everything.
+  changes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      charts: ${{ steps.diff.outputs.charts }}
+      scripts: ${{ steps.diff.outputs.scripts }}
+    steps:
+      - name: Check out
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Find what changed
+        id: diff
+        env:
+          EVENT: ${{ github.event_name }}
+          # a pull request's base, or the commit main was at before a push
+          BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+          CHART_INPUTS: '^(charts/|examples/|test/(scripts|e2e)/|ct\.yaml$|\.github/(actions|kind|scripts/(ci|tests|e2e))/|\.github/release\.json$|\.github/workflows/(\.index|\.e2e|charts|version)\.yml$)'
+          SCRIPT_INPUTS: '(\.sh$|^\.shellcheckrc$|^\.github/workflows/\.index\.yml$)'
+        run: |
+          if { [ "$EVENT" != pull_request ] && [ "$EVENT" != push ]; } || ! git cat-file -e "$BASE^{commit}" 2>/dev/null; then
+            echo "charts=true" >> "$GITHUB_OUTPUT"
+            echo "scripts=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          files=$(git diff --name-only "$BASE" HEAD)
+          printf '%s\n' "$files"
+          if printf '%s\n' "$files" | grep -qE "$CHART_INPUTS"; then charts=true; else charts=false; fi
+          if printf '%s\n' "$files" | grep -qE "$SCRIPT_INPUTS"; then scripts=true; else scripts=false; fi
+          echo "charts=$charts" | tee -a "$GITHUB_OUTPUT"
+          echo "scripts=$scripts" | tee -a "$GITHUB_OUTPUT"
+
+  # shellcheck, kube-linter, chart-testing's lint, Trivy, Checkov, the unit and script tests, and the
+  # changed charts deployed on kind; on main before the release, so a release is never cut without them
+  charts:
+    needs: changes
+    if: ${{ github.event_name != 'schedule' && (needs.changes.outputs.charts == 'true' || needs.changes.outputs.scripts == 'true') }}
+    uses: ./.github/workflows/charts.yml
+    permissions:
+      contents: read
+    with:
+      charts: ${{ needs.changes.outputs.charts == 'true' }}
+      scripts: ${{ needs.changes.outputs.scripts == 'true' }}
+
+  # On main: each new chart version released, signed and added to the chart index, the refreshed chart
+  # locks committed, then release-please's release pull requests. It uses only the workflow's own token.
+  version:
+    needs: [changes, charts]
+    if: >-
+      ${{ !cancelled() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') &&
+      github.event_name != 'pull_request' && github.event_name != 'schedule' }}
+    uses: ./.github/workflows/version.yml
+    permissions:
+      contents: write
+      pull-requests: write
+      id-token: write
+
+  # forgejs's website pipeline for the documentation site: Gitleaks over the whole repository, OSV-Scanner,
+  # Biome, the type check and the build, then its internal links with lychee and every page in the sitemap
+  # against WCAG 2.2 A and AA with axe. The site also serves the chart repository's index.yaml, which the
+  # pre-build command copies in; on main, after the release, so it has the versions just released.
+  website:
+    needs: version
+    if: ${{ !cancelled() && github.event_name != 'schedule' }}
+    uses: apollogeddon/forgejs/.github/workflows/website.yml@ci-v2
+    permissions:
+      contents: read
+      packages: read
+      # Gitleaks comments on the pull request when it finds a secret
+      pull-requests: write
+    with:
+      working_directory: webpage
+      # a pull request builds its own code; otherwise the tip of main, not the commit that triggered
+      # the run, as the release has just pushed index.yaml
+      ref: ${{ github.event_name != 'pull_request' && 'main' || '' }}
+      pre_build_command: cp ../index.yaml public/index.yaml
+      run_tests: false
+      # served under its GitHub Pages path
+      base_path: /ignition-helm/
+      check_links: true
+      check_accessibility: true
+
+  # A website stage of the repository's own: every Markdown file in it, which no forge pipeline lints
+  website-lint-markdown:
+    name: website / lint (markdown)
+    if: ${{ github.event_name != 'schedule' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      # the root tooling installs @apollogeddon/forgejs from GitHub Packages
+      packages: read
+    steps:
+      - name: Check out
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: webpage/.nvmrc
+          cache: "npm"
+          cache-dependency-path: package-lock.json
+          registry-url: "https://npm.pkg.github.com"
+          scope: "@apollogeddon"
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Lint
+        run: npx markdownlint-cli2 "**/*.{md,mdx}"
+
+  # Every push to main deploys the site, which also serves the Helm repository, whether or not it made
+  # a release, as a docs change makes none
+  pages:
+    needs: [website, website-lint-markdown]
+    if: >-
+      ${{ !cancelled() && needs.website.result == 'success' && needs.website-lint-markdown.result == 'success' &&
+      github.event_name != 'pull_request' && github.ref == 'refs/heads/main' }}
+    uses: apollogeddon/forgejs/.github/workflows/pages.yml@ci-v2
+    permissions:
+      pages: write
+      id-token: write
+
+  # Weekly, by hand, or after a merge's dispatch: the site's vulnerable npm dependencies upgraded on main
+  patch:
+    if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || github.event_name == 'repository_dispatch' }}
+    uses: apollogeddon/forgejs/.github/workflows/patch.yml@ci-v2
+    permissions:
+      contents: write
+      packages: read
+    with:
+      working_directory: webpage
+
+  # Dependabot's pull requests: a review request, and a squash merge once every check above passed
+  merge:
+    needs: [changes, charts, website, website-lint-markdown]
+    if: ${{ !cancelled() && github.event_name == 'pull_request' && github.event.pull_request.user.login == 'dependabot[bot]' }}
+    uses: apollogeddon/forgejs/.github/workflows/merge.yml@ci-v2
+    permissions:
+      contents: write
+      pull-requests: write
+    with:
+      checks_passed: ${{ !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') }}

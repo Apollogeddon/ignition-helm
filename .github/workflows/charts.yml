@@ -1,0 +1,305 @@
+name: charts
+
+# The Helm charts' checks: lint, the Trivy and Checkov scans, the unit and script tests, and the
+# deploy test on a kind cluster. The e2e workflow calls it for the staging scenarios alone.
+on:
+  workflow_call:
+    inputs:
+      charts:
+        description: "Run the chart stages: lint, scan, test and test (cluster)"
+        required: false
+        type: boolean
+        default: true
+      scripts:
+        description: "Lint every shell script with shellcheck, in the lint stage"
+        required: false
+        type: boolean
+        default: true
+      staging:
+        description: "Run only the staging scenarios, test (staging), on a disposable kind cluster"
+        required: false
+        type: boolean
+        default: false
+      scenarios:
+        description: "With staging, the scenarios to run (test/e2e script names without .sh); empty runs the default list"
+        required: false
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: lint
+    if: ${{ !inputs.staging && (inputs.charts || inputs.scripts) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Check out
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      # pinned, as the runner's shellcheck version changes what it reports
+      - name: Set up shellcheck
+        if: inputs.scripts
+        env:
+          VERSION: v0.11.0
+        run: |
+          curl -sSfL "https://github.com/koalaman/shellcheck/releases/download/$VERSION/shellcheck-$VERSION.linux.x86_64.tar.xz" \
+            | tar -xJ -C "$RUNNER_TEMP" --strip-components=1 "shellcheck-$VERSION/shellcheck"
+          echo "$RUNNER_TEMP" >> "$GITHUB_PATH"
+
+      - name: Lint the scripts
+        if: inputs.scripts
+        run: git ls-files -z '*.sh' | xargs -0 shellcheck
+
+      - name: Set up Helm
+        if: inputs.charts
+        uses: ./.github/actions/setup-helm
+
+      - name: Set up Python
+        if: inputs.charts
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.x'
+          check-latest: true
+
+      - name: Set up chart-testing
+        if: inputs.charts
+        uses: helm/chart-testing-action@v2.9.0
+
+      # Before "Update dependencies": that step rewrites Chart.lock when a release bumps
+      # ignition-common, and chart-testing would then see every chart as changed
+      - name: List the changed charts
+        id: list-changed
+        if: inputs.charts
+        env:
+          TARGET: ${{ github.event.repository.default_branch || 'main' }}
+        run: |
+          if [[ -n "$(ct list-changed --target-branch "$TARGET")" ]]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Update dependencies
+        if: inputs.charts
+        run: sh ./.github/scripts/ci/update-dependencies.sh
+
+      - name: Lint the changed charts
+        if: steps.list-changed.outputs.changed == 'true'
+        env:
+          TARGET: ${{ github.event.repository.default_branch || 'main' }}
+        # release-please sets chart versions, and the charts list no maintainers
+        run: ct lint --target-branch "$TARGET" --check-version-increment=false --validate-maintainers=false
+
+      - name: Render the charts
+        if: inputs.charts
+        run: |
+          mkdir rendered
+          helm template failover charts/failover > rendered/failover.yaml
+          helm template scaleout charts/scaleout > rendered/scaleout.yaml
+
+      - name: Lint the rendered manifests
+        if: inputs.charts
+        uses: stackrox/kube-linter-action@v1.0.7
+        with:
+          directory: rendered/
+          format: plain
+
+  scan-trivy:
+    name: scan (trivy)
+    if: ${{ !inputs.staging && inputs.charts }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Check out
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      # Trivy renders the charts itself; without the ignition-common dependency
+      # in charts/*/charts it cannot render failover or scaleout and finds nothing
+      - name: Set up Helm
+        uses: ./.github/actions/setup-helm
+
+      - name: Update dependencies
+        run: sh ./.github/scripts/ci/update-dependencies.sh
+
+      - name: Scan with Trivy
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: 'config'
+          scan-ref: 'charts'
+          exit-code: '1'
+          severity: 'CRITICAL,HIGH'
+
+  scan-checkov:
+    name: scan (checkov)
+    if: ${{ !inputs.staging && inputs.charts }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Check out
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Scan with Checkov
+        uses: bridgecrewio/checkov-action@v12
+        with:
+          directory: charts/
+          framework: helm
+          soft_fail: false
+          output_format: cli
+          skip_check: CKV_K8S_21,CKV_K8S_35,CKV_K8S_22,CKV_K8S_15,CKV_K8S_43,CKV_K8S_40,CKV2_K8S_6
+
+  test:
+    name: test
+    if: ${{ !inputs.staging && inputs.charts }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - name: Check out
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Set up Helm
+        uses: ./.github/actions/setup-helm
+
+      - name: Update dependencies
+        run: sh ./.github/scripts/ci/update-dependencies.sh
+
+      - name: Install helm-unittest
+        run: helm plugin install https://github.com/helm-unittest/helm-unittest.git --version 0.7.2
+
+      - name: Test the templates
+        run: sh ./.github/scripts/ci/run-unit-tests.sh
+
+      - name: Test the scripts
+        run: for t in test/scripts/*_test.sh; do bash "$t" || exit 1; done
+
+  # a fresh install of each changed chart with its ci/deploy-values.yaml, checked on the running
+  # gateways, then an upgrade from the default branch's chart
+  test-cluster:
+    name: test (cluster)
+    needs: [test]
+    if: ${{ !inputs.staging && inputs.charts }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - name: Check out
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Helm
+        uses: ./.github/actions/setup-helm
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.x'
+          check-latest: true
+
+      - name: Set up chart-testing
+        uses: helm/chart-testing-action@v2.9.0
+
+      # Before "Update dependencies": that step rewrites Chart.lock when a release bumps
+      # ignition-common, and chart-testing would then see every chart as changed
+      - name: List the charts to deploy
+        id: list-changed
+        env:
+          TARGET: ${{ github.event.repository.default_branch || 'main' }}
+        run: |
+          changed=$(ct list-changed --target-branch "$TARGET")
+          # what installs and checks the charts changed: deploy both
+          if ! git diff --quiet "origin/$TARGET...HEAD" -- \
+              ct.yaml .github/kind .github/scripts/tests .github/scripts/ci/install-cert-manager.sh \
+              .github/workflows/charts.yml; then
+            changed="charts/failover charts/scaleout"
+          fi
+          if [[ -n "$changed" ]]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+          # the charts to deploy: a change to the common library chart affects both
+          deploy=$(for c in $changed; do
+            case "$c" in
+              charts/common) echo failover; echo scaleout ;;
+              charts/*) echo "${c#charts/}" ;;
+            esac
+          done | sort -u | tr '\n' ' ')
+          echo "deploy=$deploy" >> "$GITHUB_OUTPUT"
+
+      - name: Update dependencies
+        if: steps.list-changed.outputs.changed == 'true'
+        run: sh ./.github/scripts/ci/update-dependencies.sh
+
+      - name: Create the kind cluster
+        if: steps.list-changed.outputs.changed == 'true'
+        uses: helm/kind-action@v1.15.1
+
+      # the charts create cert-manager Certificates and Issuers by default
+      - name: Install cert-manager
+        if: steps.list-changed.outputs.changed == 'true'
+        run: ./.github/scripts/ci/install-cert-manager.sh
+
+      - name: Test
+        if: steps.list-changed.outputs.changed == 'true'
+        env:
+          CHARTS: ${{ steps.list-changed.outputs.deploy }}
+          TARGET_BRANCH: ${{ github.event.repository.default_branch || 'main' }}
+        run: for c in $CHARTS; do bash ./.github/scripts/tests/deploy-test.sh "$c"; done
+
+  # The staging scenarios in test/e2e on a disposable three-node kind cluster with cert-manager,
+  # Contour and Chaos Mesh; a full run takes about two hours
+  test-staging:
+    name: test (staging)
+    if: inputs.staging
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    permissions:
+      contents: read
+    steps:
+      - name: Check out
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Set up Helm
+        uses: ./.github/actions/setup-helm
+
+      - name: Create the kind cluster
+        uses: helm/kind-action@v1.15.1
+        with:
+          cluster_name: e2e
+          config: .github/kind/e2e.yaml
+
+      - name: Install cert-manager, Contour and Chaos Mesh
+        run: bash .github/scripts/e2e/setup-cluster.sh
+
+      - name: Test
+        env:
+          SCENARIOS: ${{ inputs.scenarios || 's07-uncommissioned s08-wrapper-log s01-ingress-failover s06-restart-on-renewal s10-partition' }}
+          E2E_OUT: ${{ github.workspace }}/e2e-out
+        run: bash .github/scripts/e2e/run-scenarios.sh
+
+      - name: Upload the results
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: e2e-results
+          path: e2e-out

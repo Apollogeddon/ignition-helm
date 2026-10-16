@@ -24,7 +24,7 @@ for pkg in .cr-release-packages/*.tgz; do
   cosign sign-blob --yes --bundle "$bundle" "$pkg"
   # much the check a user runs, so a bundle that wouldn't verify is never released
   cosign verify-blob "$pkg" --bundle "$bundle" \
-    --certificate-identity-regexp "^https://github\.com/$GITHUB_REPOSITORY/\.github/workflows/release\.yaml@" \
+    --certificate-identity-regexp "^https://github\.com/$GITHUB_REPOSITORY/\.github/workflows/version\.yml@" \
     --certificate-oidc-issuer https://token.actions.githubusercontent.com
   gh release create "$tag" "$pkg" "$bundle" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
     --title "$tag" --notes-file "${pkg%.tgz}.md"

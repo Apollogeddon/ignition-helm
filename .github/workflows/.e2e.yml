@@ -1,0 +1,26 @@
+name: e2e
+
+# Manual only: the staging scenarios on a disposable kind cluster, as charts / test (staging). A full run
+# takes about two hours.
+on:
+  workflow_dispatch:
+    inputs:
+      scenarios:
+        description: Scenarios to run (test/e2e script names without .sh); empty runs the default list
+        default: s07-uncommissioned s08-wrapper-log s01-ingress-failover s06-restart-on-renewal s10-partition
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  charts:
+    uses: ./.github/workflows/charts.yml
+    permissions:
+      contents: read
+    with:
+      staging: true
+      scenarios: ${{ inputs.scenarios }}

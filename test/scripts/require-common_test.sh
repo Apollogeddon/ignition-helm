@@ -39,7 +39,7 @@ sed -i 's/^version: .*/version: 9.9.9/' charts/common/Chart.yaml
 git commit --quiet -am "chore: release common 9.9.9" && git push --quiet origin main
 run; git fetch --quiet origin
 ok "a pull request branch raises every chart that bundles common" '[ "$(rc)" = 0 ] && [ "$(on chore/ignition-common-9.9.9 failover)" = "^9.9.9" ] && [ "$(on chore/ignition-common-9.9.9 scaleout)" = "^9.9.9" ]'
-ok "it leaves the Chart.lock files to main's Index job, so the two can't conflict" '[ -z "$(git diff --name-only origin/main origin/chore/ignition-common-9.9.9 -- "charts/*/Chart.lock")" ]'
+ok "it leaves the Chart.lock files to main's release job, so the two can't conflict" '[ -z "$(git diff --name-only origin/main origin/chore/ignition-common-9.9.9 -- "charts/*/Chart.lock")" ]'
 ok "the commit is a fix, so release-please releases the charts" '[ "$(git log -1 --format=%s origin/chore/ignition-common-9.9.9)" = "fix: require ignition-common ^9.9.9 in the charts that bundle it" ]'
 ok "the commit touches only the charts that bundle common" 'git rev-parse -q --verify origin/chore/ignition-common-9.9.9 >/dev/null && [ -z "$(git diff --name-only origin/main origin/chore/ignition-common-9.9.9 | grep -v -e "^charts/failover/Chart\.yaml$" -e "^charts/scaleout/Chart\.yaml$")" ]'
 ok "it opens a pull request against main" 'grep -q "^pr create --repo Apollogeddon/ignition-helm --base main --head chore/ignition-common-9.9.9" "$GH_LOG"'
