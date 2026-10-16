@@ -92,7 +92,7 @@ jobs:
   website:
     needs: version
     if: ${{ !cancelled() && github.event_name != 'schedule' }}
-    uses: apollogeddon/forgejs/.github/workflows/website.yml@ci-v2
+    uses: apollogeddon/forgejs/.github/workflows/website.yml@main
     permissions:
       contents: read
       packages: read
@@ -147,7 +147,7 @@ jobs:
     if: >-
       ${{ !cancelled() && needs.website.result == 'success' && needs.website-lint-markdown.result == 'success' &&
       github.event_name != 'pull_request' && github.ref == 'refs/heads/main' }}
-    uses: apollogeddon/forgejs/.github/workflows/pages.yml@ci-v2
+    uses: apollogeddon/forgejs/.github/workflows/pages.yml@main
     permissions:
       pages: write
       id-token: write
@@ -155,7 +155,7 @@ jobs:
   # Weekly, by hand, or after a merge's dispatch: the site's vulnerable npm dependencies upgraded on main
   patch:
     if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || github.event_name == 'repository_dispatch' }}
-    uses: apollogeddon/forgejs/.github/workflows/patch.yml@ci-v2
+    uses: apollogeddon/forgejs/.github/workflows/patch.yml@main
     permissions:
       contents: write
       packages: read
@@ -166,7 +166,7 @@ jobs:
   merge:
     needs: [changes, charts, website, website-lint-markdown]
     if: ${{ !cancelled() && github.event_name == 'pull_request' && github.event.pull_request.user.login == 'dependabot[bot]' }}
-    uses: apollogeddon/forgejs/.github/workflows/merge.yml@ci-v2
+    uses: apollogeddon/forgejs/.github/workflows/merge.yml@main
     permissions:
       contents: write
       pull-requests: write
