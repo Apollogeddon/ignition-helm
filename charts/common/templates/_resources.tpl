@@ -77,6 +77,10 @@ metadata:
 spec:
   encryptedData:
     {{- range $key, $val := .secrets }}
+    {{- /* the controller unseals all or nothing, so one plain value (a default left in) stops every gateway */}}
+    {{- if or (lt (len (toString $val)) 300) (not (regexMatch "^[A-Za-z0-9+/]+=*$" (toString $val))) }}
+    {{- fail (printf "sealedSecrets is on, but secrets.%s is not a kubeseal-encrypted value: seal every key, the chart's defaults included (kubeseal --raw --scope namespace-wide)" $key) }}
+    {{- end }}
     {{ $key }}: {{ $val | quote }}
     {{- end }}
 {{- else }}
@@ -138,30 +142,12 @@ spec:
 {{ end }}
 
 {{/*
-GAN Metro Keystore Secret
-Params:
-  secrets: The component-specific secrets map
-  context: The global context (Dot)
-*/}}
-{{- define "ignition-common.ganMetroKeystore" -}}
-apiVersion: v1
-kind: Secret
-metadata:
-  name: {{ include "ignition.name" .context }}-gan-metro-keystore
-  namespace: {{ .context.Release.Namespace }}
-  labels:
-    {{- include "ignition.labels" .context | nindent 4 }}
-type: Opaque
-data:
-  metro.keystore.password: {{ index .secrets "IGNITION_GAN_KEYSTORE_PASSWORD" | b64enc }}
-{{ end }}
-
-{{/*
 GAN Certificate
 Params:
   name: The component name suffix (e.g. "frontend" or "")
   commonName: The common name for the certificate
   dnsNames: List of DNS names
+  secretName: The component's secrets (default "<name>[-<component>]-secrets")
   context: The global context (Dot)
 */}}
 {{- define "ignition-common.ganCertificate" -}}
@@ -193,9 +179,11 @@ spec:
   keystores:
     pkcs12:
       create: true
+      # the Secret the preconfigure container reads the passphrase from, so the
+      # two agree when it is unsealed from a SealedSecret
       passwordSecretRef:
-        name: {{ include "ignition.name" .context }}-gan-metro-keystore
-        key: metro.keystore.password
+        name: {{ .secretName | default (printf "%s-secrets" $fullname) }}
+        key: IGNITION_GAN_KEYSTORE_PASSWORD
 {{ end }}
 
 {{/*
