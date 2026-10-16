@@ -11,5 +11,5 @@ keywords:
 appVersion: "8.3.10"
 dependencies:
   - name: ignition-common
-    version: "^3.3.2"
+    version: "^4.0.0"
     repository: "file://../common"
