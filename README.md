@@ -39,8 +39,8 @@ This repository holds Helm charts that deploy Ignition gateways on Kubernetes, e
 
 ## Requirements
 
-- Kubernetes 1.23 or later, with a storage class that can provision persistent volumes.
-- Helm 3. The CI workflows use Helm v3.22.0.
+- Kubernetes, with a storage class that can provision persistent volumes.
+- Helm.
 - [cert-manager](https://cert-manager.io/docs/installation/) and a `ClusterIssuer` named `cluster-issuer` (configurable with `certManager.issuer.name` and `certManager.issuer.kind`). The charts create cert-manager `Certificate` and `Issuer` resources for the Gateway Network, so they do not install without it. See [Installation](https://apollogeddon.github.io/ignition-helm/docs/guides/installation/) for a self-signed issuer you can use to get started.
 
 ## Installation
@@ -54,7 +54,7 @@ helm repo update
 
 ### Verifying a chart
 
-Each chart version's release carries a [Sigstore](https://www.sigstore.dev/) bundle beside the chart, `<chart>-<version>.tgz.sigstore.json`. The release pipeline signs the chart keyless with [cosign](https://docs.sigstore.dev/cosign/) before the release is published, so the bundle ties the exact `.tgz` the Helm repository serves to this repository's release pipeline (`.github/workflows/version.yml`) on `main`, and the signature is recorded in the public Rekor transparency log. To check a chart before installing it, with [cosign](https://docs.sigstore.dev/cosign/system_config/installation/) v3 or later and the [GitHub CLI](https://cli.github.com/) (or download the bundle from the release page):
+Each chart version's release carries a [Sigstore](https://www.sigstore.dev/) bundle beside the chart, `<chart>-<version>.tgz.sigstore.json`. The release pipeline signs the chart keyless with [cosign](https://docs.sigstore.dev/cosign/) before the release is published, so the bundle ties the exact `.tgz` the Helm repository serves to this repository's release pipeline (`.github/workflows/version.yml`) on `main`, and the signature is recorded in the public Rekor transparency log. To check a chart before installing it, with [cosign](https://docs.sigstore.dev/cosign/system_config/installation/) and the [GitHub CLI](https://cli.github.com/) (or download the bundle from the release page):
 
 ```bash
 helm pull ignition-charts/ignition-scaleout --version <version>
@@ -65,7 +65,7 @@ cosign verify-blob ignition-scaleout-<version>.tgz \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com
 ```
 
-`Verified OK` means the chart was built and released by this repository's release pipeline and hasn't changed since. Chart versions released before the pipeline was renamed were signed as `https://github.com/Apollogeddon/ignition-helm/.github/workflows/release.yaml@refs/heads/main`, so check those with that identity, and chart versions released before signing was added have no bundle.
+`Verified OK` means the chart was built and released by this repository's release pipeline and hasn't changed since.
 
 ## Quick start
 

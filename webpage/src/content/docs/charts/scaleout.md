@@ -30,7 +30,7 @@ sequenceDiagram
     Backend-->>Frontend: Accept connection
 ```
 
-> **Upgrading from 4.0.0 or earlier?** It needs a one-time step; see the [upgrading guide](../../guides/upgrading/).
+> **Upgrading?** Some installs need a one-time step; see the [upgrading guide](../../guides/upgrading/).
 
 ## Values
 
@@ -45,7 +45,7 @@ Settings that apply to both layers. `affinity.enabled` spreads each layer's pods
 | `applicationName` | string | `"ignition-scaleout"` |
 | `componentSelectors` | bool | `false` |
 | `image.repository` | string | `"inductiveautomation/ignition"` |
-| `image.tag` | string | `""` (the chart's `appVersion`, 8.3.10) |
+| `image.tag` | string | `""` (the chart's `appVersion`) |
 | `image.pullPolicy` | string | `"IfNotPresent"` |
 | `image.imagePullSecrets` | list | unset |
 | `affinity.enabled` | bool | `false` |
@@ -55,7 +55,7 @@ Settings that apply to both layers. `affinity.enabled` spreads each layer's pods
 | `certManager.issuer.kind` | string | `"ClusterIssuer"` |
 | `certManager.rotation.enabled` | bool | `false` |
 | `certManager.rotation.schedule` | string | `"0 7 * * *"` |
-| `certManager.restartOnRenewal` | object | `{"enabled":false,"schedule":"*/15 * * * *","image":"alpine/kubectl:1.37.1"}` |
+| `certManager.restartOnRenewal` | object | `{"enabled":false,"schedule":"*/15 * * * *","image":"<kubectl image>"}` |
 | `serviceAccount.create` | bool | `false` |
 | `serviceAccount.name` | string | `""` |
 | `serviceAccount.annotations` | object | `{}` |
@@ -115,6 +115,7 @@ GATEWAY_MODULES_ENABLED: alarm-notification,modbus-driver-v2,opc-ua,reporting,si
 | `backend.serviceMonitor.enabled` | bool | `false` |
 | `backend.serviceMonitor.interval` | string | `"30s"` |
 | `backend.serviceMonitor.path` | string | `"/data/metrics"` |
+| `backend.serviceMonitor.additionalLabels` | object | `{}` |
 
 #### Redundancy (backend)
 
@@ -122,7 +123,7 @@ GATEWAY_MODULES_ENABLED: alarm-notification,modbus-driver-v2,opc-ua,reporting,si
 | --- | --- | --- |
 | `backend.redundancy.enabled` | bool | `false` |
 | `backend.redundancy` | object | *(See below)* |
-| `backend.activeRouting` | object | `{"enabled":false,"image":"alpine/kubectl:1.37.1","intervalSeconds":2,"unknownHold":3,"resources":{"requests":{"cpu":"10m","memory":"32Mi"},"limits":{"cpu":"200m","memory":"128Mi"}}}` |
+| `backend.activeRouting` | object | `{"enabled":false,"image":"<kubectl image>","intervalSeconds":2,"unknownHold":3,"resources":{"requests":{"cpu":"10m","memory":"32Mi"},"limits":{"cpu":"200m","memory":"128Mi"}}}` |
 
 **Default `backend.redundancy`:**
 
@@ -180,6 +181,7 @@ With `backend.sealedSecrets`, every `backend.secrets` value, the defaults includ
 | `backend.resources.requests` | object | `{"memory":"1Gi","cpu":"500m"}` |
 | `backend.resources.limits.cpu` | string | `"1000m"` |
 | `backend.resources.limits.memory` | string | `"2Gi"` |
+| `backend.initResources` | object | `{"requests":{"memory":"128Mi","cpu":"100m"},"limits":{"memory":"256Mi","cpu":"200m"}}` |
 | `backend.updateStrategy.type` | string | `"RollingUpdate"` |
 | `backend.externalModules.enabled` | bool | `false` |
 | `backend.externalModules.pvcName` | string | `""` |
@@ -279,6 +281,7 @@ GATEWAY_MODULES_ENABLED: perspective,symbol-factory
 | `frontend.serviceMonitor.enabled` | bool | `false` |
 | `frontend.serviceMonitor.interval` | string | `"30s"` |
 | `frontend.serviceMonitor.path` | string | `"/data/metrics"` |
+| `frontend.serviceMonitor.additionalLabels` | object | `{}` |
 
 #### Scaling (frontend)
 
@@ -289,6 +292,8 @@ GATEWAY_MODULES_ENABLED: perspective,symbol-factory
 | `frontend.hpa.minReplicas` | int | `1` |
 | `frontend.hpa.maxReplicas` | int | `10` |
 | `frontend.hpa.targetCPUUtilizationPercentage` | int | `80` |
+| `frontend.hpa.targetMemoryUtilizationPercentage` | string | `""` |
+| `frontend.hpa.behavior` | object | `{}` |
 
 #### Networking (frontend)
 
@@ -312,6 +317,7 @@ With `frontend.sealedSecrets`, every `frontend.secrets` value, the defaults incl
 | `frontend.resources.requests` | object | `{"memory":"1Gi","cpu":"500m"}` |
 | `frontend.resources.limits.cpu` | string | `"1000m"` |
 | `frontend.resources.limits.memory` | string | `"2Gi"` |
+| `frontend.initResources` | object | `{"requests":{"memory":"128Mi","cpu":"100m"},"limits":{"memory":"256Mi","cpu":"200m"}}` |
 | `frontend.updateStrategy.type` | string | `"RollingUpdate"` |
 | `frontend.externalModules.enabled` | bool | `false` |
 | `frontend.externalModules.pvcName` | string | `""` |

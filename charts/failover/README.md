@@ -11,8 +11,8 @@
 
 ## Prerequisites
 
-- Kubernetes 1.23 or later, with a storage class that can provision persistent volumes.
-- Helm 3. The CI workflows use Helm v3.22.0.
+- Kubernetes, with a storage class that can provision persistent volumes.
+- Helm.
 - [cert-manager](https://cert-manager.io/docs/installation/) and an issuer that can sign a CA certificate, by default a `ClusterIssuer` named `cluster-issuer` (set `certManager.issuer.name` and `certManager.issuer.kind` to use another). A self-signed `ClusterIssuer` is enough:
 
   ```yaml
@@ -63,31 +63,31 @@ cosign verify-blob ignition-failover-<version>.tgz \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com
 ```
 
-A chart version released before the pipeline was renamed was signed as `.github/workflows/release.yaml`: name that in `--certificate-identity` instead. See [Verifying a chart](../../README.md#verifying-a-chart) for what this checks.
+See [Verifying a chart](../../README.md#verifying-a-chart) for what this checks.
 
 ## Operations
 
 - **Controlled rollouts**: set `ignition.updateStrategy.type` to `OnDelete` so a `helm upgrade` does not restart running gateways. Each pod then picks up the change when you delete it, in your own maintenance window.
 - **External modules**: set `ignition.externalModules.enabled` and `ignition.externalModules.pvcName` to mount a PersistentVolumeClaim of `.modl` files, instead of building a custom image.
-- **Health checks and shutdown**: the probes check that `/StatusPing` reports `RUNNING`, which works on Ignition 8.1 and 8.3. Readiness (`health-check.sh -r`) also fails while the gateway is still commissioning; liveness does not, so a gateway stuck commissioning is not restarted in a loop. There is no default `preStop` hook: on `SIGTERM` the gateway shuts down gracefully, and `gwcmd.sh -p` (used by 4.1.0) resets the gateway login password.
+- **Health checks and shutdown**: the probes check that `/StatusPing` reports `RUNNING`, which works on Ignition 8.1 and 8.3. Readiness (`health-check.sh -r`) also fails while the gateway is still commissioning; liveness does not, so a gateway stuck commissioning is not restarted in a loop. There is no default `preStop` hook: on `SIGTERM` the gateway shuts down gracefully. Don't add `gwcmd.sh -p` as one: it resets the gateway login password.
 - **Certificate rotation and renewal**: `certManager.rotation.enabled` adds CronJobs that refresh the Gateway Network keystore on each gateway's volume. A running gateway only loads renewed certificates when it restarts, so pair it with `certManager.restartOnRenewal.enabled`, which restarts the gateways (Backup first) when the certificate secrets change.
 
-## Upgrading from 4.0.0 or earlier
+## Upgrading
 
-From 4.1.0 the StatefulSet is governed by the `<name>-headless` Service. Kubernetes does not allow `serviceName` to change on an existing StatefulSet, so `helm upgrade` from 4.0.0 or earlier is rejected. Delete only the StatefulSet object first. Its pods and volumes keep running, and the upgraded StatefulSet adopts them and replaces the Backup before the Master:
+The StatefulSet is governed by the `<name>-headless` Service. Kubernetes does not allow `serviceName` to change on an existing StatefulSet, so if yours names another Service, `helm upgrade` is rejected. Delete only the StatefulSet object first. Its pods and volumes keep running, and the upgraded StatefulSet adopts them and replaces the Backup before the Master:
 
 ```bash
 kubectl delete statefulset ignition-failover --cascade=orphan -n <namespace>
 helm upgrade <release> ignition-charts/ignition-failover -n <namespace> ...
 ```
 
-On start the gateways apply the chart's redundancy settings to their volumes, including the peer address under the new Service name, so the pair reconnects once both pods have been replaced.
+On start the gateways apply the chart's redundancy settings to their volumes, including the peer address under the `-headless` Service's name, so the pair reconnects once both pods have been replaced.
 
-Charts up to 4.0.0 created no NetworkPolicy, and this chart creates one by default that admits web traffic only from pods in the release's namespace. In the same upgrade, add `ignition.networkPolicy.extraIngress` rules for the traffic you rely on (an ingress controller's or Prometheus's namespace, or the node addresses behind a NodePort or LoadBalancer), as in the [examples](https://github.com/Apollogeddon/ignition-helm/tree/main/examples), or set `ignition.networkPolicy.enabled=false`. Otherwise the upgrade cuts that traffic off.
+The chart creates a NetworkPolicy by default that admits web traffic only from pods in the release's namespace. If your release has none from the chart yet, in the same upgrade add `ignition.networkPolicy.extraIngress` rules for the traffic you rely on (an ingress controller's or Prometheus's namespace, or the node addresses behind a NodePort or LoadBalancer), as in the [examples](https://github.com/Apollogeddon/ignition-helm/tree/main/examples), or set `ignition.networkPolicy.enabled=false`. Otherwise the upgrade cuts that traffic off.
 
-Turn on `ignition.activeRouting.enabled` in a separate, later upgrade, once every pod has been replaced. Until the Master's pod is replaced it is only reachable under the old Service name, so the new Backup cannot sync with it. With active routing a Backup must be in sync to be Ready, so a combined upgrade would wait indefinitely (the Master keeps serving meanwhile).
+If you also want active routing, turn on `ignition.activeRouting.enabled` in a separate, later upgrade, once every pod has been replaced. Until the Master's pod is replaced it is only reachable under the other Service's name, so the new Backup cannot sync with it. With active routing a Backup must be in sync to be Ready, so a combined upgrade would wait indefinitely (the Master keeps serving meanwhile).
 
-Charts up to 3.1.0 ran the gateway as root by default. On storage that does not apply `fsGroup` (for example local-path), their data volumes are owned by root, and the upgraded gateway, which runs as `securityContext.runAsUser` (2003), cannot update them: the `preconfigure` init container fails with `Permission denied`. If your 3.x install did not set `securityContext.runAsUser`, also set `ignition.fixDataOwnership=true` for the upgrade, and set it back to `false` once the pods are running. It adds an init container that changes the volume's owner as root, so the namespace must allow the baseline Pod Security level while it is on.
+The gateway runs as `securityContext.runAsUser` (2003). On storage that does not apply `fsGroup` (for example local-path), a data volume a gateway running as root wrote is owned by root, and the gateway cannot update it: the `preconfigure` init container fails with `Permission denied`. If your install ran the gateway as root, also set `ignition.fixDataOwnership=true` for the upgrade, and set it back to `false` once the pods are running. It adds an init container that changes the volume's owner as root, so the namespace must allow the baseline Pod Security level while it is on.
 
 The [upgrading guide](https://apollogeddon.github.io/ignition-helm/docs/guides/upgrading/) covers both charts.
 
@@ -99,7 +99,7 @@ The most commonly changed values are below. See [`values.yaml`](values.yaml) for
 | --------- | ----------- | ------- |
 | `applicationName` | Name of every resource the chart creates. | `ignition-failover` |
 | `image.repository` | Ignition image repository. | `inductiveautomation/ignition` |
-| `image.tag` | Ignition image tag. Empty uses the chart's `appVersion`; 8.1.55 and 8.3.10 are tested. | `""` (8.3.10) |
+| `image.tag` | Ignition image tag. Empty uses the chart's `appVersion`. | `""` |
 | `ignition.secrets.GATEWAY_ADMIN_USERNAME` | Gateway admin user name. | `admin` |
 | `ignition.secrets.GATEWAY_ADMIN_PASSWORD` | Gateway admin password. Set your own. | `admin` |
 | `ignition.secrets.IGNITION_GAN_KEYSTORE_PASSWORD` | Password for the Gateway Network keystore. | `metro` |
@@ -122,7 +122,7 @@ The most commonly changed values are below. See [`values.yaml`](values.yaml) for
 | `ignition.serviceMonitor.enabled` | Create a Prometheus Operator ServiceMonitor. | `false` |
 | `ignition.updateStrategy.type` | StatefulSet update strategy (`RollingUpdate` or `OnDelete`). | `RollingUpdate` |
 | `ignition.externalModules.enabled` | Mount the `ignition.externalModules.pvcName` PersistentVolumeClaim of modules. | `false` |
-| `ignition.fixDataOwnership` | Change the data volume's owner to the gateway user on start (an init container running as root). Only for upgrades from charts up to 3.1.0 installed with the default root user. | `false` |
+| `ignition.fixDataOwnership` | Change the data volume's owner to the gateway user on start (an init container running as root). Only for upgrading an install whose gateway ran as root. | `false` |
 | `ignition.readinessProbe` / `ignition.livenessProbe` | Probe settings. A configured `command` is used as-is; the chart's health check (`/StatusPing` must report `RUNNING`) is the fallback when it is empty. Readiness adds `-r`: not Ready while the gateway is still commissioning, and with active routing a Backup must also be in sync. | `/config/scripts/health-check.sh -t 3 -r` / `-t 5` |
 | `ignition.startupProbe.enabled` | Add a startup probe, so slow starts are tolerated while liveness stays strict. | `false` |
 | `ignition.lifecycle` | Container lifecycle hooks, rendered as-is. | `{}` (none) |

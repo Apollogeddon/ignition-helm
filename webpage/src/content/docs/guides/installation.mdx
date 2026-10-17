@@ -8,8 +8,8 @@ This guide takes you from an empty workstation to a running Ignition gateway: in
 
 ## Requirements
 
-- A Kubernetes 1.23 or later cluster, with a storage class that can provision persistent volumes. For local development, Docker Desktop (with Kubernetes enabled) or kind work.
-- `kubectl` and Helm 3. The repository's CI workflows use Helm v3.22.0.
+- A Kubernetes cluster, with a storage class that can provision persistent volumes. For local development, Docker Desktop (with Kubernetes enabled) or kind work.
+- `kubectl` and Helm.
 - cert-manager and an issuer, described in [Prepare the cluster](#prepare-the-cluster). The charts create cert-manager `Certificate` and `Issuer` resources, so they do not install without it.
 
 ## Install the tools
@@ -51,12 +51,12 @@ helm version
 
 ### Install cert-manager
 
-The charts use cert-manager to issue the Gateway Network certificates. Install it with Helm. CI tests the charts with cert-manager v1.18.2:
+The charts use cert-manager to issue the Gateway Network certificates. Install it with Helm:
 
 ```bash
 helm repo add jetstack https://charts.jetstack.io
 helm upgrade --install cert-manager jetstack/cert-manager -n cert-manager --create-namespace \
-  --version v1.18.2 --set crds.enabled=true --wait
+  --set crds.enabled=true --wait
 ```
 
 See the [cert-manager documentation](https://cert-manager.io/docs/installation/) for other installation methods.

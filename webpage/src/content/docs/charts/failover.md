@@ -35,7 +35,7 @@ sequenceDiagram
     Ignition->>Ignition: Connect Gateway Network to peer
 ```
 
-> **Upgrading from 4.0.0 or earlier?** It needs a one-time step; see the [upgrading guide](../../guides/upgrading/).
+> **Upgrading?** Some installs need a one-time step; see the [upgrading guide](../../guides/upgrading/).
 
 ## Values
 
@@ -49,7 +49,7 @@ Resource naming and the container image.
 | --- | --- | --- |
 | `applicationName` | string | `"ignition-failover"` |
 | `image.repository` | string | `"inductiveautomation/ignition"` |
-| `image.tag` | string | `""` (the chart's `appVersion`, 8.3.10) |
+| `image.tag` | string | `""` (the chart's `appVersion`) |
 | `image.pullPolicy` | string | `"IfNotPresent"` |
 | `image.imagePullSecrets` | list | unset |
 
@@ -117,7 +117,7 @@ Redundancy settings, applied to each gateway's data volume on every start.
 | --- | --- | --- |
 | `ignition.redundancy.enabled` | bool | `false` |
 | `ignition.redundancy` | object | *(See below)* |
-| `ignition.activeRouting` | object | `{"enabled":false,"image":"alpine/kubectl:1.37.1","intervalSeconds":2,"unknownHold":3,"resources":{"requests":{"cpu":"10m","memory":"32Mi"},"limits":{"cpu":"200m","memory":"128Mi"}}}` |
+| `ignition.activeRouting` | object | `{"enabled":false,"image":"<kubectl image>","intervalSeconds":2,"unknownHold":3,"resources":{"requests":{"cpu":"10m","memory":"32Mi"},"limits":{"cpu":"200m","memory":"128Mi"}}}` |
 
 **Default `ignition.redundancy`:**
 
@@ -175,7 +175,7 @@ Service, Ingress and cert-manager settings.
 | `certManager.issuer.kind` | string | `"ClusterIssuer"` |
 | `certManager.rotation.enabled` | bool | `false` |
 | `certManager.rotation.schedule` | string | `"0 7 * * *"` |
-| `certManager.restartOnRenewal` | object | `{"enabled":false,"schedule":"*/15 * * * *","image":"alpine/kubectl:1.37.1"}` |
+| `certManager.restartOnRenewal` | object | `{"enabled":false,"schedule":"*/15 * * * *","image":"<kubectl image>"}` |
 
 ### Resources and scheduling
 
