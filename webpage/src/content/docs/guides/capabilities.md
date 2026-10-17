@@ -127,7 +127,7 @@ ignition:
     enabled: true
 ```
 
-Failover then takes a few seconds: about 4-5 s for a graceful stop of the Master and 2-3 s for a crash, measured on a test cluster. When upgrading from 4.0.0 or earlier, enable it in a separate upgrade (see [Upgrading](../upgrading/)).
+Failover then takes a few seconds: about 4-5 s for a graceful stop of the Master and 2-3 s for a crash, measured on a test cluster. If your StatefulSets name another Service than `<name>-headless`, enable it in a separate upgrade (see [Upgrading](../upgrading/)).
 
 ### Pod anti-affinity
 

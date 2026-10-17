@@ -111,7 +111,7 @@ ignition:
 
 When Kubernetes stops a pod it sends the gateway `SIGTERM`, and Ignition shuts down cleanly on its own, flushing its internal configuration database. The charts therefore add no `preStop` hook by default.
 
-> **Warning**: do not use `gwcmd.sh -p` as a shutdown hook. Chart 4.1.0 did, and that command resets the gateway login password (on Ignition 8.1 and 8.3) every time a pod stops. 4.1.0 has been withdrawn.
+> **Warning**: do not use `gwcmd.sh -p` as a shutdown hook. It resets the gateway login password (on Ignition 8.1 and 8.3) every time a pod stops.
 
 If you need your own hooks, set `ignition.lifecycle` (rendered as-is). The pods' `terminationGracePeriodSeconds` is 60; make sure your hooks and the gateway's shutdown finish within it.
 
@@ -123,9 +123,7 @@ With GitOps tools such as Argo CD, Services must stay reachable through rolling 
 
 `ignition.service.sessionAffinity` defaults to `None`.
 
-Earlier versions set it to `ClientIP` for sticky Vision and Perspective sessions. That can leave a client unable to reach the Service during a rolling update while it holds an affinity mapping to a terminating pod.
-
-If your infrastructure (for example an external load balancer) handles stickiness, keep it as `None`. If you use `ClientIP`, expect brief connection drops while gateways restart.
+`ClientIP` gives sticky Vision and Perspective sessions, but can leave a client unable to reach the Service during a rolling update while it holds an affinity mapping to a terminating pod. If your infrastructure (for example an external load balancer) handles stickiness, keep it as `None`. If you use `ClientIP`, expect brief connection drops while gateways restart.
 
 ### Headless Services
 

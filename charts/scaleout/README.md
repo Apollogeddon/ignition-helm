@@ -15,8 +15,8 @@
 
 ## Prerequisites
 
-- Kubernetes 1.23 or later, with a storage class that can provision persistent volumes.
-- Helm 3. The CI workflows use Helm v3.22.0.
+- Kubernetes, with a storage class that can provision persistent volumes.
+- Helm.
 - [cert-manager](https://cert-manager.io/docs/installation/) and an issuer that can sign a CA certificate, by default a `ClusterIssuer` named `cluster-issuer` (set `certManager.issuer.name` and `certManager.issuer.kind` to use another). A self-signed `ClusterIssuer` is enough:
 
   ```yaml
@@ -61,7 +61,7 @@ cosign verify-blob ignition-scaleout-<version>.tgz \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com
 ```
 
-A chart version released before the pipeline was renamed was signed as `.github/workflows/release.yaml`: name that in `--certificate-identity` instead. See [Verifying a chart](../../README.md#verifying-a-chart) for what this checks.
+See [Verifying a chart](../../README.md#verifying-a-chart) for what this checks.
 
 ## Operations
 
@@ -103,20 +103,20 @@ frontend:
 - A PodDisruptionBudget (`minAvailable: 1`) protects the frontend while the autoscaler is enabled.
 - The backend doesn't autoscale, and `backend.hpa.enabled` is refused. A backend is one gateway, or a Master/Backup pair, each with its own data volume, redundancy role and device connections: an extra backend pod would be neither Master nor Backup, and would open its own connections to the same devices and databases. Scale user load on the frontend instead.
 
-## Upgrading from 4.0.0 or earlier
+## Upgrading
 
-From 4.1.0 the frontend and backend StatefulSets are governed by the `<name>-frontend-headless` and `<name>-backend-headless` Services. Kubernetes does not allow `serviceName` to change on an existing StatefulSet, so `helm upgrade` from 4.0.0 or earlier is rejected. Delete only the StatefulSet objects first. Their pods and volumes keep running, and the upgraded StatefulSets adopt them:
+The frontend and backend StatefulSets are governed by the `<name>-frontend-headless` and `<name>-backend-headless` Services. Kubernetes does not allow `serviceName` to change on an existing StatefulSet, so if yours name other Services, `helm upgrade` is rejected. Delete only the StatefulSet objects first. Their pods and volumes keep running, and the upgraded StatefulSets adopt them:
 
 ```bash
 kubectl delete statefulset ignition-scaleout-frontend ignition-scaleout-backend --cascade=orphan -n <namespace>
 helm upgrade <release> ignition-charts/ignition-scaleout -n <namespace> ...
 ```
 
-Turn on `backend.activeRouting.enabled` in a separate, later upgrade, once every pod has been replaced. Until the Master's pod is replaced it is only reachable under the old Service name, so the new Backup cannot sync with it. With active routing a Backup must be in sync to be Ready, so a combined upgrade would wait indefinitely (the Master keeps serving meanwhile).
+If you also want active routing, turn on `backend.activeRouting.enabled` in a separate, later upgrade, once every pod has been replaced. Until the Master's pod is replaced it is only reachable under the other Service's name, so the new Backup cannot sync with it. With active routing a Backup must be in sync to be Ready, so a combined upgrade would wait indefinitely (the Master keeps serving meanwhile).
 
-Charts up to 4.0.0 created no NetworkPolicy, and this chart creates one by default that admits web traffic only from pods in the release's namespace. In the same upgrade, add `frontend.networkPolicy.extraIngress` (and `backend.networkPolicy.extraIngress`, if the backend is reached from outside) rules for the traffic you rely on (an ingress controller's or Prometheus's namespace, or the node addresses behind a NodePort or LoadBalancer), as in the [examples](https://github.com/Apollogeddon/ignition-helm/tree/main/examples), or set `frontend.networkPolicy.enabled=false` and `backend.networkPolicy.enabled=false`. Otherwise the upgrade cuts that traffic off.
+The chart creates a NetworkPolicy by default that admits web traffic only from pods in the release's namespace. If your release has none from the chart yet, in the same upgrade add `frontend.networkPolicy.extraIngress` (and `backend.networkPolicy.extraIngress`, if the backend is reached from outside) rules for the traffic you rely on (an ingress controller's or Prometheus's namespace, or the node addresses behind a NodePort or LoadBalancer), as in the [examples](https://github.com/Apollogeddon/ignition-helm/tree/main/examples), or set `frontend.networkPolicy.enabled=false` and `backend.networkPolicy.enabled=false`. Otherwise the upgrade cuts that traffic off.
 
-Charts up to 3.1.0 ran the gateway as root by default. On storage that does not apply `fsGroup` (for example local-path), their data volumes are owned by root, and the upgraded gateway, which runs as `securityContext.runAsUser` (2003), cannot update them: the `preconfigure` init container fails with `Permission denied`. If your 3.x install did not set `securityContext.runAsUser`, also set `frontend.fixDataOwnership=true` and `backend.fixDataOwnership=true` for the upgrade, and set them back to `false` once the pods are running. They add an init container that changes the volume's owner as root, so the namespace must allow the baseline Pod Security level while they are on.
+The gateways run as `securityContext.runAsUser` (2003). On storage that does not apply `fsGroup` (for example local-path), a data volume a gateway running as root wrote is owned by root, and the gateway cannot update it: the `preconfigure` init container fails with `Permission denied`. If your install ran the gateways as root, also set `frontend.fixDataOwnership=true` and `backend.fixDataOwnership=true` for the upgrade, and set them back to `false` once the pods are running. They add an init container that changes the volume's owner as root, so the namespace must allow the baseline Pod Security level while they are on.
 
 The [upgrading guide](https://apollogeddon.github.io/ignition-helm/docs/guides/upgrading/) covers both charts.
 
@@ -128,7 +128,7 @@ The most commonly changed values are below. Most `frontend.*` and `backend.*` va
 | --------- | ----------- | ------- |
 | `applicationName` | Prefix of every resource the chart creates. | `ignition-scaleout` |
 | `componentSelectors` | Select each StatefulSet's pods by `app.kubernetes.io/component` too. Needed by `frontend.hpa`; set it at install, as a selector can't change (see [Autoscaling the frontend](#autoscaling-the-frontend)). | `false` |
-| `image.tag` | Ignition image tag for both layers. Empty uses the chart's `appVersion`. | `""` (8.3.10) |
+| `image.tag` | Ignition image tag for both layers. Empty uses the chart's `appVersion`. | `""` |
 | `frontend.secrets.GATEWAY_ADMIN_PASSWORD` | Frontend gateway admin password. Set your own. | `admin` |
 | `backend.secrets.GATEWAY_ADMIN_PASSWORD` | Backend gateway admin password. Set your own. | `admin` |
 | `frontend.secrets.IGNITION_GAN_KEYSTORE_PASSWORD` / `backend.secrets.IGNITION_GAN_KEYSTORE_PASSWORD` | Password for each layer's Gateway Network keystore. | `metro` |
@@ -152,7 +152,7 @@ The most commonly changed values are below. Most `frontend.*` and `backend.*` va
 | `frontend.updateStrategy.type` / `backend.updateStrategy.type` | StatefulSet update strategy (`RollingUpdate` or `OnDelete`). | `RollingUpdate` |
 | `frontend.externalModules.enabled` / `backend.externalModules.enabled` | Mount the layer's `externalModules.pvcName` PersistentVolumeClaim of modules. | `false` |
 | `backend.restore.enabled` | Restore a gateway backup from `backend.restore.url`, or a mounted `backend.restore.path`, on the backend gateway's first start. The backup is staged on the data volume once and the gateway starts with `-r`; later restarts keep the gateway's own changes. To restore again, start from an empty data volume. | `false` |
-| `frontend.fixDataOwnership` / `backend.fixDataOwnership` | Change the data volume's owner to the gateway user on start (an init container running as root). Only for upgrades from charts up to 3.1.0 installed with the default root user. | `false` |
+| `frontend.fixDataOwnership` / `backend.fixDataOwnership` | Change the data volume's owner to the gateway user on start (an init container running as root). Only for upgrading an install whose gateways ran as root. | `false` |
 | `frontend.readinessProbe` / `frontend.livenessProbe` | Probe settings. Readiness fails while the gateway is still commissioning. | `/config/scripts/health-check.sh -t 3 -r` / `-t 5` |
 | `backend.readinessProbe` / `backend.livenessProbe` | Probe settings. Readiness fails while the gateway is still commissioning; with `backend.activeRouting` a Backup must also be in sync. | `/config/scripts/health-check.sh -t 3 -r` / `-t 5` |
 | `frontend.startupProbe.enabled` / `backend.startupProbe.enabled` | Add a startup probe, so slow starts are tolerated while liveness stays strict. | `false` |

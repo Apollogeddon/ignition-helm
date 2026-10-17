@@ -33,11 +33,17 @@
 | -------- | ------- |
 | `ignition.name` | The application name (`applicationName`, else the chart name), used to name every resource. |
 | `ignition.fullname` | The release-qualified name. |
+| `ignition.labels` / `ignition.selectorLabels` | The common labels on every resource, and the subset a selector uses. |
 | `ignition-common.service` / `ignition-common.headlessService` | The gateway Service and the StatefulSet's governing headless Service. |
 | `ignition-common.ingress` | The gateway Ingress. |
 | `ignition-common.podFQDN` | The in-cluster DNS name of a pod ordinal. |
 | `ignition-common.volumes` / `ignition-common.volumeMounts` | The gateway's volumes and mounts. |
 | `ignition-common.initContainer.preconfigure` | The init container that prepares the data volume before the gateway starts. |
+| `ignition-common.initContainer.fixDataOwnership` | The init container that changes a root-owned data volume's owner to the gateway user, when `fixDataOwnership` is set. |
+| `ignition-common.redundancyXml` | The `redundancy.xml` settings for a component's redundancy role, peer address and timeouts. |
+| `ignition-common.logback` | The gateway's `logback.xml`: the log level, per-logger levels and SQLite log limits. |
+| `ignition-common.affinity` | The pods' affinity, spreading one component's pods apart. |
+| `ignition-common.podServiceAccount` | The gateway pods' service account and whether its API token is mounted. |
 | `ignition-common.containerProbes` | The readiness, liveness and startup probes and lifecycle hooks. |
 | `ignition-common.updateStrategy` | The body of a gateway StatefulSet's `updateStrategy`. |
 | `ignition-common.podSecurityContext` | The gateway pod's `securityContext`, with the `RuntimeDefault` seccomp profile. |
