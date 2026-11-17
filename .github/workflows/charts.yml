@@ -250,7 +250,7 @@ jobs:
 
       - name: Create the kind cluster
         if: steps.list-changed.outputs.changed == 'true'
-        uses: helm/kind-action@v1.15.1
+        uses: helm/kind-action@v1.15.2
 
       # the charts create cert-manager Certificates and Issuers by default
       - name: Install cert-manager
@@ -283,7 +283,7 @@ jobs:
         uses: ./.github/actions/setup-helm
 
       - name: Create the kind cluster
-        uses: helm/kind-action@v1.15.1
+        uses: helm/kind-action@v1.15.2
         with:
           cluster_name: e2e
           config: .github/kind/e2e.yaml
