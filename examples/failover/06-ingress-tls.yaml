@@ -4,6 +4,11 @@
 # 1. An Ingress Controller installed (e.g., ingress-nginx).
 # 2. Cert-Manager installed and a ClusterIssuer configured.
 
+# Read and accept Inductive Automation's Ignition EULA
+# (https://inductiveautomation.com/ignition/license); the charts refuse to
+# render without it
+acceptEula: true
+
 ignition:
   # When using Ingress, the Service is usually ClusterIP (internal only)
   service:

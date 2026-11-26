@@ -33,12 +33,15 @@ helm repo add ignition-charts https://apollogeddon.github.io/ignition-helm
 helm repo update
 ```
 
+Installing needs `acceptEula=true`: read Inductive Automation's [Ignition End User License Agreement](https://inductiveautomation.com/ignition/license) first. The chart refuses to render until you accept it, and then sets `ACCEPT_IGNITION_EULA=Y` on every gateway.
+
 The chart has no default passwords. Set `GATEWAY_ADMIN_PASSWORD`, `IGNITION_GAN_KEYSTORE_PASSWORD` and `IGNITION_WEB_KEYSTORE_PASSWORD` in `ignition.secrets`, or create a Secret that holds them and set `ignition.existingSecret` to its name; the render fails until one is done.
 
 Install a single gateway with the release name `my-ignition`:
 
 ```bash
 helm install my-ignition ignition-charts/ignition-failover \
+  --set acceptEula=true \
   --set ignition.secrets.GATEWAY_ADMIN_PASSWORD=<admin password> \
   --set ignition.secrets.IGNITION_GAN_KEYSTORE_PASSWORD=<gan keystore password> \
   --set ignition.secrets.IGNITION_WEB_KEYSTORE_PASSWORD=<web keystore password>
@@ -48,6 +51,7 @@ Install a Master/Backup pair:
 
 ```bash
 helm install my-ignition ignition-charts/ignition-failover \
+  --set acceptEula=true \
   --set ignition.redundancy.enabled=true \
   --set ignition.secrets.GATEWAY_ADMIN_PASSWORD=<admin password> \
   --set ignition.secrets.IGNITION_GAN_KEYSTORE_PASSWORD=<gan keystore password> \
@@ -61,7 +65,8 @@ kubectl create secret generic my-ignition-secrets -n <namespace> \
   --from-literal=GATEWAY_ADMIN_PASSWORD=<admin password> \
   --from-literal=IGNITION_GAN_KEYSTORE_PASSWORD=<gan keystore password> \
   --from-literal=IGNITION_WEB_KEYSTORE_PASSWORD=<web keystore password>
-helm install my-ignition ignition-charts/ignition-failover --set ignition.existingSecret=my-ignition-secrets
+helm install my-ignition ignition-charts/ignition-failover \
+  --set acceptEula=true --set ignition.existingSecret=my-ignition-secrets
 ```
 
 Resources are named after `applicationName` (default `ignition-failover`), not the release name: the StatefulSet is `ignition-failover` and its pods are `ignition-failover-0` and `ignition-failover-1`. Set `applicationName` to install more than one release in a namespace.
@@ -122,7 +127,8 @@ The most commonly changed values are below. See [`values.yaml`](values.yaml) for
 | `ignition.secrets.IGNITION_GAN_KEYSTORE_PASSWORD` | Password for the Gateway Network keystore. Required unless `ignition.existingSecret` is set. | unset |
 | `ignition.secrets.IGNITION_WEB_KEYSTORE_PASSWORD` | Password for the web server TLS keystore. Required unless `ignition.existingSecret` is set. | unset |
 | `ignition.sealedSecrets` | Render `ignition.secrets` as a SealedSecret of already encrypted values. Every key must then be sealed, the user name included. | `false` |
-| `ignition.config` | Gateway environment variables (edition, EULA, enabled modules). | see `values.yaml` |
+| `acceptEula` | Accept Inductive Automation's Ignition EULA: sets `ACCEPT_IGNITION_EULA=Y` on the gateways. The chart refuses to render while it is `false`. | `false` |
+| `ignition.config` | Gateway environment variables (edition, enabled modules). | see `values.yaml` |
 | `ignition.redundancy.enabled` | Deploy a Master/Backup pair (2 replicas) instead of one gateway. Changing it, or any other `ignition.redundancy.*` value, on an existing install restarts the gateways and applies the role (Master, Backup, or Independent when turned off) and settings to their data volumes on start. | `false` |
 | `ignition.activeRouting.enabled` | Route user traffic only to the active gateway of a redundant pair: a labeller keeps `redundancy-active=true` on the active pod, the `<name>-active` Service (which takes the configured service type, node ports and annotations) selects it, and the Ingress points at it. Readiness also requires a Backup to be in sync. | `false` |
 | `ignition.resources` | Gateway CPU and memory requests and limits. | requests `500m`/`1Gi`, limits `1000m`/`2Gi` |

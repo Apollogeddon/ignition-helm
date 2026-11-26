@@ -5,6 +5,12 @@
 # -- Application name used for naming resources
 applicationName: "ignition-failover"
 
+# -- Accept Inductive Automation's Ignition End User License Agreement
+# (https://inductiveautomation.com/ignition/license). Read it first: true sets
+# ACCEPT_IGNITION_EULA=Y on every gateway, and the chart refuses to render
+# while it is false
+acceptEula: false
+
 serviceAccount:
   # -- Specifies whether a service account should be created
   create: false
@@ -166,10 +172,10 @@ ignition:
   #   mountPath: "assets/projects/SiteA"
   localMounts: []
 
-  # -- Environment variables for configuration (will be mapped to ConfigMap)
+  # -- Environment variables for configuration (will be mapped to ConfigMap).
+  # ACCEPT_IGNITION_EULA comes from the top-level acceptEula
   config:
     IGNITION_EDITION: "standard"
-    ACCEPT_IGNITION_EULA: "Y"
     DISABLE_QUICKSTART: "true"
     GATEWAY_NETWORK_SECURITYPOLICY: "Unrestricted"
     GATEWAY_NETWORK_REQUIRETWOWAYAUTH: "true"

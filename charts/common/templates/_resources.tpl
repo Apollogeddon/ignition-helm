@@ -23,13 +23,20 @@ automountServiceAccountToken: {{ .values.serviceAccount.automountServiceAccountT
 
 {{/*
 Standard ConfigMap
+The gateway's environment variables: the config dictionary plus
+ACCEPT_IGNITION_EULA=Y from the top-level acceptEula, without which the render
+fails. An ACCEPT_IGNITION_EULA in config wins, so a test can withhold it.
 Params:
   name: The component name suffix (e.g. "frontend" or "")
   config: The config dictionary
   context: The global context (Dot)
 */}}
 {{- define "ignition-common.configMap" -}}
-{{- if .config }}
+{{- if ne (toString .context.Values.acceptEula) "true" }}
+{{- fail "acceptEula: Ignition's EULA is not accepted. Read Inductive Automation's End User License Agreement (https://inductiveautomation.com/ignition/license) and, if you accept it, set acceptEula=true (e.g. --set acceptEula=true)" }}
+{{- end }}
+{{- $config := merge (deepCopy (.config | default dict)) (dict "ACCEPT_IGNITION_EULA" "Y") }}
+{{- if $config }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -43,7 +50,7 @@ metadata:
   namespace: {{ .context.Release.Namespace }}
   labels:
     {{- include "ignition.labels" .context | nindent 4 }}
-data: {{ .config | toYaml | nindent 2 }}
+data: {{ $config | toYaml | nindent 2 }}
 {{- end }}
 {{ end }}
 

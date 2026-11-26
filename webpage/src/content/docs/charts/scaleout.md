@@ -43,6 +43,7 @@ Settings that apply to both layers. `affinity.enabled` spreads each layer's pods
 | Parameter | Type | Default |
 | --- | --- | --- |
 | `applicationName` | string | `"ignition-scaleout"` |
+| `acceptEula` | bool | `false` (must be `true`: the chart refuses to render until you accept Inductive Automation's [Ignition EULA](https://inductiveautomation.com/ignition/license), then sets `ACCEPT_IGNITION_EULA=Y` on every gateway) |
 | `componentSelectors` | bool | `false` |
 | `image.repository` | string | `"inductiveautomation/ignition"` |
 | `image.tag` | string | `""` (the chart's `appVersion`) |
@@ -81,7 +82,6 @@ The backend is the EAM controller and runs devices, databases and tag history.
 
 ```yaml
 IGNITION_EDITION: standard
-ACCEPT_IGNITION_EULA: "Y"
 DISABLE_QUICKSTART: "true"
 GATEWAY_NETWORK_SECURITYPOLICY: Unrestricted
 GATEWAY_NETWORK_REQUIRETWOWAYAUTH: "true"
@@ -248,7 +248,6 @@ The frontend gateways are EAM agents and serve user sessions. They have no persi
 
 ```yaml
 IGNITION_EDITION: standard
-ACCEPT_IGNITION_EULA: "Y"
 DISABLE_QUICKSTART: "true"
 GATEWAY_NETWORK_SECURITYPOLICY: Unrestricted
 GATEWAY_NETWORK_REQUIRETWOWAYAUTH: "true"

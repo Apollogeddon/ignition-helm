@@ -3,6 +3,11 @@
 # before the gateway starts.
 # Useful for seeding test environments, CI pipelines, or disaster recovery.
 
+# Read and accept Inductive Automation's Ignition EULA
+# (https://inductiveautomation.com/ignition/license); the charts refuse to
+# render without it
+acceptEula: true
+
 ignition:
   restore:
     enabled: true

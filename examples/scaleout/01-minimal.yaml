@@ -2,6 +2,11 @@
 # A basic scaleout deployment with 1 Frontend node and 1 Backend node.
 # Useful for testing the architecture without the resource overhead of HA.
 
+# Read and accept Inductive Automation's Ignition EULA
+# (https://inductiveautomation.com/ignition/license); the charts refuse to
+# render without it
+acceptEula: true
+
 frontend:
   redundancy:
     replicas: 1

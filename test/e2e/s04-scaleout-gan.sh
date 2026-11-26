@@ -16,6 +16,7 @@ e2e_require_memory "$ns"
 
 values="$E2E_OUT/s04-values.yaml"
 cat > "$values" <<'EOF'
+acceptEula: true
 frontend:
   # the charts have no default passwords
   secrets:

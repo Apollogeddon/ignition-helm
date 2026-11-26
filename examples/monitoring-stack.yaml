@@ -2,6 +2,11 @@
 # A production-ready configuration with Prometheus monitoring and resource sizing.
 # Prerequisite: Prometheus Operator must be installed in your cluster.
 
+# Read and accept Inductive Automation's Ignition EULA
+# (https://inductiveautomation.com/ignition/license); the charts refuse to
+# render without it
+acceptEula: true
+
 ignition:
   # 1. Enable Prometheus scraping
   serviceMonitor:

@@ -10,6 +10,16 @@ Most upgrades are a plain `helm upgrade` after `helm repo update`. Read the char
 
 Check these before you upgrade, and take each step that applies to your install.
 
+## If you relied on the default EULA acceptance
+
+The charts no longer accept Ignition's EULA for you: `ACCEPT_IGNITION_EULA: "Y"` is gone from the `config` defaults, and the charts refuse to render until you read Inductive Automation's [Ignition End User License Agreement](https://inductiveautomation.com/ignition/license) and set the top-level `acceptEula`:
+
+```yaml
+acceptEula: true
+```
+
+or `--set acceptEula=true`. The chart then sets `ACCEPT_IGNITION_EULA=Y` itself, so remove `ACCEPT_IGNITION_EULA` from your `config` values if you set it there: a value in `config` still wins over `acceptEula`. An existing gateway that already commissioned is not affected either way.
+
 ## If you relied on the default passwords
 
 The charts no longer have default passwords (they were `admin` for `GATEWAY_ADMIN_PASSWORD`, `metro` for `IGNITION_GAN_KEYSTORE_PASSWORD` and `ignition` for `IGNITION_WEB_KEYSTORE_PASSWORD`). An upgrade whose values don't set all three, or name a Secret that holds them with `existingSecret`, fails to render, and nothing changes in the cluster:

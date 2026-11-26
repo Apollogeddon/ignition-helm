@@ -1,6 +1,11 @@
 # 04-persistence.yaml
 # Configuration for specific storage requirements.
 
+# Read and accept Inductive Automation's Ignition EULA
+# (https://inductiveautomation.com/ignition/license); the charts refuse to
+# render without it
+acceptEula: true
+
 ignition:
   persistence:
     # Size of the disk per node

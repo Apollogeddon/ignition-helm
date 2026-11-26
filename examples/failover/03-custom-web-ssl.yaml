@@ -8,6 +8,11 @@
 # Command to create secret:
 # kubectl create secret generic my-custom-keystore --from-file=keystore.p12=./my-keystore.p12
 
+# Read and accept Inductive Automation's Ignition EULA
+# (https://inductiveautomation.com/ignition/license); the charts refuse to
+# render without it
+acceptEula: true
+
 ignition:
   # Enable custom SSL configuration
   ssl:

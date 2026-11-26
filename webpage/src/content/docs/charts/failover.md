@@ -48,6 +48,7 @@ Resource naming and the container image.
 | Parameter | Type | Default |
 | --- | --- | --- |
 | `applicationName` | string | `"ignition-failover"` |
+| `acceptEula` | bool | `false` |
 | `image.repository` | string | `"inductiveautomation/ignition"` |
 | `image.tag` | string | `""` (the chart's `appVersion`) |
 | `image.pullPolicy` | string | `"IfNotPresent"` |
@@ -75,7 +76,7 @@ Serve HTTPS with your own PKCS#12 keystore. `ignition.ssl.secretName` defaults t
 
 ### Gateway
 
-Gateway environment variables (including EULA acceptance and enabled modules), arguments, logging and the EAM role.
+Gateway environment variables (including enabled modules), arguments, logging and the EAM role. `acceptEula` (top level, default `false`) must be `true`: the chart refuses to render until you accept Inductive Automation's [Ignition EULA](https://inductiveautomation.com/ignition/license), and then adds `ACCEPT_IGNITION_EULA=Y` to the gateway's environment variables.
 
 | Parameter | Type | Default |
 | --- | --- | --- |
@@ -91,7 +92,6 @@ Gateway environment variables (including EULA acceptance and enabled modules), a
 
 ```yaml
 IGNITION_EDITION: standard
-ACCEPT_IGNITION_EULA: "Y"
 DISABLE_QUICKSTART: "true"
 GATEWAY_NETWORK_SECURITYPOLICY: Unrestricted
 GATEWAY_NETWORK_REQUIRETWOWAYAUTH: "true"

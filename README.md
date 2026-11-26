@@ -69,10 +69,11 @@ cosign verify-blob ignition-scaleout-<version>.tgz \
 
 ## Quick start
 
-Install a single failover gateway. The charts have no default passwords: set the gateway admin password and the Gateway Network and web keystore passwords, or point `ignition.existingSecret` at a Secret that holds them. The render fails until you do.
+Install a single failover gateway. Installing needs `acceptEula=true`: read Inductive Automation's [Ignition End User License Agreement](https://inductiveautomation.com/ignition/license) first. The charts refuse to render until you accept it, and then set `ACCEPT_IGNITION_EULA=Y` on every gateway. The charts also have no default passwords: set the gateway admin password and the Gateway Network and web keystore passwords, or point `ignition.existingSecret` at a Secret that holds them. The render fails until you do.
 
 ```bash
 helm install my-ignition ignition-charts/ignition-failover \
+  --set acceptEula=true \
   --set ignition.secrets.GATEWAY_ADMIN_PASSWORD=<admin password> \
   --set ignition.secrets.IGNITION_GAN_KEYSTORE_PASSWORD=<gan keystore password> \
   --set ignition.secrets.IGNITION_WEB_KEYSTORE_PASSWORD=<web keystore password>
@@ -84,6 +85,7 @@ Install the scaleout chart:
 
 ```bash
 helm install my-scaleout ignition-charts/ignition-scaleout \
+  --set acceptEula=true \
   --set backend.secrets.GATEWAY_ADMIN_PASSWORD=<admin password> \
   --set backend.secrets.IGNITION_GAN_KEYSTORE_PASSWORD=<gan keystore password> \
   --set backend.secrets.IGNITION_WEB_KEYSTORE_PASSWORD=<web keystore password> \

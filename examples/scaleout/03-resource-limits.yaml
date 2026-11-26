@@ -2,6 +2,11 @@
 # Configuration illustrating how to size the pods for production workloads.
 # Adjust 'memory' limits to match the '-m' argument passed to Ignition.
 
+# Read and accept Inductive Automation's Ignition EULA
+# (https://inductiveautomation.com/ignition/license); the charts refuse to
+# render without it
+acceptEula: true
+
 frontend:
   # Frontends are CPU intensive (Perspective rendering) but lighter on memory
   resources:

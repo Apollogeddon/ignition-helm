@@ -1,7 +1,5 @@
 {{- range $component := list "frontend" "backend" }}
 {{- $componentConfig := index $.Values $component }}
-{{- if $componentConfig.config }}
 ---
 {{ include "ignition-common.configMap" (dict "name" $component "config" $componentConfig.config "context" $) }}
-{{- end }}
 {{- end }}

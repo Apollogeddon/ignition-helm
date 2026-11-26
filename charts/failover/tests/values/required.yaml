@@ -1,4 +1,6 @@
 # The values every suite needs to render: the chart has no default passwords
+# the charts refuse to render until the EULA is accepted
+acceptEula: true
 ignition:
   secrets:
     GATEWAY_ADMIN_PASSWORD: test-admin-password

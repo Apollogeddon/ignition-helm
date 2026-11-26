@@ -1,4 +1,6 @@
 # Small requests so test gateways fit beside other workloads on a shared node
+# the charts refuse to render until the EULA is accepted
+acceptEula: true
 ignition:
   # the charts have no default passwords
   secrets:

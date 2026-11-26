@@ -1,0 +1,37 @@
+suite: Ignition Scaleout EULA
+values:
+  - values/required.yaml
+templates:
+  - configmap.yaml
+tests:
+  - it: should accept the EULA on the frontend
+    documentIndex: 0
+    asserts:
+      - equal:
+          path: data.ACCEPT_IGNITION_EULA
+          value: "Y"
+
+  - it: should accept the EULA on the backend
+    documentIndex: 1
+    asserts:
+      - equal:
+          path: data.ACCEPT_IGNITION_EULA
+          value: "Y"
+
+  # the ConfigMaps used to render only when config was set
+  - it: should render both ConfigMaps with an empty config
+    set:
+      frontend:
+        config: null
+      backend:
+        config: null
+    asserts:
+      - hasDocuments:
+          count: 2
+
+  - it: should refuse to render until the EULA is accepted
+    set:
+      acceptEula: false
+    asserts:
+      - failedTemplate:
+          errorPattern: "set acceptEula=true \\(e.g. --set acceptEula=true\\)"

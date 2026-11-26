@@ -37,12 +37,15 @@ helm repo add ignition-charts https://apollogeddon.github.io/ignition-helm
 helm repo update
 ```
 
+Installing needs `acceptEula=true`: read Inductive Automation's [Ignition End User License Agreement](https://inductiveautomation.com/ignition/license) first. The chart refuses to render until you accept it, and then sets `ACCEPT_IGNITION_EULA=Y` on every gateway.
+
 The chart has no default passwords. Set `GATEWAY_ADMIN_PASSWORD`, `IGNITION_GAN_KEYSTORE_PASSWORD` and `IGNITION_WEB_KEYSTORE_PASSWORD` in both `frontend.secrets` and `backend.secrets`, or create a Secret for each layer that holds them and set `frontend.existingSecret` and `backend.existingSecret`; the render fails until each layer has them.
 
 Install the chart with the release name `my-scaleout` and two frontend gateways:
 
 ```bash
 helm install my-scaleout ignition-charts/ignition-scaleout \
+  --set acceptEula=true \
   --set backend.secrets.GATEWAY_ADMIN_PASSWORD=<admin password> \
   --set backend.secrets.IGNITION_GAN_KEYSTORE_PASSWORD=<gan keystore password> \
   --set backend.secrets.IGNITION_WEB_KEYSTORE_PASSWORD=<web keystore password> \
@@ -133,6 +136,7 @@ The most commonly changed values are below. Most `frontend.*` and `backend.*` va
 | Parameter | Description | Default |
 | --------- | ----------- | ------- |
 | `applicationName` | Prefix of every resource the chart creates. | `ignition-scaleout` |
+| `acceptEula` | Accept Inductive Automation's Ignition EULA: sets `ACCEPT_IGNITION_EULA=Y` on every gateway. The chart refuses to render while it is `false`. | `false` |
 | `componentSelectors` | Select each StatefulSet's pods by `app.kubernetes.io/component` too. Needed by `frontend.hpa`; set it at install, as a selector can't change (see [Autoscaling the frontend](#autoscaling-the-frontend)). | `false` |
 | `image.tag` | Ignition image tag for both layers. Empty uses the chart's `appVersion`. | `""` |
 | `frontend.existingSecret` / `backend.existingSecret` | Name of a Secret you manage for the layer, holding `GATEWAY_ADMIN_PASSWORD`, `IGNITION_GAN_KEYSTORE_PASSWORD` and `IGNITION_WEB_KEYSTORE_PASSWORD`, plus any other secret environment variables (`GATEWAY_ADMIN_USERNAME`, licensing). The layer's gateways, its Gateway Network keystore and (backend) rotation CronJobs read it; the chart then renders no Secret for the layer, and refuses values left in its `secrets`. | `""` |
