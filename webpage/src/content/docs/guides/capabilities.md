@@ -45,6 +45,8 @@ ignition:
       mountPath: /usr/local/bin/ignition/user-lib/jdbc
 ```
 
+The `preconfigure` init container mounts the same `extraVolumeMounts` and `localMounts`, read-only, so a restore can read a backup from one of them (see [Restore on first start](#restore-on-first-start)).
+
 ### Local development mounts
 
 For local development (kind or Docker Desktop), mount a host directory into the gateway's installation directory. `mountPath` is relative to `/usr/local/bin/ignition`.
@@ -308,6 +310,22 @@ ignition:
   restore:
     enabled: true
     url: "https://internal-server/backups/production.gwbk"
+```
+
+Or take the backup from a volume: mount it with `extraVolumes` and `extraVolumeMounts` (or `localMounts`, under `/usr/local/bin/ignition/`) and set `restore.path` to the file's path. The `preconfigure` init container, which copies the backup to the data volume, mounts those volumes too, read-only; a path on no mounted volume fails the init container with "File not found".
+
+```yaml
+ignition:
+  extraVolumes:
+    - name: backups
+      persistentVolumeClaim:
+        claimName: gateway-backups
+  extraVolumeMounts:
+    - name: backups
+      mountPath: /mnt/backup
+  restore:
+    enabled: true
+    path: /mnt/backup/production.gwbk
 ```
 
 ### Manual backup

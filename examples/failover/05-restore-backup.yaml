@@ -15,8 +15,16 @@ ignition:
     # The init container downloads this file before the gateway starts.
     url: "https://example.com/backups/production-snapshot.gwbk"
     
-    # Alternative: Use a local path if you have mounted a volume containing the file
+    # Alternative: a path on a volume you mount with extraVolumes and
+    # extraVolumeMounts (or localMounts); the init container mounts them too
     # path: "/mnt/backup/my-backup.gwbk"
+  # extraVolumes:
+  #   - name: backups
+  #     persistentVolumeClaim:
+  #       claimName: gateway-backups
+  # extraVolumeMounts:
+  #   - name: backups
+  #     mountPath: /mnt/backup
 
   secrets:
     # NOTE: If the backup contains a stored password, it may override this!

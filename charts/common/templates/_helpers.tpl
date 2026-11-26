@@ -627,14 +627,6 @@ Params:
 {{- end }}
 
 {{/*
-Preconfigure Init Container
-Params:
-  name: The base name of the application/component
-  image: The image definition (repository and tag)
-  values: The component-specific values object
-  replicas: Number of replicas (for redundancy initialization)
-*/}}
-{{/*
 Init container that gives the data volume to the gateway user
 (<values>.fixDataOwnership). Charts up to 3.1.0 ran the gateway as root by
 default, so their data volumes are owned by root and the non-root gateway
@@ -667,6 +659,18 @@ Params:
 {{- end }}
 {{- end }}
 
+{{/*
+Preconfigure init container: seeds the data volume, applies the redundancy
+settings, installs the certificates and logback.xml, and stages a restore.
+It also mounts the gateway's localMounts and extraVolumeMounts, read-only, so
+restore.path can name a backup on one of them.
+Params:
+  name: The base name of the application/component
+  secretName: The Secret holding the keystore passwords
+  image: The image definition (repository and tag)
+  values: The component-specific values object
+  replicas: Number of replicas (for redundancy initialization)
+*/}}
 {{- define "ignition-common.initContainer.preconfigure" -}}
 {{- $secretName := .secretName | default (printf "%s-secrets" .name) -}}
 - name: preconfigure
@@ -738,6 +742,15 @@ Params:
   - mountPath: /run/secrets/ignition-gan-ca
     name: {{ .name }}-gan-ca
     readOnly: true
+  {{- /* the gateway's own mounts, read-only, so restore.path can name a .gwbk on one */}}
+  {{- range $index, $m := .values.localMounts | default list }}
+  - mountPath: /usr/local/bin/ignition/{{ $m.mountPath }}
+    name: local-mount-{{ $index }}
+    readOnly: true
+  {{- end }}
+  {{- range $m := .values.extraVolumeMounts | default list }}
+  - {{ merge (dict "readOnly" true) (omit $m "readOnly") | toYaml | indent 4 | trim }}
+  {{- end }}
 {{- end }}
 
 {{/*

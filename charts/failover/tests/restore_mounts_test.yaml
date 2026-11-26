@@ -1,0 +1,53 @@
+suite: Ignition Failover Restore From A Mounted Volume
+values:
+  - values/required.yaml
+templates:
+  - ignition-statefulset.yaml
+set:
+  ignition:
+    restore:
+      enabled: true
+      path: /mnt/backup/plant.gwbk
+    extraVolumes:
+      - name: backup
+        persistentVolumeClaim:
+          claimName: gateway-backups
+    extraVolumeMounts:
+      - name: backup
+        mountPath: /mnt/backup
+    localMounts:
+      - hostPath: /srv/projects
+        mountPath: projects/SiteA
+tests:
+  # configure-ignition.sh copies restore.path in the init container, so the
+  # volume holding it must be mounted there too
+  - it: should mount extraVolumeMounts read-only in the preconfigure init container
+    asserts:
+      - contains:
+          path: spec.template.spec.initContainers[0].volumeMounts
+          content:
+            name: backup
+            mountPath: /mnt/backup
+            readOnly: true
+      - contains:
+          path: spec.template.spec.initContainers[0].env
+          content:
+            name: IGNITION_RESTORE_PATH
+            value: /mnt/backup/plant.gwbk
+
+  - it: should mount localMounts read-only in the preconfigure init container
+    asserts:
+      - contains:
+          path: spec.template.spec.initContainers[0].volumeMounts
+          content:
+            name: local-mount-0
+            mountPath: /usr/local/bin/ignition/projects/SiteA
+            readOnly: true
+
+  - it: should keep the gateway's own mounts as they are
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].volumeMounts
+          content:
+            name: backup
+            mountPath: /mnt/backup

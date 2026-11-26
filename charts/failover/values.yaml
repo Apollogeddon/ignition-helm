@@ -250,7 +250,9 @@ ignition:
     enabled: false
     # -- URL to download the .gwbk file from
     url: ""
-    # -- OR, path to a mounted .gwbk file
+    # -- OR, path to a .gwbk file on a volume mounted with extraVolumes/
+    # extraVolumeMounts or localMounts (the preconfigure init container that
+    # copies it mounts them too, read-only)
     # path: ""
 
   # -- Redundancy-specific settings

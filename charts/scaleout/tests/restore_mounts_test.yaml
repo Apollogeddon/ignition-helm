@@ -1,0 +1,44 @@
+suite: Ignition Scaleout Restore From A Mounted Volume
+values:
+  - values/required.yaml
+templates:
+  - templates/backend/backend-statefulset.yaml
+  - templates/frontend/frontend-statefulset.yaml
+tests:
+  - it: should mount the backend's extraVolumeMounts read-only in its preconfigure init container
+    template: templates/backend/backend-statefulset.yaml
+    set:
+      backend:
+        restore:
+          enabled: true
+          path: /mnt/backup/plant.gwbk
+        extraVolumes:
+          - name: backup
+            persistentVolumeClaim:
+              claimName: gateway-backups
+        extraVolumeMounts:
+          - name: backup
+            mountPath: /mnt/backup
+            readOnly: false
+    asserts:
+      - contains:
+          path: spec.template.spec.initContainers[0].volumeMounts
+          content:
+            name: backup
+            mountPath: /mnt/backup
+            readOnly: true
+
+  - it: should mount the frontend's localMounts read-only in its preconfigure init container
+    template: templates/frontend/frontend-statefulset.yaml
+    set:
+      frontend:
+        localMounts:
+          - hostPath: /srv/projects
+            mountPath: projects/SiteA
+    asserts:
+      - contains:
+          path: spec.template.spec.initContainers[0].volumeMounts
+          content:
+            name: local-mount-0
+            mountPath: /usr/local/bin/ignition/projects/SiteA
+            readOnly: true
