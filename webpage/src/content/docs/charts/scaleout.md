@@ -164,7 +164,7 @@ The timings, `maxDiskMb` and `pingMaxMissed`, and `backend.activeRouting.interva
 | Parameter | Type | Default |
 | --- | --- | --- |
 | `backend.service.type` | string | `"NodePort"` |
-| `backend.service.ports` | object | `{"http":8088,"https":8043,"gan":8060}` |
+| `backend.service.ports` | object | `{"http":8088,"https":8043,"gan":8060}` (the Service's ports only: they map to the gateway's own 8088, 8043 and 8060) |
 | `backend.service.nodePorts` | object | unset |
 | `backend.service.sessionAffinity` | string | `"None"` |
 | `backend.ingress.enabled` | bool | `false` |
@@ -300,7 +300,7 @@ GATEWAY_MODULES_ENABLED: perspective,symbol-factory
 | Parameter | Type | Default |
 | --- | --- | --- |
 | `frontend.service.type` | string | `"NodePort"` |
-| `frontend.service.ports` | object | `{"http":8088,"https":8043,"gan":8060}` |
+| `frontend.service.ports` | object | `{"http":8088,"https":8043,"gan":8060}` (the Service's ports only: they map to the gateway's own 8088, 8043 and 8060) |
 | `frontend.service.nodePorts` | object | unset |
 | `frontend.service.sessionAffinity` | string | `"None"` |
 | `frontend.ingress.enabled` | bool | `false` |

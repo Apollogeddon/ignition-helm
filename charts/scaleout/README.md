@@ -155,6 +155,7 @@ The most commonly changed values are below. Most `frontend.*` and `backend.*` va
 | `backend.activeRouting.enabled` | Route user traffic only to the active backend gateway of a redundant pair: a labeller keeps `redundancy-active=true` on the active pod and the `<name>-backend-active` Service (which takes the configured service type, node ports and annotations) selects it. A Backup must also be in sync to be Ready. | `false` |
 | `backend.persistence.size` | Size of each backend gateway's persistent volume. | `3Gi` |
 | `frontend.service.type` / `backend.service.type` | Service type for each layer. | `NodePort` |
+| `frontend.service.ports` / `backend.service.ports` | Each layer's Service ports (`http`, `https`, `gan`). The gateways always listen on 8088, 8043 and 8060, and the Service maps these ports to them, so the container ports, probes, NetworkPolicy rules and headless Services stay on the gateway's own. | `8088` / `8043` / `8060` |
 | `frontend.service.nodePorts` / `backend.service.nodePorts` | Optional static node ports (`http`, `https`, `gan`). | unset |
 | `frontend.ingress.enabled` / `backend.ingress.enabled` | Create an Ingress for the layer. | `false` |
 | `frontend.ingress.className` / `backend.ingress.className` | IngressClass name, for example `contour`; empty uses the cluster default. | `""` |

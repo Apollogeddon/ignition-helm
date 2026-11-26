@@ -139,7 +139,7 @@ spec:
             - name: ACTIVE_LABEL
               value: redundancy-active
             - name: HTTP_PORT
-              value: {{ .values.service.ports.http | quote }}
+              value: {{ include "ignition-common.gatewayPort" "http" | quote }}
             - name: INTERVAL_SECONDS
               value: {{ include "ignition-common.positiveInt" (dict "name" "activeRouting.intervalSeconds" "value" (ternary (get $ar "intervalSeconds") 2 (hasKey $ar "intervalSeconds"))) | quote }}
             - name: UNKNOWN_HOLD

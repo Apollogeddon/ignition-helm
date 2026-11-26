@@ -314,15 +314,15 @@ metadata:
 spec:
   clusterIP: None
   ports:
-    - port: {{ .values.service.ports.http }}
+    - port: {{ include "ignition-common.gatewayPort" "http" }}
       targetPort: http
       protocol: TCP
       name: http
-    - port: {{ .values.service.ports.https }}
+    - port: {{ include "ignition-common.gatewayPort" "https" }}
       targetPort: https
       protocol: TCP
       name: https
-    - port: {{ .values.service.ports.gan }}
+    - port: {{ include "ignition-common.gatewayPort" "gan" }}
       targetPort: gan
       protocol: TCP
       name: gan
@@ -741,6 +741,18 @@ Params:
 {{- end }}
 
 {{/*
+The port the gateway listens on for http, https or gan: the Ignition image's
+8088, 8043 and 8060, whatever service.ports says. service.ports only sets the
+Services' ports, which map to these through the named targetPorts; anything
+that reaches a pod directly (probes, NetworkPolicies, headless Services, the
+redundancy peer and the active-routing labeller) uses these.
+Params: the port name (a string)
+*/}}
+{{- define "ignition-common.gatewayPort" -}}
+{{- get (dict "http" 8088 "https" 8043 "gan" 8060) . }}
+{{- end }}
+
+{{/*
 Script Mount Path
 */}}
 {{- define "ignition-common.scriptMountPath" -}}
@@ -847,11 +859,11 @@ Params:
   {{- include "ignition-common.args" (dict "values" .values) | nindent 2 }}
   ports:
   - name: http
-    containerPort: {{ .values.service.ports.http }}
+    containerPort: {{ include "ignition-common.gatewayPort" "http" }}
   - name: https
-    containerPort: {{ .values.service.ports.https }}
+    containerPort: {{ include "ignition-common.gatewayPort" "https" }}
   - name: gan
-    containerPort: {{ .values.service.ports.gan }}
+    containerPort: {{ include "ignition-common.gatewayPort" "gan" }}
 {{- end }}
 
 {{/*

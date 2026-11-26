@@ -136,6 +136,7 @@ The most commonly changed values are below. See [`values.yaml`](values.yaml) for
 | `ignition.persistence.size` | Size of each gateway's persistent volume. | `3Gi` |
 | `ignition.persistence.storageClassName` | Storage class; empty uses the cluster default. | `""` |
 | `ignition.service.type` | Service type (`ClusterIP`, `NodePort` or `LoadBalancer`). | `NodePort` |
+| `ignition.service.ports` | The Service's ports (`http`, `https`, `gan`). The gateway always listens on 8088, 8043 and 8060, and the Service maps these ports to them, so the container ports, probes, NetworkPolicy rules and headless Services stay on the gateway's own. | `8088` / `8043` / `8060` |
 | `ignition.service.nodePorts` | Optional static node ports (`http`, `https`, `gan`). | unset |
 | `ignition.ingress.enabled` | Create an Ingress. | `false` |
 | `ignition.ingress.className` | IngressClass name, for example `contour`; empty uses the cluster default. | `""` |

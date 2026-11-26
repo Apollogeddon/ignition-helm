@@ -1,0 +1,94 @@
+suite: Ignition Failover Service Ports
+values:
+  - values/required.yaml
+templates:
+  - ignition-service.yaml
+  - ignition-statefulset.yaml
+  - networkpolicy.yaml
+  - configmap-ignition-files.yaml
+  - active-routing.yaml
+set:
+  ignition:
+    service:
+      ports:
+        http: 80
+        https: 443
+        gan: 9060
+tests:
+  # the gateway always listens on 8088/8043/8060; service.ports only moves the Service
+  - it: should map the Service ports to the gateway's ports
+    template: ignition-service.yaml
+    documentIndex: 0
+    asserts:
+      - equal:
+          path: spec.ports[0]
+          value: {port: 80, targetPort: http, protocol: TCP, name: http}
+      - equal:
+          path: spec.ports[1]
+          value: {port: 443, targetPort: https, protocol: TCP, name: https}
+      - equal:
+          path: spec.ports[2]
+          value: {port: 9060, targetPort: gan, protocol: TCP, name: gan}
+
+  # DNS for a headless Service returns the pods' IPs, so no port mapping applies
+  - it: should give the headless Service the gateway's own ports
+    template: ignition-service.yaml
+    documentIndex: 1
+    asserts:
+      - equal:
+          path: spec.ports[0].port
+          value: 8088
+      - equal:
+          path: spec.ports[1].port
+          value: 8043
+      - equal:
+          path: spec.ports[2].port
+          value: 8060
+
+  - it: should keep the container ports on the gateway's own ports
+    template: ignition-statefulset.yaml
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].ports
+          value:
+            - {name: http, containerPort: 8088}
+            - {name: https, containerPort: 8043}
+            - {name: gan, containerPort: 8060}
+
+  - it: should admit traffic on the gateway's own ports
+    template: networkpolicy.yaml
+    asserts:
+      - equal:
+          path: spec.ingress[0].ports
+          value:
+            - {protocol: TCP, port: 8088}
+            - {protocol: TCP, port: 8043}
+      - equal:
+          path: spec.ingress[1].ports
+          value:
+            - {protocol: TCP, port: 8060}
+
+  # the peer is reached by its pod address, not through a Service
+  - it: should point the redundancy peer at the gateway's own gan port
+    template: configmap-ignition-files.yaml
+    asserts:
+      - matchRegex:
+          path: stringData["redundancy-primary.xml"]
+          pattern: '<entry key="redundancy.gan.port">8060</entry>'
+
+  # the labeller polls each pod's IP directly
+  - it: should poll the gateways on their own http port for active routing
+    template: active-routing.yaml
+    set:
+      ignition:
+        redundancy:
+          enabled: true
+        activeRouting:
+          enabled: true
+    documentIndex: 3
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: HTTP_PORT
+            value: "8088"

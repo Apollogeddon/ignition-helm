@@ -157,7 +157,7 @@ The timings, `maxDiskMb` and `pingMaxMissed`, and `ignition.activeRouting.interv
 
 ### Networking and certificates
 
-Service, Ingress and cert-manager settings.
+Service, Ingress and cert-manager settings. `ignition.service.ports` sets only the Service's ports: the gateway always listens on 8088, 8043 and 8060, the Service maps its ports to those, and the container ports, probes, NetworkPolicy rules, headless Services and redundancy peer address use the gateway's own.
 
 | Parameter | Type | Default |
 | --- | --- | --- |

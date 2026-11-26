@@ -230,7 +230,7 @@ spec:
 Redundancy Headless Services (Primary/Backup)
 Params:
   name: The component name suffix (e.g. "backend")
-  values: The component-specific values object (containing service ports)
+  values: The component-specific values object
   context: The global context (Dot)
 */}}
 {{- define "ignition-common.redundancyServices" -}}
@@ -256,15 +256,15 @@ spec:
     {{- include "ignition.selectorLabels" .context | nindent 4 }}
   ports:
   - name: http
-    port: {{ .values.service.ports.http }}
+    port: {{ include "ignition-common.gatewayPort" "http" }}
     protocol: TCP
     targetPort: http
   - name: https
-    port: {{ .values.service.ports.https }}
+    port: {{ include "ignition-common.gatewayPort" "https" }}
     protocol: TCP
     targetPort: https
   - name: gan
-    port: {{ .values.service.ports.gan }}
+    port: {{ include "ignition-common.gatewayPort" "gan" }}
     protocol: TCP
     targetPort: gan
   type: ClusterIP
@@ -285,15 +285,15 @@ spec:
     {{- include "ignition.selectorLabels" .context | nindent 4 }}
   ports:
   - name: http
-    port: {{ .values.service.ports.http }}
+    port: {{ include "ignition-common.gatewayPort" "http" }}
     protocol: TCP
     targetPort: http
   - name: https
-    port: {{ .values.service.ports.https }}
+    port: {{ include "ignition-common.gatewayPort" "https" }}
     protocol: TCP
     targetPort: https
   - name: gan
-    port: {{ .values.service.ports.gan }}
+    port: {{ include "ignition-common.gatewayPort" "gan" }}
     protocol: TCP
     targetPort: gan
   type: ClusterIP
@@ -335,9 +335,9 @@ spec:
         - podSelector: {}
       ports:
         - protocol: TCP
-          port: {{ .values.service.ports.http }}
+          port: {{ include "ignition-common.gatewayPort" "http" }}
         - protocol: TCP
-          port: {{ .values.service.ports.https }}
+          port: {{ include "ignition-common.gatewayPort" "https" }}
     # Allow GAN traffic only from other Ignition pods
     - from:
         - podSelector:
@@ -348,7 +348,7 @@ spec:
                   - {{ include "ignition.name" .context }}
       ports:
         - protocol: TCP
-          port: {{ .values.service.ports.gan }}
+          port: {{ include "ignition-common.gatewayPort" "gan" }}
     {{- with .values.networkPolicy.extraIngress }}
     # Additional ingress rules (e.g. the ingress controller's namespace, node
     # CIDRs for NodePorts/load balancers)

@@ -209,7 +209,9 @@ ignition:
     type: NodePort
     # -- Session affinity (ClientIP or None)
     sessionAffinity: None
-    # -- Port configuration
+    # -- The Service's ports. The gateway always listens on 8088 (http), 8043
+    # (https) and 8060 (gan): these map to them with targetPort, so the
+    # containerPorts, probes and NetworkPolicy stay on the gateway's own ports
     ports:
       http: 8088
       https: 8043
