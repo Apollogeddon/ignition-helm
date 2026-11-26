@@ -109,6 +109,8 @@ ignition:
     logs: 512Mi              # optional cap on the logs volume
 ```
 
+In scaleout, `frontend.logging` and `backend.logging` each configure their own layer's gateways: the chart renders a `logback.xml` for each layer.
+
 ## High availability
 
 ### Probes

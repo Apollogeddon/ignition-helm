@@ -3,8 +3,11 @@ values:
   - values/required.yaml
 templates:
   - templates/configmap-ignition-files.yaml
+  - templates/frontend/frontend-statefulset.yaml
+  - templates/backend/backend-statefulset.yaml
 tests:
-  - it: should render backend logger levels into logback
+  - it: should render backend logger levels into the backend's logback
+    template: templates/configmap-ignition-files.yaml
     set:
       backend:
         logging:
@@ -12,5 +15,48 @@ tests:
             gateway.SslManager: WARN
     asserts:
       - matchRegex:
-          path: stringData["logback.xml"]
+          path: stringData["logback-backend.xml"]
           pattern: '<logger name="gateway.SslManager" level="WARN" />'
+      - notMatchRegex:
+          path: stringData["logback-frontend.xml"]
+          pattern: 'gateway.SslManager'
+
+  # frontend.logging used to be ignored: both layers got the backend's logback
+  - it: should render the frontend's own logging into its logback
+    template: templates/configmap-ignition-files.yaml
+    set:
+      frontend:
+        logging:
+          level: DEBUG
+          loggers:
+            perspective: TRACE
+          sqlite:
+            entryLimit: 5000
+    asserts:
+      - matchRegex:
+          path: stringData["logback-frontend.xml"]
+          pattern: '<root level="DEBUG">'
+      - matchRegex:
+          path: stringData["logback-frontend.xml"]
+          pattern: '<logger name="perspective" level="TRACE" />'
+      - matchRegex:
+          path: stringData["logback-frontend.xml"]
+          pattern: '<entryLimit>5000</entryLimit>'
+      - matchRegex:
+          path: stringData["logback-backend.xml"]
+          pattern: '<root level="INFO">'
+
+  - it: should install the frontend's logback on the frontend
+    template: templates/frontend/frontend-statefulset.yaml
+    asserts:
+      - contains:
+          path: spec.template.spec.initContainers[0].args
+          content: cp /config/files/logback-frontend.xml /data/logback.xml
+
+  - it: should install the backend's logback on the backend
+    template: templates/backend/backend-statefulset.yaml
+    asserts:
+      - contains:
+          path: spec.template.spec.initContainers[0].args
+          content: cp /config/files/logback-backend.xml /data/logback.xml
+

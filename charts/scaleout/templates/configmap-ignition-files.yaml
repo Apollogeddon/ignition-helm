@@ -10,5 +10,9 @@ stringData:
   redundancy-backup.xml: |-
 {{ include "ignition-common.redundancyXml" (dict "role" "Backup" "host" (include "ignition-common.podFQDN" (dict "name" (printf "%s-backend" (include "ignition.name" .)) "ordinal" 0)) "port" (include "ignition-common.gatewayPort" "gan") "redundancy" .Values.backend.redundancy) | indent 4 }}
 
-  logback.xml: |-
+  # each layer's own logging values; the preconfigure init container installs
+  # its layer's file as logback.xml
+  logback-frontend.xml: |-
+{{ include "ignition-common.logback" (dict "level" .Values.frontend.logging.level "loggers" .Values.frontend.logging.loggers "sqlite" .Values.frontend.logging.sqlite) | indent 4 }}
+  logback-backend.xml: |-
 {{ include "ignition-common.logback" (dict "level" .Values.backend.logging.level "loggers" .Values.backend.logging.loggers "sqlite" .Values.backend.logging.sqlite) | indent 4 }}

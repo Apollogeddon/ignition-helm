@@ -667,6 +667,7 @@ restore.path can name a backup on one of them.
 Params:
   name: The base name of the application/component
   secretName: The Secret holding the keystore passwords
+  logbackFile: The config-files key with the component's logback.xml (default logback.xml)
   image: The image definition (repository and tag)
   values: The component-specific values object
   replicas: Number of replicas (for redundancy initialization)
@@ -723,7 +724,7 @@ Params:
   {{- if and .values.ssl .values.ssl.enabled }}
   - {{ include "ignition-common.scriptMountPath" . }}/prepare-tls-certificates.sh
   {{- end }}
-  - cp /config/files/logback.xml /data/logback.xml
+  - cp /config/files/{{ .logbackFile | default "logback.xml" }} /data/logback.xml
   - {{ include "ignition-common.scriptMountPath" . }}/configure-ignition.sh
   volumeMounts:
   - mountPath: /data

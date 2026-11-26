@@ -30,7 +30,7 @@ spec:
         app.kubernetes.io/component: frontend
       annotations:
         # restart the gateways when what they read on start changes
-        {{- include "ignition-common.podChecksums" (dict "values" .Values.frontend "logging" .Values.backend.logging "context" .) | nindent 8 }}
+        {{- include "ignition-common.podChecksums" (dict "values" .Values.frontend "logging" .Values.frontend.logging "context" .) | nindent 8 }}
     spec:
       {{- include "ignition-common.podServiceAccount" . | nindent 6 }}
       {{- include "ignition-common.podSecurityContext" (dict "values" .Values.frontend) | nindent 6 }}
@@ -67,7 +67,7 @@ spec:
         {{- include "ignition-common.containerProbes" (dict "values" .Values.frontend) | trim | nindent 8 }}
       initContainers:
 {{- with include "ignition-common.initContainer.fixDataOwnership" (dict "image" .Values.image "values" .Values.frontend "context" .) }}{{ . | trim | nindent 6 }}{{ end }}
-{{ include "ignition-common.initContainer.preconfigure" (dict "name" (include "ignition.name" .) "secretName" $secretName "image" .Values.image "values" .Values.frontend "replicas" 1 "context" .) | nindent 6 }}
+{{ include "ignition-common.initContainer.preconfigure" (dict "name" (include "ignition.name" .) "secretName" $secretName "logbackFile" "logback-frontend.xml" "image" .Values.image "values" .Values.frontend "replicas" 1 "context" .) | nindent 6 }}
       volumes:
       - name: data
         emptyDir: {}
