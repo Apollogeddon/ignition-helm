@@ -1,4 +1,6 @@
 suite: Ignition Failover Other Resources
+values:
+  - values/required.yaml
 templates:
   - pdb.yaml
   - secrets.yaml

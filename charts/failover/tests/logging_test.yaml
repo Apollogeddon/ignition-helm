@@ -1,4 +1,6 @@
 suite: Ignition Failover Logging
+values:
+  - values/required.yaml
 templates:
   - configmap-ignition-files.yaml
 tests:

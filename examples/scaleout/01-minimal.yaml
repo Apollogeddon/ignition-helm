@@ -20,10 +20,11 @@ frontend:
           - protocol: TCP
             port: 8043
 
+  # The charts have no default passwords; set your own
   secrets:
-    GATEWAY_ADMIN_PASSWORD: "admin"
-    IGNITION_GAN_KEYSTORE_PASSWORD: "metro"
-    IGNITION_WEB_KEYSTORE_PASSWORD: "ignition"
+    GATEWAY_ADMIN_PASSWORD: "strong-password"
+    IGNITION_GAN_KEYSTORE_PASSWORD: "metro-password"
+    IGNITION_WEB_KEYSTORE_PASSWORD: "web-password"
 
 backend:
   redundancy:
@@ -34,6 +35,6 @@ backend:
   # IGNITION_GAN_KEYSTORE_PASSWORD must match the frontend's: both layers'
   # Gateway Network keystores are created with the frontend's value
   secrets:
-    GATEWAY_ADMIN_PASSWORD: "admin"
-    IGNITION_GAN_KEYSTORE_PASSWORD: "metro"
-    IGNITION_WEB_KEYSTORE_PASSWORD: "ignition"
+    GATEWAY_ADMIN_PASSWORD: "strong-password"
+    IGNITION_GAN_KEYSTORE_PASSWORD: "metro-password"
+    IGNITION_WEB_KEYSTORE_PASSWORD: "web-password"

@@ -6,7 +6,7 @@ root="$(cd "$(dirname "$0")/../.." && pwd)"
 HELM="${HELM:-helm}"
 work=$(mktemp -d); trap 'rm -rf "$work"' EXIT
 
-"$HELM" template t "$root/charts/failover" --show-only templates/configmap-scripts.yaml |
+"$HELM" template t "$root/charts/failover" -f "$root/charts/failover/ci/deploy-values.yaml" --show-only templates/configmap-scripts.yaml |
   awk '/^  certify.sh: \|-/ {on=1; next} on && /^  [^ ]/ {on=0} on {sub(/^    /, ""); print}' > "$work/certify.sh"
 [ -s "$work/certify.sh" ] || { echo "could not extract certify.sh"; exit 1; }
 

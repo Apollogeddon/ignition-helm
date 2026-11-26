@@ -1,4 +1,6 @@
 suite: Ignition Scaleout Scaling, Disruption Budgets and Persistence
+values:
+  - values/required.yaml
 templates:
   - templates/frontend/hpa.yaml
   - templates/backend/hpa.yaml

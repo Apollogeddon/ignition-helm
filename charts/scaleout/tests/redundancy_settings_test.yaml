@@ -1,4 +1,6 @@
 suite: Ignition Scaleout Redundancy Settings
+values:
+  - values/required.yaml
 templates:
   - templates/backend/backend-statefulset.yaml
   - templates/frontend/frontend-statefulset.yaml

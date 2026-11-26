@@ -1,4 +1,6 @@
 suite: Ignition Failover GAN Certificates
+values:
+  - values/required.yaml
 templates:
   - gan-certificates.yaml
 tests:

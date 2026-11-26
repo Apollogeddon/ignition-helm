@@ -1,4 +1,6 @@
 suite: Ignition Failover Persistence
+values:
+  - values/required.yaml
 templates:
   - ignition-statefulset.yaml
 tests:

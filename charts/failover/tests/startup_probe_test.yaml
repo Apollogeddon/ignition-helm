@@ -1,4 +1,6 @@
 suite: Ignition Failover Startup Probe
+values:
+  - values/required.yaml
 templates:
   - ignition-statefulset.yaml
 tests:

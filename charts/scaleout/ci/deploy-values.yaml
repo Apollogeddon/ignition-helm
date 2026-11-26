@@ -3,11 +3,21 @@
 # frontend.hpa needs componentSelectors, which a fresh install sets
 componentSelectors: true
 frontend:
+  # the charts have no default passwords
+  secrets:
+    GATEWAY_ADMIN_PASSWORD: ci-admin-password
+    IGNITION_GAN_KEYSTORE_PASSWORD: ci-gan-password
+    IGNITION_WEB_KEYSTORE_PASSWORD: ci-web-password
   networkPolicy:
     enabled: true
   hpa:
     enabled: true
     minReplicas: 1
 backend:
+  # the charts have no default passwords
+  secrets:
+    GATEWAY_ADMIN_PASSWORD: ci-admin-password
+    IGNITION_GAN_KEYSTORE_PASSWORD: ci-gan-password
+    IGNITION_WEB_KEYSTORE_PASSWORD: ci-web-password
   networkPolicy:
     enabled: true

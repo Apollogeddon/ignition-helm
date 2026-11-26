@@ -1,4 +1,6 @@
 suite: Ignition Failover Redundancy Settings
+values:
+  - values/required.yaml
 templates:
   - ignition-statefulset.yaml
 tests:

@@ -1,4 +1,6 @@
 suite: Ignition Failover emptyDir Size Limits
+values:
+  - values/required.yaml
 templates:
   - ignition-statefulset.yaml
 tests:

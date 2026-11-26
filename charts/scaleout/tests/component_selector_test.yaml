@@ -1,4 +1,6 @@
 suite: Ignition Scaleout Component Selectors
+values:
+  - values/required.yaml
 templates:
   - templates/frontend/frontend-service.yaml
   - templates/backend/backend-service.yaml

@@ -234,12 +234,13 @@ command:
 
 ### Security and accounts
 
-Security context, secrets and the ServiceAccount. With `ignition.sealedSecrets`, every `ignition.secrets` value, the defaults included, must be encrypted with `kubeseal` (see [SealedSecrets](../../guides/capabilities/#example-sealedsecrets)).
+Security context, secrets and the ServiceAccount. There are no default passwords: set `GATEWAY_ADMIN_PASSWORD`, `IGNITION_GAN_KEYSTORE_PASSWORD` and `IGNITION_WEB_KEYSTORE_PASSWORD` in `ignition.secrets`, or set `ignition.existingSecret` to a Secret you manage that holds them (and any other secret environment variables); the chart then renders no Secret and refuses values left in `ignition.secrets`. With `ignition.sealedSecrets`, every `ignition.secrets` value, the user name included, must be encrypted with `kubeseal` (see [SealedSecrets](../../guides/capabilities/#example-sealedsecrets)).
 
 | Parameter | Type | Default |
 | --- | --- | --- |
 | `ignition.securityContext` | object | `{"runAsUser":2003,"runAsGroup":2003,"fsGroup":2003,"runAsNonRoot":true}` |
-| `ignition.secrets` | object | `{"GATEWAY_ADMIN_USERNAME":"admin","GATEWAY_ADMIN_PASSWORD":"admin","IGNITION_GAN_KEYSTORE_PASSWORD":"metro","IGNITION_WEB_KEYSTORE_PASSWORD":"ignition"}` |
+| `ignition.existingSecret` | string | `""` |
+| `ignition.secrets` | object | `{"GATEWAY_ADMIN_USERNAME":"admin"}` |
 | `ignition.sealedSecrets` | bool | `false` |
 | `serviceAccount.create` | bool | `false` |
 | `serviceAccount.name` | string | `""` |

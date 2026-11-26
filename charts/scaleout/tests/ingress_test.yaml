@@ -1,4 +1,6 @@
 suite: Ignition Scaleout Ingress
+values:
+  - values/required.yaml
 templates:
   - templates/backend/backend-ingress.yaml
   - templates/frontend/frontend-ingress.yaml

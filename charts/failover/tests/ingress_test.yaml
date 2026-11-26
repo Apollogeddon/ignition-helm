@@ -1,4 +1,6 @@
 suite: Ignition Failover Ingress
+values:
+  - values/required.yaml
 templates:
   - ignition-ingress.yaml
 tests:

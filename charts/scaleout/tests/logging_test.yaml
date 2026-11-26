@@ -1,4 +1,6 @@
 suite: Ignition Scaleout Logging
+values:
+  - values/required.yaml
 templates:
   - templates/configmap-ignition-files.yaml
 tests:

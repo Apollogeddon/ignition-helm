@@ -69,7 +69,7 @@ ignition:
     GATEWAY_MODULES_ENABLED: "perspective,opc-ua"
 ```
 
-Put sensitive values, such as `GATEWAY_ADMIN_PASSWORD`, in `secrets` instead, which the chart renders as a Secret.
+Put sensitive values, such as `GATEWAY_ADMIN_PASSWORD`, in `secrets` instead, which the chart renders as a Secret, or in a Secret of your own named by `existingSecret`.
 
 ### Gateway arguments
 
@@ -148,6 +148,7 @@ To keep a gateway available during voluntary disruptions such as node drains, th
 
 * **Non-root user**: the gateways run as UID `2003` with `runAsNonRoot: true`, no privilege escalation and all capabilities dropped. The charts' pods meet the Kubernetes restricted Pod Security level (except the optional `fixDataOwnership` init container).
 * **No API token**: the gateways never call the Kubernetes API, so their pods don't mount a service account token (`serviceAccount.automountServiceAccountToken: false`). Only the optional active-routing and certificate-restart pods, which run kubectl, get one, each for a service account of its own.
+* **No default passwords**: the charts refuse to render until the gateway admin password and the Gateway Network and web keystore passwords are set, in `secrets` or in a Secret you manage named by `existingSecret` (see [Example: existingSecret](#example-existingsecret)).
 * **SealedSecrets**: `sealedSecrets: true` renders the `secrets` map as a Bitnami SealedSecret, so you can keep encrypted values in Git.
 * **Network isolation**: a NetworkPolicy, on by default, allows web traffic only from pods in the release's namespace and Gateway Network traffic (port `8060`) only from the chart's own gateways. An ingress controller, Prometheus, or a NodePort or LoadBalancer Service needs a rule in `networkPolicy.extraIngress` (see [Network security](../advanced-config/#network-security-gateway-network-isolation)).
 
@@ -162,7 +163,7 @@ ignition:
 With the SealedSecrets controller in the cluster and the `kubeseal` CLI:
 
 1. Set `sealedSecrets: true` in your values.
-2. Encrypt **every** key in the `secrets` map, the chart's defaults included: `GATEWAY_ADMIN_USERNAME`, `GATEWAY_ADMIN_PASSWORD`, `IGNITION_GAN_KEYSTORE_PASSWORD` and `IGNITION_WEB_KEYSTORE_PASSWORD`, plus any you add. The controller unseals all of a SealedSecret or none of it, so one plain value left in stops the gateways from starting. The chart refuses to render a value that isn't sealed.
+2. Encrypt **every** key in the `secrets` map, the default user name included: `GATEWAY_ADMIN_USERNAME`, `GATEWAY_ADMIN_PASSWORD`, `IGNITION_GAN_KEYSTORE_PASSWORD` and `IGNITION_WEB_KEYSTORE_PASSWORD`, plus any you add. The controller unseals all of a SealedSecret or none of it, so one plain value left in stops the gateways from starting. The chart refuses to render a value that isn't sealed.
 
 The chart's SealedSecret is namespace-wide, so seal each value for the release's namespace with that scope:
 
@@ -181,6 +182,24 @@ ignition:
 ```
 
 The Gateway Network keystore takes its password from the unsealed Secret, so it matches what the gateway reads. For scaleout, seal `frontend.secrets` and `backend.secrets` the same way, with `frontend.sealedSecrets` and `backend.sealedSecrets`.
+
+### Example: existingSecret
+
+To keep the passwords out of Helm's values altogether, create the Secret yourself (by hand, from your own SealedSecret, or with External Secrets) and name it in `existingSecret`. It must hold `GATEWAY_ADMIN_PASSWORD`, `IGNITION_GAN_KEYSTORE_PASSWORD` and `IGNITION_WEB_KEYSTORE_PASSWORD`; every key in it becomes an environment variable in the gateway container, so add `GATEWAY_ADMIN_USERNAME` (the image defaults it to `admin`), licensing (see [Licensing](../licensing/)) or database passwords there too.
+
+```bash
+kubectl create secret generic my-ignition-secrets -n <namespace> \
+  --from-literal=GATEWAY_ADMIN_PASSWORD=<admin password> \
+  --from-literal=IGNITION_GAN_KEYSTORE_PASSWORD=<gan keystore password> \
+  --from-literal=IGNITION_WEB_KEYSTORE_PASSWORD=<web keystore password>
+```
+
+```yaml
+ignition:
+  existingSecret: my-ignition-secrets
+```
+
+The gateways, the `preconfigure` init container, the Gateway Network keystore (cert-manager's `passwordSecretRef`) and the certificate rotation CronJobs all read that Secret, and the chart renders no Secret of its own, so `secrets` and `sealedSecrets` are not used: the chart refuses to render if `secrets` still sets a value (other than the default user name), as it would be ignored. For scaleout, set `frontend.existingSecret` and `backend.existingSecret`, one Secret per layer or the same one for both. Create the Secret before installing: the pods wait for it until it exists.
 
 ### Ingress and sticky sessions
 

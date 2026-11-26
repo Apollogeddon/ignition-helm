@@ -69,11 +69,13 @@ cosign verify-blob ignition-scaleout-<version>.tgz \
 
 ## Quick start
 
-Install a single failover gateway. Set your own admin password; the default is `admin`.
+Install a single failover gateway. The charts have no default passwords: set the gateway admin password and the Gateway Network and web keystore passwords, or point `ignition.existingSecret` at a Secret that holds them. The render fails until you do.
 
 ```bash
 helm install my-ignition ignition-charts/ignition-failover \
-  --set ignition.secrets.GATEWAY_ADMIN_PASSWORD=mysecretpassword
+  --set ignition.secrets.GATEWAY_ADMIN_PASSWORD=<admin password> \
+  --set ignition.secrets.IGNITION_GAN_KEYSTORE_PASSWORD=<gan keystore password> \
+  --set ignition.secrets.IGNITION_WEB_KEYSTORE_PASSWORD=<web keystore password>
 ```
 
 Add `--set ignition.redundancy.enabled=true` for a Master/Backup pair.
@@ -82,8 +84,12 @@ Install the scaleout chart:
 
 ```bash
 helm install my-scaleout ignition-charts/ignition-scaleout \
-  --set backend.secrets.GATEWAY_ADMIN_PASSWORD=mysecretpassword \
-  --set frontend.secrets.GATEWAY_ADMIN_PASSWORD=mysecretpassword
+  --set backend.secrets.GATEWAY_ADMIN_PASSWORD=<admin password> \
+  --set backend.secrets.IGNITION_GAN_KEYSTORE_PASSWORD=<gan keystore password> \
+  --set backend.secrets.IGNITION_WEB_KEYSTORE_PASSWORD=<web keystore password> \
+  --set frontend.secrets.GATEWAY_ADMIN_PASSWORD=<admin password> \
+  --set frontend.secrets.IGNITION_GAN_KEYSTORE_PASSWORD=<gan keystore password> \
+  --set frontend.secrets.IGNITION_WEB_KEYSTORE_PASSWORD=<web keystore password>
 ```
 
 The [`examples/`](examples/README.md) directory has values files for common setups.

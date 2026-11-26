@@ -12,7 +12,7 @@ You can configure database connections in the Gateway web UI, but managing the c
 
 ### Environment variables
 
-Pass database connection details to the gateway with the `config` and `secrets` maps. The chart renders them as a ConfigMap and a Secret, and both become environment variables in the gateway container.
+Pass database connection details to the gateway with the `config` and `secrets` maps. The chart renders them as a ConfigMap and a Secret, and both become environment variables in the gateway container. With `existingSecret`, put `DB_PASSWORD` in that Secret instead.
 
 **values.yaml:**
 
@@ -23,6 +23,9 @@ ignition:
     DB_NAME: "ignition_data"
     DB_USER: "ignition_admin"
   secrets:
+    GATEWAY_ADMIN_PASSWORD: "strong-password"
+    IGNITION_GAN_KEYSTORE_PASSWORD: "metro-password"
+    IGNITION_WEB_KEYSTORE_PASSWORD: "web-password"
     DB_PASSWORD: "my-secure-password"
 ```
 

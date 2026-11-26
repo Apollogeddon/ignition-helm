@@ -1,4 +1,6 @@
 suite: Ignition Scaleout Connectivity
+values:
+  - values/required.yaml
 templates:
   - templates/frontend/frontend-statefulset.yaml
 tests:

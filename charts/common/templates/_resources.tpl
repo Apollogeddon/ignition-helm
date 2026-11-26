@@ -53,10 +53,11 @@ Params:
   name: The component name suffix (e.g. "frontend" or "")
   secrets: The secrets dictionary
   sealedSecrets: Boolean, whether to use SealedSecrets
+  existingSecret: A Secret the user manages; when set, nothing is rendered
   context: The global context (Dot)
 */}}
 {{- define "ignition-common.secret" -}}
-{{- if .secrets }}
+{{- if and .secrets (not .existingSecret) }}
 {{- $fullname := include "ignition.name" .context }}
 {{- if .name }}
 {{- $fullname = printf "%s-%s-secrets" $fullname .name }}

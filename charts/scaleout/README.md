@@ -37,12 +37,18 @@ helm repo add ignition-charts https://apollogeddon.github.io/ignition-helm
 helm repo update
 ```
 
+The chart has no default passwords. Set `GATEWAY_ADMIN_PASSWORD`, `IGNITION_GAN_KEYSTORE_PASSWORD` and `IGNITION_WEB_KEYSTORE_PASSWORD` in both `frontend.secrets` and `backend.secrets`, or create a Secret for each layer that holds them and set `frontend.existingSecret` and `backend.existingSecret`; the render fails until each layer has them.
+
 Install the chart with the release name `my-scaleout` and two frontend gateways:
 
 ```bash
 helm install my-scaleout ignition-charts/ignition-scaleout \
-  --set backend.secrets.GATEWAY_ADMIN_PASSWORD=mysecretpassword \
-  --set frontend.secrets.GATEWAY_ADMIN_PASSWORD=mysecretpassword \
+  --set backend.secrets.GATEWAY_ADMIN_PASSWORD=<admin password> \
+  --set backend.secrets.IGNITION_GAN_KEYSTORE_PASSWORD=<gan keystore password> \
+  --set backend.secrets.IGNITION_WEB_KEYSTORE_PASSWORD=<web keystore password> \
+  --set frontend.secrets.GATEWAY_ADMIN_PASSWORD=<admin password> \
+  --set frontend.secrets.IGNITION_GAN_KEYSTORE_PASSWORD=<gan keystore password> \
+  --set frontend.secrets.IGNITION_WEB_KEYSTORE_PASSWORD=<web keystore password> \
   --set frontend.redundancy.replicas=2
 ```
 
@@ -129,10 +135,10 @@ The most commonly changed values are below. Most `frontend.*` and `backend.*` va
 | `applicationName` | Prefix of every resource the chart creates. | `ignition-scaleout` |
 | `componentSelectors` | Select each StatefulSet's pods by `app.kubernetes.io/component` too. Needed by `frontend.hpa`; set it at install, as a selector can't change (see [Autoscaling the frontend](#autoscaling-the-frontend)). | `false` |
 | `image.tag` | Ignition image tag for both layers. Empty uses the chart's `appVersion`. | `""` |
-| `frontend.secrets.GATEWAY_ADMIN_PASSWORD` | Frontend gateway admin password. Set your own. | `admin` |
-| `backend.secrets.GATEWAY_ADMIN_PASSWORD` | Backend gateway admin password. Set your own. | `admin` |
-| `frontend.secrets.IGNITION_GAN_KEYSTORE_PASSWORD` / `backend.secrets.IGNITION_GAN_KEYSTORE_PASSWORD` | Password for each layer's Gateway Network keystore. | `metro` |
-| `frontend.secrets.IGNITION_WEB_KEYSTORE_PASSWORD` / `backend.secrets.IGNITION_WEB_KEYSTORE_PASSWORD` | Password for each layer's web server TLS keystore. | `ignition` |
+| `frontend.existingSecret` / `backend.existingSecret` | Name of a Secret you manage for the layer, holding `GATEWAY_ADMIN_PASSWORD`, `IGNITION_GAN_KEYSTORE_PASSWORD` and `IGNITION_WEB_KEYSTORE_PASSWORD`, plus any other secret environment variables (`GATEWAY_ADMIN_USERNAME`, licensing). The layer's gateways, its Gateway Network keystore and (backend) rotation CronJobs read it; the chart then renders no Secret for the layer, and refuses values left in its `secrets`. | `""` |
+| `frontend.secrets.GATEWAY_ADMIN_PASSWORD` / `backend.secrets.GATEWAY_ADMIN_PASSWORD` | Each layer's gateway admin password. Required unless the layer's `existingSecret` is set. | unset |
+| `frontend.secrets.IGNITION_GAN_KEYSTORE_PASSWORD` / `backend.secrets.IGNITION_GAN_KEYSTORE_PASSWORD` | Password for each layer's Gateway Network keystore. Required unless the layer's `existingSecret` is set. | unset |
+| `frontend.secrets.IGNITION_WEB_KEYSTORE_PASSWORD` / `backend.secrets.IGNITION_WEB_KEYSTORE_PASSWORD` | Password for each layer's web server TLS keystore. Required unless the layer's `existingSecret` is set. | unset |
 | `frontend.config.GATEWAY_MODULES_ENABLED` | Modules enabled on the frontend. | `perspective,symbol-factory` |
 | `backend.config.GATEWAY_MODULES_ENABLED` | Modules enabled on the backend. | drivers, SQL Bridge, tag historian, reporting, alarm notification |
 | `frontend.redundancy.replicas` | Number of frontend gateways. | `1` |

@@ -2,8 +2,18 @@
 # (.github/scripts/tests/deploy-test.sh). Without the HPA and componentSelectors
 # of deploy-values.yaml: a StatefulSet's selector can't change on upgrade.
 frontend:
+  # the charts have no default passwords
+  secrets:
+    GATEWAY_ADMIN_PASSWORD: ci-admin-password
+    IGNITION_GAN_KEYSTORE_PASSWORD: ci-gan-password
+    IGNITION_WEB_KEYSTORE_PASSWORD: ci-web-password
   networkPolicy:
     enabled: true
 backend:
+  # the charts have no default passwords
+  secrets:
+    GATEWAY_ADMIN_PASSWORD: ci-admin-password
+    IGNITION_GAN_KEYSTORE_PASSWORD: ci-gan-password
+    IGNITION_WEB_KEYSTORE_PASSWORD: ci-web-password
   networkPolicy:
     enabled: true

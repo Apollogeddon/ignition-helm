@@ -1,3 +1,5 @@
+{{- include "ignition-common.requireSecrets" (dict "path" "frontend" "values" .Values.frontend) }}
+{{- $secretName := include "ignition-common.secretName" (dict "name" "frontend" "values" .Values.frontend "context" .) }}
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -40,7 +42,7 @@ spec:
         - configMapRef:
             name: {{ include "ignition.name" . }}-frontend-config
         - secretRef:
-            name: {{ include "ignition.name" . }}-frontend-secrets
+            name: {{ $secretName }}
         env:
         {{- $backendReplicas := (ternary 2 1 .Values.backend.redundancy.enabled) }}
         {{- range $i, $e := until (int $backendReplicas) }}
@@ -62,7 +64,7 @@ spec:
         {{- include "ignition-common.containerProbes" (dict "values" .Values.frontend) | trim | nindent 8 }}
       initContainers:
 {{- with include "ignition-common.initContainer.fixDataOwnership" (dict "image" .Values.image "values" .Values.frontend "context" .) }}{{ . | trim | nindent 6 }}{{ end }}
-{{ include "ignition-common.initContainer.preconfigure" (dict "name" (include "ignition.name" .) "secretName" (printf "%s-frontend-secrets" (include "ignition.name" .)) "image" .Values.image "values" .Values.frontend "replicas" 1 "context" .) | nindent 6 }}
+{{ include "ignition-common.initContainer.preconfigure" (dict "name" (include "ignition.name" .) "secretName" $secretName "image" .Values.image "values" .Values.frontend "replicas" 1 "context" .) | nindent 6 }}
       volumes:
       - name: data
         emptyDir: {}

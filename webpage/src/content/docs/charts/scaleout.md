@@ -174,7 +174,7 @@ The timings, `maxDiskMb` and `pingMaxMissed`, and `backend.activeRouting.interva
 
 #### Resources and security (backend)
 
-With `backend.sealedSecrets`, every `backend.secrets` value, the defaults included, must be encrypted with `kubeseal` (see [SealedSecrets](../../guides/capabilities/#example-sealedsecrets)).
+There are no default passwords: set `GATEWAY_ADMIN_PASSWORD`, `IGNITION_GAN_KEYSTORE_PASSWORD` and `IGNITION_WEB_KEYSTORE_PASSWORD` in `backend.secrets`, or set `backend.existingSecret` to a Secret you manage that holds them (and any other secret environment variables); the chart then renders no Secret and refuses values left in `backend.secrets`. With `backend.sealedSecrets`, every `backend.secrets` value, the user name included, must be encrypted with `kubeseal` (see [SealedSecrets](../../guides/capabilities/#example-sealedsecrets)).
 
 | Parameter | Type | Default |
 | --- | --- | --- |
@@ -186,7 +186,8 @@ With `backend.sealedSecrets`, every `backend.secrets` value, the defaults includ
 | `backend.externalModules.enabled` | bool | `false` |
 | `backend.externalModules.pvcName` | string | `""` |
 | `backend.securityContext` | object | `{"runAsUser":2003,"runAsGroup":2003,"fsGroup":2003,"runAsNonRoot":true}` |
-| `backend.secrets` | object | `{"GATEWAY_ADMIN_USERNAME":"admin","GATEWAY_ADMIN_PASSWORD":"admin","IGNITION_GAN_KEYSTORE_PASSWORD":"metro","IGNITION_WEB_KEYSTORE_PASSWORD":"ignition"}` |
+| `backend.existingSecret` | string | `""` |
+| `backend.secrets` | object | `{"GATEWAY_ADMIN_USERNAME":"admin"}` |
 | `backend.sealedSecrets` | bool | `false` |
 
 #### Probes (backend)
@@ -310,7 +311,7 @@ GATEWAY_MODULES_ENABLED: perspective,symbol-factory
 
 #### Resources and security (frontend)
 
-With `frontend.sealedSecrets`, every `frontend.secrets` value, the defaults included, must be encrypted with `kubeseal` (see [SealedSecrets](../../guides/capabilities/#example-sealedsecrets)).
+There are no default passwords: set `GATEWAY_ADMIN_PASSWORD`, `IGNITION_GAN_KEYSTORE_PASSWORD` and `IGNITION_WEB_KEYSTORE_PASSWORD` in `frontend.secrets`, or set `frontend.existingSecret` to a Secret you manage that holds them (and any other secret environment variables); the chart then renders no Secret and refuses values left in `frontend.secrets`. With `frontend.sealedSecrets`, every `frontend.secrets` value, the user name included, must be encrypted with `kubeseal` (see [SealedSecrets](../../guides/capabilities/#example-sealedsecrets)).
 
 | Parameter | Type | Default |
 | --- | --- | --- |
@@ -325,7 +326,8 @@ With `frontend.sealedSecrets`, every `frontend.secrets` value, the defaults incl
 | `frontend.emptyDirSizeLimit` | object | `{"logs":"","temp":"","dotIgnition":""}` |
 | `frontend.fixDataOwnership` | bool | `false` |
 | `frontend.securityContext` | object | `{"runAsUser":2003,"runAsGroup":2003,"fsGroup":2003,"runAsNonRoot":true}` |
-| `frontend.secrets` | object | `{"GATEWAY_ADMIN_USERNAME":"admin","GATEWAY_ADMIN_PASSWORD":"admin","IGNITION_GAN_KEYSTORE_PASSWORD":"metro","IGNITION_WEB_KEYSTORE_PASSWORD":"ignition"}` |
+| `frontend.existingSecret` | string | `""` |
+| `frontend.secrets` | object | `{"GATEWAY_ADMIN_USERNAME":"admin"}` |
 | `frontend.sealedSecrets` | bool | `false` |
 
 #### Probes (frontend)

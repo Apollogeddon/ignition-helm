@@ -10,6 +10,28 @@ Most upgrades are a plain `helm upgrade` after `helm repo update`. Read the char
 
 Check these before you upgrade, and take each step that applies to your install.
 
+## If you relied on the default passwords
+
+The charts no longer have default passwords (they were `admin` for `GATEWAY_ADMIN_PASSWORD`, `metro` for `IGNITION_GAN_KEYSTORE_PASSWORD` and `ignition` for `IGNITION_WEB_KEYSTORE_PASSWORD`). An upgrade whose values don't set all three, or name a Secret that holds them with `existingSecret`, fails to render, and nothing changes in the cluster:
+
+```text
+Error: ... the chart has no default passwords: set ignition.existingSecret to a Secret holding GATEWAY_ADMIN_PASSWORD, ...
+```
+
+To upgrade without changing anything on the gateways, set the old values explicitly, then change them deliberately later:
+
+```yaml
+ignition:                  # scaleout: frontend and backend
+  secrets:
+    GATEWAY_ADMIN_PASSWORD: admin
+    IGNITION_GAN_KEYSTORE_PASSWORD: metro
+    IGNITION_WEB_KEYSTORE_PASSWORD: ignition
+```
+
+Then choose real passwords. The image applies `GATEWAY_ADMIN_PASSWORD` when the gateway commissions, so on an existing data volume change the admin password in the Gateway web UI as well. A new `IGNITION_GAN_KEYSTORE_PASSWORD` only takes effect once cert-manager reissues the Gateway Network keystore with it (`cmctl renew <name>-gan`, or `<name>-frontend-gan` and `<name>-backend-gan`), and the next gateway start installs it.
+
+To keep the passwords out of Helm's values, move them to a Secret of your own and set `existingSecret` (`ignition.existingSecret`, or `frontend.existingSecret` and `backend.existingSecret`), removing the passwords from `secrets`; see [Example: existingSecret](../capabilities/#example-existingsecret). The chart then deletes its own `<name>-secrets` Secret on the upgrade, so create yours with every key the gateways need first, including `GATEWAY_ADMIN_USERNAME` if it isn't `admin`.
+
 ## If your StatefulSets name another Service
 
 Each StatefulSet is governed by a `<name>-headless` Service (`<name>-frontend-headless` and `<name>-backend-headless` in scaleout). Check what yours name:
@@ -75,7 +97,7 @@ Each gateway trusts only its release's own Gateway Network CA, not the root of t
 
 ## If you use SealedSecrets
 
-Each Gateway Network keystore takes its password from the release's own secrets (`<name>-secrets`, or `<name>-frontend-secrets` and `<name>-backend-secrets`), and the chart refuses a value in `secrets` that isn't sealed, the defaults included. If your release has a separate `<name>-gan-metro-keystore` Secret, the upgrade deletes it, and the keystore keeps the password from that Secret until cert-manager next issues the certificate. Once the upgrade has rendered, renew it (`cmctl renew <name>-gan`, or `<name>-frontend-gan` and `<name>-backend-gan`).
+Each Gateway Network keystore takes its password from the release's own secrets (`<name>-secrets`, or `<name>-frontend-secrets` and `<name>-backend-secrets`, or the `existingSecret` you name), and the chart refuses a value in `secrets` that isn't sealed, the default user name included. If your release has a separate `<name>-gan-metro-keystore` Secret, the upgrade deletes it, and the keystore keeps the password from that Secret until cert-manager next issues the certificate. Once the upgrade has rendered, renew it (`cmctl renew <name>-gan`, or `<name>-frontend-gan` and `<name>-backend-gan`).
 
 ## If you autoscale the scaleout frontend
 

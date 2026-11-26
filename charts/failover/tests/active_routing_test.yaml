@@ -1,4 +1,6 @@
 suite: Ignition Failover Active Routing
+values:
+  - values/required.yaml
 templates:
   - active-routing.yaml
   - ignition-service.yaml

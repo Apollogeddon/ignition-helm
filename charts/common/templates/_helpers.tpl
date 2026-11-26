@@ -82,6 +82,59 @@ Create the name for the common scripts ConfigMap.
 {{- end -}}
 
 {{/*
+The Secret a component's gateways take their passwords and other secret
+environment variables from: <values>.existingSecret when set, else the chart's
+own <name>[-<component>]-secrets
+Params:
+  name: The component name suffix (e.g. "frontend" or "")
+  values: The component-specific values object
+  context: The global context (Dot)
+*/}}
+{{- define "ignition-common.secretName" -}}
+{{- if .values.existingSecret }}
+{{- .values.existingSecret }}
+{{- else if .name }}
+{{- printf "%s-%s-secrets" (include "ignition.name" .context) .name }}
+{{- else }}
+{{- printf "%s-secrets" (include "ignition.name" .context) }}
+{{- end }}
+{{- end }}
+
+{{/*
+The passwords a gateway needs. There are no defaults: the render fails unless
+<path>.existingSecret names a Secret holding them, or <path>.secrets sets all
+three. With existingSecret, the chart renders no Secret, so a value left in
+<path>.secrets would be dropped: the render fails on it too (except the
+default GATEWAY_ADMIN_USERNAME, which the image also defaults to admin).
+Params:
+  path: The values path, for the errors (e.g. "ignition" or "frontend")
+  values: The component-specific values object
+*/}}
+{{- define "ignition-common.requireSecrets" -}}
+{{- $required := list "GATEWAY_ADMIN_PASSWORD" "IGNITION_GAN_KEYSTORE_PASSWORD" "IGNITION_WEB_KEYSTORE_PASSWORD" }}
+{{- $secrets := .values.secrets | default dict }}
+{{- if .values.existingSecret }}
+{{- range $key, $value := $secrets }}
+{{- if and $value (not (and (eq $key "GATEWAY_ADMIN_USERNAME") (eq (toString $value) "admin"))) }}
+{{- fail (printf "%s.secrets.%s is set, but %s.existingSecret (%s) replaces the chart's Secret, so it would be ignored: put %s in that Secret instead" $.path $key $.path $.values.existingSecret $key) }}
+{{- end }}
+{{- end }}
+{{- else }}
+{{- $missing := list }}
+{{- $example := list }}
+{{- range $key := $required }}
+{{- if not (get $secrets $key) }}
+{{- $missing = append $missing (printf "%s.secrets.%s" $.path $key) }}
+{{- $example = append $example (printf "%s.secrets.%s=<password>" $.path $key) }}
+{{- end }}
+{{- end }}
+{{- if $missing }}
+{{- fail (printf "the chart has no default passwords: set %s.existingSecret to a Secret holding %s, or set %s (e.g. --set %s, or --set %s.existingSecret=<secret>)" .path (join ", " $required) (join ", " $missing) (join "," $example) .path) }}
+{{- end }}
+{{- end }}
+{{- end }}
+
+{{/*
 Common labels for common resources.
 */}}
 {{- define "ignition-common.labels" -}}
