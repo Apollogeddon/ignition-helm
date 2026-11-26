@@ -196,7 +196,7 @@ There are no default passwords: set `GATEWAY_ADMIN_PASSWORD`, `IGNITION_GAN_KEYS
 | --- | --- | --- |
 | `backend.livenessProbe` | object | *(See below)* |
 | `backend.readinessProbe` | object | *(See below)* |
-| `backend.startupProbe` | object | `{"enabled":false,"initialDelaySeconds":30,"periodSeconds":10,"failureThreshold":30,"timeoutSeconds":5,"command":["/config/scripts/health-check.sh","-t","5"]}` |
+| `backend.startupProbe` | object | `{"enabled":true,"initialDelaySeconds":30,"periodSeconds":10,"failureThreshold":60,"timeoutSeconds":5,"command":["/config/scripts/health-check.sh","-t","5"]}` |
 | `backend.lifecycle` | object | `{}` |
 
 **Default `backend.livenessProbe`:**
@@ -335,7 +335,7 @@ There are no default passwords: set `GATEWAY_ADMIN_PASSWORD`, `IGNITION_GAN_KEYS
 | --- | --- | --- |
 | `frontend.livenessProbe` | object | *(See below)* |
 | `frontend.readinessProbe` | object | *(See below)* |
-| `frontend.startupProbe` | object | `{"enabled":false,"initialDelaySeconds":30,"periodSeconds":10,"failureThreshold":30,"timeoutSeconds":5,"command":["/config/scripts/health-check.sh","-t","5"]}` |
+| `frontend.startupProbe` | object | `{"enabled":true,"initialDelaySeconds":30,"periodSeconds":10,"failureThreshold":60,"timeoutSeconds":5,"command":["/config/scripts/health-check.sh","-t","5"]}` |
 | `frontend.lifecycle` | object | `{}` |
 
 **Default `frontend.livenessProbe`:**

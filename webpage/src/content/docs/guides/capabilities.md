@@ -111,7 +111,7 @@ Kubernetes uses the probes to decide whether a gateway is alive and ready for tr
 
 * **Readiness** (`health-check.sh -t 3 -r`): `/StatusPing` must report `RUNNING`, and the gateway must have finished commissioning. With `activeRouting`, a Backup must also be in sync with its Master.
 * **Liveness** (`health-check.sh -t 5`): `/StatusPing` must report `RUNNING`. A gateway stuck commissioning is not restarted in a loop.
-* **Startup** (optional, `startupProbe.enabled`): holds liveness off during slow starts, such as a Backup restoring a state transfer from its Master.
+* **Startup** (on by default, `startupProbe.enabled`): holds liveness and readiness off during slow starts, such as a first start, a large `.gwbk` restore or a Backup restoring a state transfer from its Master. It allows about 10 minutes (`failureThreshold` 60 × `periodSeconds` 10, after `initialDelaySeconds` 30) before the kubelet restarts the gateway; raise `startupProbe.failureThreshold` if yours needs longer.
 
 The checks use `/StatusPing`, which works on Ignition 8.1 and 8.3. A probe `command` you set is used as-is.
 

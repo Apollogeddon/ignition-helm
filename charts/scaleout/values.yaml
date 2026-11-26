@@ -293,14 +293,17 @@ frontend:
       - -t
       - "5"
 
-  # -- Startup Probe configuration (off by default). While it runs, liveness and
-  # readiness are held off, so livenessProbe.failureThreshold can stay low and
-  # slow starts (e.g. a redundant state transfer restart) are still tolerated.
+  # -- Startup Probe configuration. While it runs, liveness and readiness are
+  # held off, so livenessProbe.failureThreshold can stay low and slow starts are
+  # still tolerated: a first start (commissioning, module installs), a large
+  # .gwbk restore or a redundant state transfer. failureThreshold x periodSeconds
+  # (60 x 10s) gives the gateway about 10 minutes after initialDelaySeconds to
+  # answer /StatusPing with RUNNING before the kubelet restarts it
   startupProbe:
-    enabled: false
+    enabled: true
     initialDelaySeconds: 30
     periodSeconds: 10
-    failureThreshold: 30
+    failureThreshold: 60
     timeoutSeconds: 5
     command:
       - /config/scripts/health-check.sh
@@ -569,14 +572,17 @@ backend:
       - -t
       - "5"
 
-  # -- Startup Probe configuration (off by default). While it runs, liveness and
-  # readiness are held off, so livenessProbe.failureThreshold can stay low and
-  # slow starts (e.g. a redundant state transfer restart) are still tolerated.
+  # -- Startup Probe configuration. While it runs, liveness and readiness are
+  # held off, so livenessProbe.failureThreshold can stay low and slow starts are
+  # still tolerated: a first start (commissioning, module installs), a large
+  # .gwbk restore or a redundant state transfer. failureThreshold x periodSeconds
+  # (60 x 10s) gives the gateway about 10 minutes after initialDelaySeconds to
+  # answer /StatusPing with RUNNING before the kubelet restarts it
   startupProbe:
-    enabled: false
+    enabled: true
     initialDelaySeconds: 30
     periodSeconds: 10
-    failureThreshold: 30
+    failureThreshold: 60
     timeoutSeconds: 5
     command:
       - /config/scripts/health-check.sh

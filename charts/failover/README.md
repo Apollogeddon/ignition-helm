@@ -147,7 +147,7 @@ The most commonly changed values are below. See [`values.yaml`](values.yaml) for
 | `ignition.externalModules.enabled` | Mount the `ignition.externalModules.pvcName` PersistentVolumeClaim of modules. | `false` |
 | `ignition.fixDataOwnership` | Change the data volume's owner to the gateway user on start (an init container running as root). Only for upgrading an install whose gateway ran as root. | `false` |
 | `ignition.readinessProbe` / `ignition.livenessProbe` | Probe settings. A configured `command` is used as-is; the chart's health check (`/StatusPing` must report `RUNNING`) is the fallback when it is empty. Readiness adds `-r`: not Ready while the gateway is still commissioning, and with active routing a Backup must also be in sync. | `/config/scripts/health-check.sh -t 3 -r` / `-t 5` |
-| `ignition.startupProbe.enabled` | Add a startup probe, so slow starts are tolerated while liveness stays strict. | `false` |
+| `ignition.startupProbe.enabled` | Startup probe, so slow starts (a first start, a large `.gwbk` restore, a state transfer) are tolerated while liveness stays strict. It allows about 10 minutes (`failureThreshold` 60 × `periodSeconds` 10, after `initialDelaySeconds` 30); raise `failureThreshold` for a slower start. | `true` |
 | `ignition.lifecycle` | Container lifecycle hooks, rendered as-is. | `{}` (none) |
 | `ignition.logging.level` | Root log level (`INFO`, `DEBUG`, `WARN`, `ERROR`). | `INFO` |
 | `ignition.logging.loggers` | Per-logger levels, for example `{"gateway.SslManager": "DEBUG"}`. | `{}` |

@@ -200,7 +200,7 @@ Health checks for the gateway container. A `command` you set is used as-is.
 | --- | --- | --- |
 | `ignition.livenessProbe` | object | *(See below)* |
 | `ignition.readinessProbe` | object | *(See below)* |
-| `ignition.startupProbe` | object | `{"enabled":false,"initialDelaySeconds":30,"periodSeconds":10,"failureThreshold":30,"timeoutSeconds":5,"command":["/config/scripts/health-check.sh","-t","5"]}` |
+| `ignition.startupProbe` | object | `{"enabled":true,"initialDelaySeconds":30,"periodSeconds":10,"failureThreshold":60,"timeoutSeconds":5,"command":["/config/scripts/health-check.sh","-t","5"]}` |
 | `ignition.lifecycle` | object | `{}` |
 
 **Default `ignition.livenessProbe`:**
