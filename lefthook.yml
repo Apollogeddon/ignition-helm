@@ -10,7 +10,6 @@ pre-commit:
   commands:
     shellcheck:
       glob: "*.sh"
-      # CI runs shellcheck on every script, so the hook doesn't insist it's installed
-      run: |
-        if command -v shellcheck >/dev/null; then shellcheck {staged_files}
-        else echo "shellcheck isn't installed: skipping, CI checks the scripts"; fi
+      # CI runs shellcheck on every script, so the hook doesn't insist it's installed. One line and no quotes:
+      # lefthook on Windows splits a quoted or multi-line command before sh -c sees it.
+      run: if command -v shellcheck >/dev/null; then shellcheck {staged_files}; else echo shellcheck not installed, CI checks the scripts; fi
