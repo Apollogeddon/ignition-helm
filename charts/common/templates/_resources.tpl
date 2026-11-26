@@ -36,6 +36,27 @@ Params:
 {{- fail "acceptEula: Ignition's EULA is not accepted. Read Inductive Automation's End User License Agreement (https://inductiveautomation.com/ignition/license) and, if you accept it, set acceptEula=true (e.g. --set acceptEula=true)" }}
 {{- end }}
 {{- $config := merge (deepCopy (.config | default dict)) (dict "ACCEPT_IGNITION_EULA" "Y") }}
+{{- /* GATEWAY_MODULES_ENABLED names 8.1's modules. 8.3 has no tag-historian, and ships its
+JDBC drivers and historians as modules of their own that it enables only by module id,
+while 8.1's entrypoint refuses any identifier it doesn't know. So on 8.3, tag-historian
+becomes the historian modules, and a list with sql-bridge gains the JDBC drivers. */}}
+{{- $tag := toString (.context.Values.image.tag | default .context.Chart.AppVersion) }}
+{{- if and (hasKey $config "GATEWAY_MODULES_ENABLED") (not (hasPrefix "8.1" $tag)) }}
+{{- $modules := list }}
+{{- $named := splitList "," (toString (get $config "GATEWAY_MODULES_ENABLED")) }}
+{{- range $named }}
+{{- $m := trim . }}
+{{- if eq $m "tag-historian" }}
+{{- $modules = concat $modules (list "com.inductiveautomation.historian" "com.inductiveautomation.historian.sql") }}
+{{- else if $m }}
+{{- $modules = append $modules $m }}
+{{- end }}
+{{- end }}
+{{- if has "sql-bridge" $modules }}
+{{- $modules = concat $modules (list "com.inductiveautomation.jdbc.postgresql" "com.inductiveautomation.jdbc.mssql" "com.inductiveautomation.jdbc.mariadb") }}
+{{- end }}
+{{- $_ := set $config "GATEWAY_MODULES_ENABLED" (join "," (uniq $modules)) }}
+{{- end }}
 {{- if $config }}
 apiVersion: v1
 kind: ConfigMap
