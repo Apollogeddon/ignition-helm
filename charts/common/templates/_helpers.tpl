@@ -136,8 +136,8 @@ Params:
 
 {{/*
 Gateway pod-template checksum annotations, so a change to what the gateways
-read only on start rolls the pods: the environment variables (config and
-acceptEula), the chart's own Secret (none with existingSecret: the chart can't
+read only on start rolls the pods: the environment variables (the rendered
+ConfigMap's data, so a chart change to it rolls them too), the chart's own Secret (none with existingSecret: the chart can't
 see a Secret it doesn't render, so roll the pods yourself when it changes), the
 logback.xml the init container installs, and the scripts. Only the scripts'
 contents are hashed, so a chart version bump alone restarts nothing.
@@ -148,7 +148,7 @@ Params:
 */}}
 {{- define "ignition-common.podChecksums" -}}
 {{- $logging := .logging | default dict -}}
-checksum/config: {{ dict "config" .values.config "acceptEula" .context.Values.acceptEula | toJson | sha256sum }}
+checksum/config: {{ get (include "ignition-common.configMap" (dict "config" .values.config "context" .context) | fromYaml) "data" | toJson | sha256sum }}
 {{- if not .values.existingSecret }}
 checksum/secrets: {{ dict "secrets" .values.secrets "sealed" .values.sealedSecrets | toJson | sha256sum }}
 {{- end }}
