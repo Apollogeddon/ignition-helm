@@ -37,9 +37,7 @@ helm repo add ignition-charts https://apollogeddon.github.io/ignition-helm
 helm repo update
 ```
 
-Read Inductive Automation's [Ignition End User License Agreement](https://inductiveautomation.com/ignition/license) first: the chart renders only with `acceptEula=true`, and then sets `ACCEPT_IGNITION_EULA=Y` on every gateway.
-
-The chart has no default passwords. Set `GATEWAY_ADMIN_PASSWORD`, `IGNITION_GAN_KEYSTORE_PASSWORD` and `IGNITION_WEB_KEYSTORE_PASSWORD` in both `frontend.secrets` and `backend.secrets`, or name a Secret per layer that holds them in `frontend.existingSecret` and `backend.existingSecret`.
+Read Inductive Automation's [Ignition End User License Agreement](https://inductiveautomation.com/ignition/license) first: the chart renders only with `acceptEula=true`. It has no default passwords: set the three below for each layer, or each layer's `existingSecret`.
 
 Install the chart with the release name `my-scaleout` and two frontend gateways:
 
@@ -74,8 +72,8 @@ See [Verifying a chart](../../README.md#verifying-a-chart) for what this checks.
 
 ## Operations
 
-- **Configuration changes roll the pods**: the pod template's `checksum/config`, `checksum/secrets`, `checksum/logging`, `checksum/scripts` and (backend) `checksum/redundancy` annotations restart the gateways one at a time when a layer's `config`, `acceptEula`, the chart's own Secret, logging or the chart's scripts change (with `OnDelete`, at your next pod deletion). A Secret named by `existingSecret` isn't hashed: after changing it, run `kubectl rollout restart statefulset/<name>`.
-- **Licensing**: set a leased license key and its activation token as `IGNITION_LICENSE_KEY` and `IGNITION_ACTIVATION_TOKEN` in `frontend.secrets` and `backend.secrets`, or each layer's `existingSecret`; the image activates them on start. Without them the gateway runs in trial mode, two hours at a time on Ignition 8.3. See the [licensing guide](https://apollogeddon.github.io/ignition-helm/docs/guides/licensing/).
+- **Configuration changes roll the pods**: the pod template's `checksum/config`, `checksum/secrets`, `checksum/logging`, `checksum/scripts` and (backend) `checksum/redundancy` annotations restart the gateways one at a time when a layer's `config`, `acceptEula`, the chart's own Secret, logging or the chart's scripts change (with `OnDelete`, at your next pod deletion). After changing an `existingSecret`, run `kubectl rollout restart statefulset/<name>`.
+- **Licensing**: set `IGNITION_LICENSE_KEY` and `IGNITION_ACTIVATION_TOKEN` in `frontend.secrets` and `backend.secrets`, or each layer's `existingSecret`. Without them the gateway runs a trial, two hours at a time on 8.3. See the [licensing guide](https://apollogeddon.github.io/ignition-helm/docs/guides/licensing/).
 - **Controlled rollouts**: set `frontend.updateStrategy.type` or `backend.updateStrategy.type` to `OnDelete` so a `helm upgrade` does not restart running gateways. Each pod then picks up the change when you delete it, in your own maintenance window.
 - **External modules**: set `backend.externalModules.enabled` and `backend.externalModules.pvcName` (or the `frontend.` equivalents) to mount a PersistentVolumeClaim of `.modl` files, instead of building a custom image.
 - **Certificate rotation and renewal**: `certManager.rotation.enabled` adds CronJobs that refresh the Gateway Network keystore on each backend gateway's volume. The frontends need none: their data volume is an emptyDir, rebuilt from the current certificate on every start, including autoscaled ones. A running gateway only loads renewed certificates when it restarts, so pair it with `certManager.restartOnRenewal.enabled`, which restarts the gateways (Backup first) when the certificate secrets change.
@@ -111,13 +109,13 @@ frontend:
   With the autoscaler already on, the recreated frontend StatefulSet starts at one gateway until the autoscaler raises it to `minReplicas`, so do it in a quiet period. Turning `componentSelectors` off again needs the same step.
 - While the autoscaler is enabled, the frontend StatefulSet leaves out `replicas`, so `helm upgrade` doesn't reset the count it has set. When you enable it on an existing release, Helm removes the field and Kubernetes briefly scales the StatefulSet to one gateway, until the autoscaler raises it to `minReplicas`. Enable it in a quiet period.
 - A new frontend gateway takes minutes to start and commission, and scaling down ends the Perspective sessions on the gateways it removes, so scale down slowly with `behavior.scaleDown`.
-- A PodDisruptionBudget (`minAvailable: 1`) protects the frontend while it has at least two gateways (`frontend.redundancy.replicas`, or `frontend.hpa.minReplicas` with the autoscaler). With one, it would block every node drain, so the chart leaves it out.
-- With more than one frontend gateway, or the autoscaler, the frontend Service uses `sessionAffinity: ClientIP`, so a Perspective session stays on its gateway. Set `frontend.service.sessionAffinity` to override it.
+- With at least two frontend gateways (`frontend.redundancy.replicas` or `frontend.hpa.minReplicas`), a PodDisruptionBudget (`minAvailable: 1`) protects the frontend; with one it would block node drains.
+- With more than one frontend gateway, or the autoscaler, the frontend Service defaults to `sessionAffinity: ClientIP`.
 - The backend doesn't autoscale, and `backend.hpa.enabled` is refused. A backend is one gateway, or a Master/Backup pair, each with its own data volume, redundancy role and device connections: an extra backend pod would be neither Master nor Backup, and would open its own connections to the same devices and databases. Scale user load on the frontend instead.
 
 ## Upgrading
 
-Before any upgrade, take a gateway backup (`.gwbk`) and pin `image.tag`, so a chart upgrade doesn't also upgrade Ignition. Ignition 8.1 to 8.3 is one-way. This major version needs `acceptEula: true` and each layer's passwords (`secrets` or `existingSecret`), and refuses unknown keys: see [Before you upgrade](https://apollogeddon.github.io/ignition-helm/docs/guides/upgrading/#before-you-upgrade) and [Breaking changes](https://apollogeddon.github.io/ignition-helm/docs/guides/upgrading/#breaking-changes-eula-passwords-and-the-values-schema).
+Before any upgrade, take a `.gwbk` backup and pin `image.tag`; 8.1 to 8.3 is one-way. This major version needs `acceptEula: true`, each layer's passwords (`secrets` or `existingSecret`) and no unknown keys: see [Before you upgrade](https://apollogeddon.github.io/ignition-helm/docs/guides/upgrading/#before-you-upgrade) and [Breaking changes](https://apollogeddon.github.io/ignition-helm/docs/guides/upgrading/#breaking-changes-eula-passwords-and-the-values-schema).
 
 The frontend and backend StatefulSets are governed by the `<name>-frontend-headless` and `<name>-backend-headless` Services. Kubernetes does not allow `serviceName` to change on an existing StatefulSet, so if yours name other Services, `helm upgrade` is rejected. Delete only the StatefulSet objects first. Their pods and volumes keep running, and the upgraded StatefulSets adopt them:
 
@@ -136,7 +134,7 @@ The [upgrading guide](https://apollogeddon.github.io/ignition-helm/docs/guides/u
 
 ## Configuration
 
-The most commonly changed values are below. Most `frontend.*` and `backend.*` values have the same meaning as the matching `ignition.*` value in the [failover chart](../failover/README.md#configuration). See [`values.yaml`](values.yaml) for every value, and the [chart reference](https://apollogeddon.github.io/ignition-helm/docs/charts/scaleout/) for the full defaults. The chart validates values against [`values.schema.json`](values.schema.json): an unknown or misspelt key (e.g. `backend.redundency`) fails `helm install`, `helm template` and `helm lint`. Free-form maps such as `config`, `secrets`, `resources` and annotations take any keys.
+The most commonly changed values are below. Most `frontend.*` and `backend.*` values have the same meaning as the matching `ignition.*` value in the [failover chart](../failover/README.md#configuration). See [`values.yaml`](values.yaml) for every value, and the [chart reference](https://apollogeddon.github.io/ignition-helm/docs/charts/scaleout/) for the full defaults. The chart validates values against [`values.schema.json`](values.schema.json): a misspelt key (e.g. `backend.redundency`) fails install, template and lint. Free-form maps (`config`, `secrets`, `resources`, annotations) take any keys.
 
 | Parameter | Description | Default |
 | --------- | ----------- | ------- |
@@ -144,13 +142,13 @@ The most commonly changed values are below. Most `frontend.*` and `backend.*` va
 | `acceptEula` | Accept Inductive Automation's Ignition EULA: sets `ACCEPT_IGNITION_EULA=Y` on every gateway. The chart refuses to render while it is `false`. | `false` |
 | `componentSelectors` | Select each StatefulSet's pods by `app.kubernetes.io/component` too. Needed by `frontend.hpa`; set it at install, as a selector can't change (see [Autoscaling the frontend](#autoscaling-the-frontend)). | `false` |
 | `image.tag` | Ignition image tag for both layers. Empty uses the chart's `appVersion`. | `""` |
-| `frontend.existingSecret` / `backend.existingSecret` | A Secret you manage for the layer, holding `GATEWAY_ADMIN_PASSWORD`, `IGNITION_GAN_KEYSTORE_PASSWORD`, `IGNITION_WEB_KEYSTORE_PASSWORD` and any other secret environment variables (`GATEWAY_ADMIN_USERNAME`, licensing). The layer's gateways, its Gateway Network keystore and (backend) rotation CronJobs read it. The chart then renders no Secret for the layer, and refuses values left in its `secrets`. | `""` |
-| `frontend.secrets.GATEWAY_ADMIN_PASSWORD` / `backend.secrets.GATEWAY_ADMIN_PASSWORD` | Each layer's gateway admin password. Required unless the layer's `existingSecret` is set. | unset |
-| `frontend.secrets.IGNITION_GAN_KEYSTORE_PASSWORD` / `backend.secrets.IGNITION_GAN_KEYSTORE_PASSWORD` | Password for each layer's Gateway Network keystore. Required unless the layer's `existingSecret` is set. | unset |
-| `frontend.secrets.IGNITION_WEB_KEYSTORE_PASSWORD` / `backend.secrets.IGNITION_WEB_KEYSTORE_PASSWORD` | Password for each layer's web server TLS keystore. Required unless the layer's `existingSecret` is set. | unset |
+| `frontend.existingSecret` / `backend.existingSecret` | A Secret you manage for the layer, holding `GATEWAY_ADMIN_PASSWORD`, `IGNITION_GAN_KEYSTORE_PASSWORD`, `IGNITION_WEB_KEYSTORE_PASSWORD` and other secret variables. The chart then renders no Secret for the layer and refuses values in its `secrets`. | `""` |
+| `frontend.secrets.GATEWAY_ADMIN_PASSWORD` / `backend.secrets.GATEWAY_ADMIN_PASSWORD` | Each layer's gateway admin password. Required without the layer's `existingSecret`. | unset |
+| `frontend.secrets.IGNITION_GAN_KEYSTORE_PASSWORD` / `backend.secrets.IGNITION_GAN_KEYSTORE_PASSWORD` | Password for each layer's Gateway Network keystore. Required without the layer's `existingSecret`. | unset |
+| `frontend.secrets.IGNITION_WEB_KEYSTORE_PASSWORD` / `backend.secrets.IGNITION_WEB_KEYSTORE_PASSWORD` | Password for each layer's web server TLS keystore. Required without the layer's `existingSecret`. | unset |
 | `frontend.config.GATEWAY_MODULES_ENABLED` | Modules enabled on the frontend. | `perspective,symbol-factory` |
 | `backend.config.GATEWAY_MODULES_ENABLED` | Modules enabled on the backend. | drivers, SQL Bridge, tag historian, reporting, alarm notification |
-| `frontend.redundancy.replicas` | Number of frontend gateways. With 2 or more the chart adds a PodDisruptionBudget and `ClientIP` session affinity. | `1` |
+| `frontend.redundancy.replicas` | Number of frontend gateways. | `1` |
 | `frontend.service.sessionAffinity` | `ClientIP` or `None`. Empty picks `ClientIP` while there is more than one frontend gateway (or the autoscaler), else `None`. | `""` |
 | `frontend.hpa.enabled` | Scale the frontend with a HorizontalPodAutoscaler. The StatefulSet then leaves out `replicas`, so `frontend.redundancy.replicas` is ignored and the autoscaler owns the count. See [Autoscaling the frontend](#autoscaling-the-frontend). | `false` |
 | `frontend.hpa.minReplicas` / `frontend.hpa.maxReplicas` | Fewest and most frontend gateways: whole numbers from 1 to 2147483647, with the minimum no higher than the maximum. | `1` / `10` |
@@ -160,7 +158,7 @@ The most commonly changed values are below. Most `frontend.*` and `backend.*` va
 | `backend.activeRouting.enabled` | Route user traffic only to the active backend gateway of a redundant pair: a labeller keeps `redundancy-active=true` on the active pod and the `<name>-backend-active` Service (which takes the configured service type, node ports and annotations) selects it. A Backup must also be in sync to be Ready. | `false` |
 | `backend.persistence.size` | Size of each backend gateway's persistent volume. | `3Gi` |
 | `frontend.service.type` / `backend.service.type` | Service type for each layer. | `NodePort` |
-| `frontend.service.ports` / `backend.service.ports` | Each layer's Service ports (`http`, `https`, `gan`). They map to the gateways' own 8088, 8043 and 8060, which the container ports, probes, NetworkPolicy rules and headless Services always use. | `8088` / `8043` / `8060` |
+| `frontend.service.ports` / `backend.service.ports` | Each layer's Service ports (`http`, `https`, `gan`). They map to the gateways' own 8088, 8043 and 8060. | `8088` / `8043` / `8060` |
 | `frontend.service.nodePorts` / `backend.service.nodePorts` | Optional static node ports (`http`, `https`, `gan`). | unset |
 | `frontend.ingress.enabled` / `backend.ingress.enabled` | Create an Ingress for the layer. | `false` |
 | `frontend.ingress.className` / `backend.ingress.className` | IngressClass name, for example `contour`; empty uses the cluster default. | `""` |
@@ -168,11 +166,11 @@ The most commonly changed values are below. Most `frontend.*` and `backend.*` va
 | `frontend.networkPolicy.extraIngress` / `backend.networkPolicy.extraIngress` | Extra NetworkPolicy ingress rules: needed for an ingress controller, Prometheus, or a NodePort or LoadBalancer Service, as in the [examples](https://github.com/Apollogeddon/ignition-helm/tree/main/examples). | `[]` |
 | `frontend.updateStrategy.type` / `backend.updateStrategy.type` | StatefulSet update strategy (`RollingUpdate` or `OnDelete`). | `RollingUpdate` |
 | `frontend.externalModules.enabled` / `backend.externalModules.enabled` | Mount the layer's `externalModules.pvcName` PersistentVolumeClaim of modules. | `false` |
-| `backend.restore.enabled` | Restore a gateway backup from `backend.restore.url`, or `backend.restore.path` on a volume from `backend.extraVolumes`/`extraVolumeMounts` or `localMounts`, which the init container mounts read-only, on the backend gateway's first start. The backup is staged on the data volume once and the gateway starts with `-r`; later restarts keep the gateway's own changes. To restore again, start from an empty data volume. | `false` |
+| `backend.restore.enabled` | Restore a gateway backup from `backend.restore.url`, or `backend.restore.path` on a volume from `backend.extraVolumes`/`extraVolumeMounts` or `localMounts` (mounted read-only in the init container), on the backend gateway's first start. The backup is staged on the data volume once and the gateway starts with `-r`; later restarts keep the gateway's own changes. To restore again, start from an empty data volume. | `false` |
 | `frontend.fixDataOwnership` / `backend.fixDataOwnership` | Change the data volume's owner to the gateway user on start (an init container running as root). Only for upgrading an install whose gateways ran as root. | `false` |
 | `frontend.readinessProbe` / `frontend.livenessProbe` | Probe settings. Readiness fails while the gateway is still commissioning. | `/config/scripts/health-check.sh -t 3 -r` / `-t 5` |
-| `backend.readinessProbe` / `backend.livenessProbe` | Probe settings. Readiness fails while the gateway is still commissioning; with `backend.activeRouting` a Backup must also be in sync, or `Incompatible` with its Master for up to `IGNITION_READY_INCOMPATIBLE_SECONDS` (in `backend.config`, default 1800) so a rolling update that changes the modules or Ignition version reaches the Master. | `/config/scripts/health-check.sh -t 3 -r` / `-t 5` |
-| `frontend.startupProbe.enabled` / `backend.startupProbe.enabled` | Startup probe, so a slow start (a first start, a large `.gwbk` restore, a state transfer) isn't killed by liveness. It allows about 10 minutes (`failureThreshold` 60 × `periodSeconds` 10, after `initialDelaySeconds` 30); raise `failureThreshold` for a slower start. | `true` |
+| `backend.readinessProbe` / `backend.livenessProbe` | Probe settings. Readiness fails while the gateway is still commissioning; with `backend.activeRouting` a Backup must also be in sync, or `Incompatible` for up to `IGNITION_READY_INCOMPATIBLE_SECONDS` (in `backend.config`, default 1800). | `/config/scripts/health-check.sh -t 3 -r` / `-t 5` |
+| `frontend.startupProbe.enabled` / `backend.startupProbe.enabled` | Startup probe: about 10 minutes (`failureThreshold` 60 × `periodSeconds` 10, after 30 s) before liveness applies; raise `failureThreshold` for a slower start. | `true` |
 | `frontend.lifecycle` / `backend.lifecycle` | Container lifecycle hooks, rendered as-is. | `{}` (none) |
 | `frontend.logging.*` / `backend.logging.*` | `level`, per-logger `loggers`, SQLite log database maintenance (`sqlite`) and `wrapperLogToStdout`, as in the failover chart. Each layer gets its own `logback.xml`. | `INFO`, `{}`, `{}`, `true` |
 | `frontend.emptyDirSizeLimit` / `backend.emptyDirSizeLimit` | Optional `sizeLimit` for the `logs`, `temp` and `dotIgnition` emptyDir volumes. | `""` each (no limit) |

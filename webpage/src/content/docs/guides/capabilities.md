@@ -45,7 +45,7 @@ ignition:
       mountPath: /usr/local/bin/ignition/user-lib/jdbc
 ```
 
-The `preconfigure` init container mounts the same `extraVolumeMounts` and `localMounts` read-only, so a restore can read a backup from one (see [Restore on first start](#restore-on-first-start)).
+The `preconfigure` init container mounts these read-only too, so a [restore](#restore-on-first-start) can read from them.
 
 ### Local development mounts
 
@@ -75,7 +75,7 @@ Put sensitive values, such as `GATEWAY_ADMIN_PASSWORD`, in `secrets` instead, wh
 
 ### Rolling out changes
 
-The gateways read their environment variables, logging configuration and the chart's scripts only on start. The pod template hashes each (`checksum/config`, `checksum/secrets`, `checksum/logging` and `checksum/scripts`, besides `checksum/redundancy`), so a `helm upgrade` that changes one restarts the gateways one at a time, the Backup before the Master. A Secret named by `existingSecret` isn't hashed, as the chart doesn't render it: after changing it, run `kubectl rollout restart statefulset/<name>`.
+Checksum annotations (`checksum/config`, `secrets`, `logging`, `scripts`, `redundancy`) restart the gateways one at a time, Backup first, when a `helm upgrade` changes what they read on start. An `existingSecret` isn't hashed: after changing it, run `kubectl rollout restart statefulset/<name>`.
 
 ### Gateway arguments
 
@@ -109,7 +109,7 @@ ignition:
     logs: 512Mi              # optional cap on the logs volume
 ```
 
-In scaleout, `frontend.logging` and `backend.logging` each render their own layer's `logback.xml`.
+In scaleout, `frontend.logging` and `backend.logging` each configure their own layer.
 
 ## High availability
 
@@ -117,9 +117,9 @@ In scaleout, `frontend.logging` and `backend.logging` each render their own laye
 
 Kubernetes uses the probes to decide whether a gateway is alive and ready for traffic.
 
-* **Readiness** (`health-check.sh -t 3 -r`): `/StatusPing` must report `RUNNING`, and the gateway must have finished commissioning. With `activeRouting`, a Backup must also be in sync with its Master (`RedundantState=Good`), or `Incompatible` with it for up to 30 minutes, so a rolling update that changes the modules or Ignition version goes on to the Master (see [Upgrading](../upgrading/#module-and-version-changes-on-a-redundant-pair)).
+* **Readiness** (`health-check.sh -t 3 -r`): `/StatusPing` must report `RUNNING`, and the gateway must have finished commissioning. With `activeRouting`, a Backup must also be in sync (`RedundantState=Good`), or `Incompatible` for up to 30 minutes during a module or version change (see [Upgrading](../upgrading/#module-and-version-changes-on-a-redundant-pair)).
 * **Liveness** (`health-check.sh -t 5`): `/StatusPing` must report `RUNNING`. A gateway stuck commissioning is not restarted in a loop.
-* **Startup** (on by default, `startupProbe.enabled`): holds liveness and readiness off during a slow start, such as a first start, a large `.gwbk` restore or a Backup's state transfer from its Master. It allows about 10 minutes (`failureThreshold` 60 × `periodSeconds` 10, after `initialDelaySeconds` 30) before the kubelet restarts the gateway; raise `startupProbe.failureThreshold` for longer.
+* **Startup** (on by default): holds the other probes off for about 10 minutes (`failureThreshold` 60 × `periodSeconds` 10, after `initialDelaySeconds` 30), for a first start, a large restore or a state transfer; raise `startupProbe.failureThreshold` for longer.
 
 The checks use `/StatusPing`, which works on Ignition 8.1 and 8.3. A probe `command` you set is used as-is.
 
@@ -150,13 +150,13 @@ affinity:
 
 ### Pod disruption budgets
 
-To keep a gateway available during voluntary disruptions such as node drains, the charts create a PodDisruptionBudget with `minAvailable: 1` for a redundant pair (failover or scaleout backend), and for the scaleout frontend when it has at least two gateways (`frontend.redundancy.replicas`, or `frontend.hpa.minReplicas` with an autoscaler). With one, it would block every node drain.
+To keep a gateway available during voluntary disruptions such as node drains, the charts create a PodDisruptionBudget with `minAvailable: 1` for a redundant pair (failover or scaleout backend), and for the scaleout frontend with at least two gateways (`frontend.redundancy.replicas` or `frontend.hpa.minReplicas`).
 
 ## Security
 
 * **Non-root user**: the gateways run as UID `2003` with `runAsNonRoot: true`, no privilege escalation and all capabilities dropped. The charts' pods meet the Kubernetes restricted Pod Security level (except the optional `fixDataOwnership` init container).
 * **No API token**: the gateways never call the Kubernetes API, so their pods don't mount a service account token (`serviceAccount.automountServiceAccountToken: false`). Only the optional active-routing and certificate-restart pods, which run kubectl, get one, each for a service account of its own.
-* **No default passwords**: the charts render only once the admin, Gateway Network keystore and web keystore passwords are set, in `secrets` or in a Secret you manage named by `existingSecret` (see [Example: existingSecret](#example-existingsecret)).
+* **No default passwords**: set the three passwords in `secrets` or an [`existingSecret`](#example-existingsecret).
 * **SealedSecrets**: `sealedSecrets: true` renders the `secrets` map as a Bitnami SealedSecret, so you can keep encrypted values in Git.
 * **Network isolation**: a NetworkPolicy, on by default, allows web traffic only from pods in the release's namespace and Gateway Network traffic (port `8060`) only from the chart's own gateways. An ingress controller, Prometheus, or a NodePort or LoadBalancer Service needs a rule in `networkPolicy.extraIngress` (see [Network security](../advanced-config/#network-security-gateway-network-isolation)).
 
@@ -193,7 +193,7 @@ The Gateway Network keystore takes its password from the unsealed Secret, so it 
 
 ### Example: existingSecret
 
-To keep the passwords out of Helm's values, create the Secret yourself (by hand, from your own SealedSecret, or with External Secrets) and name it in `existingSecret`. It must hold `GATEWAY_ADMIN_PASSWORD`, `IGNITION_GAN_KEYSTORE_PASSWORD` and `IGNITION_WEB_KEYSTORE_PASSWORD`. Every key in it becomes a gateway environment variable, so put `GATEWAY_ADMIN_USERNAME` (the image defaults it to `admin`), [licensing](../licensing/) and database passwords there too.
+To keep the passwords out of Helm's values, create the Secret yourself (by hand, SealedSecret or External Secrets) and name it in `existingSecret`. Every key becomes a gateway environment variable, so add `GATEWAY_ADMIN_USERNAME` (default `admin`), [licensing](../licensing/) and database passwords there too.
 
 ```bash
 kubectl create secret generic my-ignition-secrets -n <namespace> \
@@ -207,11 +207,14 @@ ignition:
   existingSecret: my-ignition-secrets
 ```
 
-The gateways, the `preconfigure` init container, the Gateway Network keystore (cert-manager's `passwordSecretRef`) and the certificate rotation CronJobs read that Secret. The chart renders no Secret of its own and ignores `sealedSecrets`, and refuses to render while `secrets` still sets a value other than the default user name. For scaleout, set `frontend.existingSecret` and `backend.existingSecret`, to one Secret per layer or the same one. Create the Secret before installing: the pods wait until it exists.
+* The gateways, init container, Gateway Network keystore and rotation CronJobs all read it; the chart renders no Secret and ignores `sealedSecrets`.
+* The render fails while `secrets` sets anything but the default user name.
+* Scaleout: set `frontend.existingSecret` and `backend.existingSecret` (one Secret or two).
+* Create it before installing: the pods wait for it.
 
 ### Ingress and sticky sessions
 
-Perspective and Vision sessions are stateful. When more than one gateway can serve a client, for example scaleout frontends behind an Ingress, enable sticky sessions so each client stays on the same pod. The scaleout frontend Service already uses `sessionAffinity: ClientIP` with more than one gateway or an autoscaler, unless you set `frontend.service.sessionAffinity`. Behind an Ingress every client arrives from the controller's addresses, so make the Ingress sticky too. With ingress-nginx:
+Perspective and Vision sessions are stateful. When more than one gateway can serve a client, for example scaleout frontends behind an Ingress, enable sticky sessions so each client stays on the same pod. The scaleout frontend Service's `ClientIP` affinity doesn't help behind an Ingress, where every client arrives from the controller, so make the Ingress sticky. With ingress-nginx:
 
 ```yaml
 frontend:
@@ -314,7 +317,7 @@ ignition:
     url: "https://internal-server/backups/production.gwbk"
 ```
 
-Or take the backup from a volume: mount it with `extraVolumes` and `extraVolumeMounts` (or `localMounts`, under `/usr/local/bin/ignition/`) and set `restore.path` to the file. The `preconfigure` init container, which copies the backup to the data volume, mounts those volumes read-only. A path on no mounted volume fails it with "File not found".
+Or mount the backup with `extraVolumes`/`extraVolumeMounts` (or `localMounts`, under `/usr/local/bin/ignition/`) and set `restore.path`; a path on no mounted volume fails with "File not found".
 
 ```yaml
 ignition:
