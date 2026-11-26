@@ -165,8 +165,8 @@ e2e_request_headroom_mi() {
 e2e_to_mi() {
   awk '/^[0-9]/ {
     n = $0 + 0; u = $0; sub(/^[0-9.]+/, "", u)
-    f = (u == "Ki") ? 1/1024 : (u == "Mi") ? 1 : (u == "Gi") ? 1024 : (u == "Ti") ? 1048576 :
-        (u == "k") ? 1000/1048576 : (u == "M") ? 1e6/1048576 : (u == "G") ? 1e9/1048576 : 1/1048576
+    # one line: POSIX awk (mawk) does not continue a ?: expression onto the next
+    f = (u == "Ki") ? 1/1024 : (u == "Mi") ? 1 : (u == "Gi") ? 1024 : (u == "Ti") ? 1048576 : (u == "k") ? 1000/1048576 : (u == "M") ? 1e6/1048576 : (u == "G") ? 1e9/1048576 : 1/1048576
     t += n * f
   } END {printf "%d\n", t}'
 }
@@ -317,6 +317,85 @@ e2e_require_served() {
     } }
     END { for (k in seen) { any = 1; if (!ok[k]) printf "%s ", k }; if (!any) printf "(no samples) " }' "$f")
   [ -z "$missing" ] || die "$f: never served through: ${missing% }"
+}
+
+# e2e_gwinfo_summary: read a /system/gwinfo body on stdin and print
+# RedundancyStatus/RedundantState/RedundantNodeActiveStatus, e.g.
+# Master/Good/Active (empty for no answer)
+e2e_gwinfo_summary() {
+  tr ';' '\n' | awk -F= '$1 == "RedundancyStatus" {r = $2} $1 == "RedundantState" {s = $2}
+    $1 == "RedundantNodeActiveStatus" {a = $2} END {if (r s a != "") print r "/" s "/" a}'
+}
+
+# e2e_gwinfo <ns> <pod> [field]: the pod's gwinfo summary, or with a field
+# name (e.g. Version) that field's value
+e2e_gwinfo() {
+  local body
+  body=$(kubectl -n "$1" exec "$2" -c gateway -- curl -s --max-time 3 http://localhost:8088/system/gwinfo 2>/dev/null) || return 0
+  if [ -n "${3:-}" ]; then
+    tr ';' '\n' <<< "$body" | sed -n "s/^$3=//p"
+  else
+    e2e_gwinfo_summary <<< "$body"
+  fi
+}
+
+# e2e_pair_good <master summary> <backup summary>: whether a redundant pair is
+# healthy, the Master Good and Active and the Backup Good and Cold
+e2e_pair_good() {
+  [ "$1" = Master/Good/Active ] && [ "$2" = Backup/Good/Cold ]
+}
+
+# e2e_wait_pair <ns> <statefulset> <timeout seconds>: wait until <sts>-0 is
+# Master/Good/Active and <sts>-1 Backup/Good/Cold
+e2e_wait_pair() {
+  local deadline=$(( $(date +%s) + $3 )) m b
+  while [ "$(date +%s)" -lt "$deadline" ]; do
+    m=$(e2e_gwinfo "$1" "$2-0"); b=$(e2e_gwinfo "$1" "$2-1")
+    if e2e_pair_good "$m" "$b"; then log "pair healthy: $2-0 $m, $2-1 $b"; return 0; fi
+    sleep 5
+  done
+  e2e_diagnose "$1"
+  die "pair not healthy after $3s: $2-0 ${m:-no answer}, $2-1 ${b:-no answer}"
+}
+
+# e2e_active_check <ns> <statefulset>: with activeRouting, exactly one gateway
+# pod carries redundancy-active=true, it is the Master (<sts>-0), and the
+# <sts>-active Service has that pod, and only it, as its endpoint
+e2e_active_check() {
+  local labelled endpoints
+  labelled=$(kubectl -n "$1" get pods -l "redundancy-active=true,app.kubernetes.io/name=$2" \
+    -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}' | sort | paste -sd' ' -)
+  [ "$labelled" = "$2-0" ] || { log "active label on '${labelled}', want $2-0"; return 1; }
+  endpoints=$(kubectl -n "$1" get endpointslices -l "kubernetes.io/service-name=$2-active" \
+    -o jsonpath='{range .items[*].endpoints[*]}{.targetRef.name}{"\n"}{end}' | grep -v '^$' | sort -u | paste -sd' ' -)
+  [ "$endpoints" = "$2-0" ] || { log "$2-active endpoints '${endpoints}', want $2-0"; return 1; }
+}
+
+# e2e_modules_started <gateway log> <module id>...: whether the log shows each
+# module starting ("Starting up module '<id>'"); prints the missing ids
+e2e_modules_started() {
+  local f=$1 id missing=""; shift
+  for id in "$@"; do
+    grep -qF "Starting up module '$id'" "$f" || missing="$missing $id"
+  done
+  [ -z "$missing" ] || { echo "${missing# }"; return 1; }
+}
+
+# e2e_issuer_is_ca <ns> <kind> <name>: whether a cert-manager Issuer or
+# ClusterIssuer is the CA type (spec.ca), not self-signed or ACME
+e2e_issuer_is_ca() {
+  local scope=()
+  [ "$2" = ClusterIssuer ] || scope=(-n "$1")
+  [ -n "$(kubectl "${scope[@]}" get "$(tr '[:upper:]' '[:lower:]' <<< "$2")" "$3" -o jsonpath='{.spec.ca.secretName}' 2>/dev/null)" ]
+}
+
+# e2e_rollout_done <ns> <statefulset>: whether the StatefulSet has finished
+# its rolling update, every replica updated and Ready
+e2e_rollout_done() {
+  local s
+  s=$(kubectl -n "$1" get statefulset "$2" \
+    -o jsonpath='{.spec.replicas}/{.status.readyReplicas}/{.status.updatedReplicas}/{.status.currentRevision}/{.status.updateRevision}') || return 1
+  awk -F/ '$1 != "" && $1 == $2 && $1 == $3 && $4 != "" && $4 == $5 {ok = 1} END {exit !ok}' <<< "$s"
 }
 
 # e2e_teardown: delete every e2e namespace and wait until they are gone
