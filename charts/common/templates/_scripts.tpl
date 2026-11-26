@@ -383,9 +383,11 @@ stringData:
     log "started: namespace=${namespace} selector=${selector} label=${label} interval=${interval}s"
     streak=0
     loops=0
+    # Every API call is bounded by timeout(1), not --request-timeout: kubectl treats that flag as a config
+    # override and then ignores the in-cluster service account, so every call would fail.
     while :; do
       loops=$((loops + 1))
-      pods=$(kubectl get pods --request-timeout=10s -n "$namespace" -l "$selector" \
+      pods=$(timeout 10 kubectl get pods -n "$namespace" -l "$selector" \
         -o jsonpath="{range .items[*]}{.metadata.name}|{.status.podIP}|{.metadata.deletionTimestamp}|{.metadata.labels.${label}}{\"\n\"}{end}" 2>/dev/null)
       if [ -z "$pods" ]; then
         log "WARN: no gateway pods listed"
@@ -422,10 +424,10 @@ stringData:
         printf '%s\n' "$pods" | while IFS='|' read -r name ip deleting has; do
           [ -n "$name" ] || continue
           if [ "$name" = "$want" ] && [ "$has" != "true" ]; then
-            kubectl label pod "$name" --request-timeout=10s -n "$namespace" "${label}=true" --overwrite >/dev/null &&
+            timeout 10 kubectl label pod "$name" -n "$namespace" "${label}=true" --overwrite >/dev/null &&
               log "routing to ${name} (states:${states})"
           elif [ "$name" != "$want" ] && [ "$has" = "true" ]; then
-            kubectl label pod "$name" --request-timeout=10s -n "$namespace" "${label}-" >/dev/null &&
+            timeout 10 kubectl label pod "$name" -n "$namespace" "${label}-" >/dev/null &&
               log "no longer routing to ${name} (states:${states})"
           fi
         done
