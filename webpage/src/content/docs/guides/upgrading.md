@@ -6,7 +6,7 @@ description: Upgrade an existing installation to a newer chart version.
 
 This guide covers upgrading an installed chart, and the one-time steps some installs need.
 
-Most upgrades are a plain `helm upgrade` after `helm repo update`. Read the chart's `CHANGELOG.md` for the versions you are skipping. The StatefulSets replace one pod at a time, the Backup (pod 1) before the Master (pod 0), and a Backup only counts as Ready once it is running.
+Most upgrades are a plain `helm upgrade` after `helm repo update`. Read the chart's `CHANGELOG.md` for the versions you are skipping. The StatefulSets replace one pod at a time, the Backup (pod 1) before the Master (pod 0), and a Backup only counts as Ready once it is running and, with `activeRouting`, in sync with its Master (see [Module and version changes on a redundant pair](#module-and-version-changes-on-a-redundant-pair)).
 
 ## Before you upgrade
 
@@ -36,6 +36,22 @@ Read Inductive Automation's release notes for every Ignition version you skip, a
 ### Ignition 8.1 to 8.3 is one-way
 
 Upgrading a gateway from Ignition 8.1 to 8.3 converts its data volume to 8.3's configuration format, and an 8.3 gateway backup can't be restored on 8.1. There is no rolling back by setting `image.tag` to 8.1 again: the 8.1 gateway won't start on the converted volume. Before moving to 8.3, take an 8.1 backup (above), keep it, and check that every module and third-party module you use has an 8.3 version. To go back, restore the 8.1 backup on an empty data volume with the 8.1 image.
+
+### Module and version changes on a redundant pair
+
+An upgrade that changes the pair's modules (`GATEWAY_MODULES_ENABLED`, or a chart upgrade that changes its default list) or its Ignition version replaces the Backup first, so for a while the new Backup runs different modules from the old Master. Ignition reports the Backup as `RedundantState=Incompatible` (and the Master as `Modules_Incompatible`), and logs `Master and backup are incompatible due to differences between installed modules` and `Could not disable module ... to match master`. Only replacing the Master fixes that.
+
+With `activeRouting`, readiness requires a Backup to be in sync, except in this one state: an `Incompatible` Backup counts as Ready, so the rolling update goes on to the Master, and the gateway logs `[health-check] Backup is Incompatible with the Master ...`. While the Master restarts, the Backup takes over and the `-active` Service routes to it. Once the Master is back, the Backup goes `OutOfDate` while it syncs (not Ready, for about a minute) and then `Good`, logging `[health-check] Backup is in sync with the Master again`. On a test cluster, adding or removing a module took about five minutes from `helm upgrade` to both gateways `Good`.
+
+A pair that is still `Incompatible` 30 minutes after the Backup first reported it is broken rather than mid-upgrade, for example a module installed on one gateway only, and the Backup is not Ready again until it is `Good`: check both gateways' modules and Ignition versions. To allow longer, for a Master that takes a long time to start, set the limit in seconds:
+
+```yaml
+ignition:                  # scaleout: backend
+  config:
+    IGNITION_READY_INCOMPATIBLE_SECONDS: "3600"
+```
+
+Kubernetes doesn't replace a StatefulSet pod that isn't Ready during a rolling update. If an upgrade with an earlier chart version is already stuck with an `Incompatible` Backup that never goes Ready, upgrading to this chart doesn't move it on by itself: after `helm upgrade`, delete the Backup's pod (`kubectl delete pod -n <namespace> ignition-failover-1`, or `<name>-backend-1`), and the StatefulSet recreates it with this chart's readiness check and then replaces the Master.
 
 ## Breaking changes: EULA, passwords and the values schema
 

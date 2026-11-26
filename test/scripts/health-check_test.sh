@@ -51,5 +51,43 @@ check 0 "master ready without a peer" PING='{"state":"RUNNING"}' GWINFO="$MASTER
 check 1 "no gwinfo answer is not ready" PING='{"state":"RUNNING"}' GWINFO= "$SYNC" -- -r
 check 0 "liveness ignores backup sync" PING='{"state":"RUNNING"}' GWINFO="$STALE_BACKUP" "$SYNC" --
 
+# A Backup Incompatible with its Master (modules or version differ, as after a
+# rolling update replaced the Backup first) is Ready for a limited time, so the
+# StatefulSet goes on to the Master; Good clears the clock. Every change is
+# logged once to HEALTH_CHECK_LOG.
+INCOMPAT_BACKUP="ContextStatus=RUNNING;RedundancyStatus=Backup;RedundantState=Incompatible;RedundantNodeActiveStatus=Cold;"
+INCOMPAT_MASTER="ContextStatus=RUNNING;RedundancyStatus=Master;RedundantState=Modules_Incompatible;RedundantNodeActiveStatus=Active;"
+state="$work/state"; mkdir "$state"
+# holds <description> <command...>: the command succeeds
+holds() {
+  if "${@:2}"; then echo "ok   $1"; else echo "FAIL $1"; fails=$((fails + 1)); fi
+}
+log_lines() { [ "$(wc -l < "$log")" -eq "$1" ]; }
+clock_started_and_logged() { [ -s "$since" ] && grep -q "Incompatible with the Master" "$log" && log_lines 1; }
+clock_cleared_and_logged() { [ ! -e "$since" ] && grep -q "in sync with the Master again" "$log"; }
+since="$state/health-check.incompatible-since"
+log="$work/gateway.log"
+HC=(PING='{"state":"RUNNING"}' "$SYNC" HEALTH_CHECK_STATE_DIR="$state" HEALTH_CHECK_LOG="$log")
+check 0 "incompatible backup is ready" "${HC[@]}" GWINFO="$INCOMPAT_BACKUP" -- -r
+holds "incompatible start recorded and logged once" clock_started_and_logged
+check 0 "incompatible backup stays ready within the limit" "${HC[@]}" GWINFO="$INCOMPAT_BACKUP" -- -r
+holds "incompatible not logged again" log_lines 1
+check 1 "unknown backup still not ready while incompatible clock runs" "${HC[@]}" GWINFO="$STALE_BACKUP" -- -r
+holds "unknown keeps the incompatible clock" test -s "$since"
+echo $(( $(date +%s) - 1801 )) > "$since"
+check 1 "incompatible backup past the limit is not ready" "${HC[@]}" GWINFO="$INCOMPAT_BACKUP" -- -r
+check 0 "limit is configurable" "${HC[@]}" GWINFO="$INCOMPAT_BACKUP" IGNITION_READY_INCOMPATIBLE_SECONDS=7200 -- -r
+check 0 "good backup is ready again" "${HC[@]}" GWINFO="$GOOD_BACKUP" -- -r
+holds "good clears the clock and logs it" clock_cleared_and_logged
+check 0 "incompatible clock restarts after good" "${HC[@]}" GWINFO="$INCOMPAT_BACKUP" -- -r
+check 0 "incompatible master is ready" "${HC[@]}" GWINFO="$INCOMPAT_MASTER" -- -r
+rm -f "$since"
+check 0 "incompatible ignored without backup sync" PING='{"state":"RUNNING"}' HEALTH_CHECK_STATE_DIR="$state" HEALTH_CHECK_LOG="$log" GWINFO="$INCOMPAT_BACKUP" -- -r
+holds "no incompatible clock without backup sync" test ! -e "$since"
+echo garbage > "$since"
+check 0 "a corrupt clock starts again" "${HC[@]}" GWINFO="$INCOMPAT_BACKUP" -- -r
+check 0 "unwritable log does not fail the probe" PING='{"state":"RUNNING"}' "$SYNC" HEALTH_CHECK_STATE_DIR="$work/new" HEALTH_CHECK_LOG=/nonexistent/x GWINFO="$INCOMPAT_BACKUP" -- -r
+check 1 "other backup states are still not ready" "${HC[@]}" GWINFO="${STALE_BACKUP/Unknown/Faulted}" -- -r
+
 if [ "$fails" -ne 0 ]; then echo "$fails failed"; exit 1; fi
 echo "all passed"

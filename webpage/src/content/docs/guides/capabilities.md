@@ -117,7 +117,7 @@ In scaleout, `frontend.logging` and `backend.logging` each configure their own l
 
 Kubernetes uses the probes to decide whether a gateway is alive and ready for traffic.
 
-* **Readiness** (`health-check.sh -t 3 -r`): `/StatusPing` must report `RUNNING`, and the gateway must have finished commissioning. With `activeRouting`, a Backup must also be in sync with its Master.
+* **Readiness** (`health-check.sh -t 3 -r`): `/StatusPing` must report `RUNNING`, and the gateway must have finished commissioning. With `activeRouting`, a Backup must also be in sync with its Master (`RedundantState=Good`), or, for up to 30 minutes, `Incompatible` with it: a rolling update that changes the modules or the Ignition version replaces the Backup first, and only replacing the Master next can bring them back in sync (see [Upgrading](../upgrading/#module-and-version-changes-on-a-redundant-pair)).
 * **Liveness** (`health-check.sh -t 5`): `/StatusPing` must report `RUNNING`. A gateway stuck commissioning is not restarted in a loop.
 * **Startup** (on by default, `startupProbe.enabled`): holds liveness and readiness off during slow starts, such as a first start, a large `.gwbk` restore or a Backup restoring a state transfer from its Master. It allows about 10 minutes (`failureThreshold` 60 × `periodSeconds` 10, after `initialDelaySeconds` 30) before the kubelet restarts the gateway; raise `startupProbe.failureThreshold` if yours needs longer.
 

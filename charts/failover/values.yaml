@@ -282,7 +282,10 @@ ignition:
   # redundancy-active=true on the Active gateway and a <name>-active Service
   # selects it; that Service takes service.type/nodePorts/annotations, the main
   # Service becomes ClusterIP, and the Ingress points at it. Readiness then
-  # also requires a Backup to be in sync, so rolling updates wait for it.
+  # also requires a Backup to be in sync, so rolling updates wait for it, except
+  # a Backup Incompatible with its Master (modules or version differ), which is
+  # Ready for up to config.IGNITION_READY_INCOMPATIBLE_SECONDS (default 1800) so
+  # the rollout can replace the Master.
   activeRouting:
     enabled: false
     # -- Labeller image; needs /bin/sh, curl and kubectl

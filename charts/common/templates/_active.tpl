@@ -9,7 +9,9 @@ but a cold Backup that is healthy and in sync must count as Ready, or the
 OrderedReady rolling update stalls. So:
 
   - readiness means "running, commissioned and, for a Backup, in sync with the
-    Master" (health-check.sh -r with IGNITION_READY_REQUIRES_BACKUP_SYNC);
+    Master" (health-check.sh -r with IGNITION_READY_REQUIRES_BACKUP_SYNC), or
+    for a limited time Incompatible with it, the state a rolling update that
+    changes the modules leaves until it replaces the Master;
   - a small labeller Deployment polls each gateway's /system/gwinfo and keeps
     the label redundancy-active=true on the Active gateway (preferring the
     Master during a failback overlap);
