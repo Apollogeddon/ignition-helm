@@ -39,7 +39,7 @@ sequenceDiagram
 
 ## Values
 
-The tables below list the chart's values and defaults, grouped by area. [`values.yaml`](https://github.com/Apollogeddon/ignition-helm/blob/main/charts/failover/values.yaml) is the authoritative list.
+The tables below list the chart's values and defaults, grouped by area. [`values.yaml`](https://github.com/Apollogeddon/ignition-helm/blob/main/charts/failover/values.yaml) is the authoritative list. The chart validates values against its `values.schema.json`, so an unknown or misspelt key (for example `ignition.redundency`) fails the install, template or lint instead of being ignored; free-form maps (`config`, `secrets`, `resources`, annotations) take any keys.
 
 ### General
 

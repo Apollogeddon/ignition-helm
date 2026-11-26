@@ -134,7 +134,7 @@ The [upgrading guide](https://apollogeddon.github.io/ignition-helm/docs/guides/u
 
 ## Configuration
 
-The most commonly changed values are below. Most `frontend.*` and `backend.*` values have the same meaning as the matching `ignition.*` value in the [failover chart](../failover/README.md#configuration). See [`values.yaml`](values.yaml) for every value, and the [chart reference](https://apollogeddon.github.io/ignition-helm/docs/charts/scaleout/) for the full defaults.
+The most commonly changed values are below. Most `frontend.*` and `backend.*` values have the same meaning as the matching `ignition.*` value in the [failover chart](../failover/README.md#configuration). See [`values.yaml`](values.yaml) for every value, and the [chart reference](https://apollogeddon.github.io/ignition-helm/docs/charts/scaleout/) for the full defaults. The chart validates values against its [`values.schema.json`](values.schema.json): an unknown or misspelt key (for example `backend.redundency`) fails `helm install`, `helm template` and `helm lint` rather than being ignored. Free-form maps such as `config`, `secrets`, `resources` and annotations take any keys.
 
 | Parameter | Description | Default |
 | --------- | ----------- | ------- |

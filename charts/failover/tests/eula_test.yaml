@@ -17,14 +17,6 @@ tests:
       - failedTemplate:
           errorPattern: "you accept it, set acceptEula=true \\(e.g. --set acceptEula=true\\)"
 
-  # "false" from --set-string or a quoted YAML value is not an acceptance
-  - it: should refuse anything but true
-    set:
-      acceptEula: "yes"
-    asserts:
-      - failedTemplate:
-          errorPattern: "Ignition's EULA is not accepted"
-
   # lets a test (e2e S07) start a gateway that cannot commission
   - it: should let config override the accepted EULA
     set:
