@@ -117,6 +117,20 @@ Params:
   context: The global context (Dot)
 */}}
 {{- define "ignition-common.ganCA" -}}
+{{- /* The GAN CA is a self-signed root of the release's own, not one certManager.issuer
+signs: Ignition trusts a Gateway Network peer only when the end of the chain it presents
+is in its trusted folder, so a CA under a cluster root (a CA-type issuer) would make the
+peers trust that whole root, or each other not at all. */}}
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: {{ include "ignition.name" .context }}-gan-selfsigned
+  namespace: {{ .context.Release.Namespace }}
+  labels:
+    {{- include "ignition.labels" .context | nindent 4 }}
+spec:
+  selfSigned: {}
+---
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
@@ -135,8 +149,8 @@ spec:
     rotationPolicy: Never
   duration: 17520h0m0s  # 2 years
   issuerRef:
-    name: {{ .context.Values.certManager.issuer.name }}
-    kind: {{ .context.Values.certManager.issuer.kind }}
+    name: {{ include "ignition.name" .context }}-gan-selfsigned
+    kind: Issuer
     group: cert-manager.io
 ---
 apiVersion: cert-manager.io/v1
