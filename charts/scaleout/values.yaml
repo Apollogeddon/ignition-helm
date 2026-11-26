@@ -233,6 +233,11 @@ frontend:
     # GATEWAY_ADMIN_PASSWORD: ""
     # IGNITION_GAN_KEYSTORE_PASSWORD: ""
     # IGNITION_WEB_KEYSTORE_PASSWORD: ""
+    # Leased licensing (see the Licensing guide): the image activates the
+    # 8-character leased key with its activation token on start. Without them
+    # the gateway runs in trial mode (2 hours at a time on Ignition 8.3)
+    # IGNITION_LICENSE_KEY: "XXXX-XXXX"
+    # IGNITION_ACTIVATION_TOKEN: ""
 
   service:
     # -- Service type (LoadBalancer, NodePort, ClusterIP)
@@ -483,6 +488,11 @@ backend:
     # GATEWAY_ADMIN_PASSWORD: ""
     # IGNITION_GAN_KEYSTORE_PASSWORD: ""
     # IGNITION_WEB_KEYSTORE_PASSWORD: ""
+    # Leased licensing (see the Licensing guide): the image activates the
+    # 8-character leased key with its activation token on start. Without them
+    # the gateway runs in trial mode (2 hours at a time on Ignition 8.3)
+    # IGNITION_LICENSE_KEY: "XXXX-XXXX"
+    # IGNITION_ACTIVATION_TOKEN: ""
 
   service:
     # -- Service type (LoadBalancer, NodePort, ClusterIP)
