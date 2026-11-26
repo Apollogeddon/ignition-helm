@@ -117,6 +117,8 @@ frontend:
 
 ## Upgrading
 
+Before any upgrade, take a gateway backup (`.gwbk`) and pin `image.tag`, so a chart upgrade doesn't also upgrade Ignition; going from Ignition 8.1 to 8.3 is one-way. This major version also needs `acceptEula: true` and the gateway passwords (`frontend.secrets` and `backend.secrets`, or `frontend.existingSecret` and `backend.existingSecret`), and refuses unknown keys in values: see [Before you upgrade](https://apollogeddon.github.io/ignition-helm/docs/guides/upgrading/#before-you-upgrade) and [Breaking changes](https://apollogeddon.github.io/ignition-helm/docs/guides/upgrading/#breaking-changes-eula-passwords-and-the-values-schema).
+
 The frontend and backend StatefulSets are governed by the `<name>-frontend-headless` and `<name>-backend-headless` Services. Kubernetes does not allow `serviceName` to change on an existing StatefulSet, so if yours name other Services, `helm upgrade` is rejected. Delete only the StatefulSet objects first. Their pods and volumes keep running, and the upgraded StatefulSets adopt them:
 
 ```bash
