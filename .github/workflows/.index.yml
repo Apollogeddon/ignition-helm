@@ -8,9 +8,6 @@ on:
   # sent by the merge pipeline, as a merge it makes starts no push run on main
   repository_dispatch:
     types: [auto-merged]
-  # weekly, for the patch pipeline; a manual run or a merge's dispatch patches too
-  schedule:
-    - cron: '23 4 * * 1'
 
 # A pull request's newer run replaces its older one; every other run has a group of its own, so a run on
 # main, running or queued, is never cancelled and the site is never left half deployed.
@@ -64,7 +61,7 @@ jobs:
   # changed charts deployed on kind; on main before the release, so a release is never cut without them
   charts:
     needs: changes
-    if: ${{ github.event_name != 'schedule' && (needs.changes.outputs.charts == 'true' || needs.changes.outputs.scripts == 'true') }}
+    if: ${{ needs.changes.outputs.charts == 'true' || needs.changes.outputs.scripts == 'true' }}
     uses: ./.github/workflows/charts.yml
     permissions:
       contents: read
@@ -78,7 +75,7 @@ jobs:
     needs: [changes, charts]
     if: >-
       ${{ !cancelled() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') &&
-      github.event_name != 'pull_request' && github.event_name != 'schedule' }}
+      github.event_name != 'pull_request' }}
     uses: ./.github/workflows/version.yml
     permissions:
       contents: write
@@ -91,7 +88,7 @@ jobs:
   # pre-build command copies in; on main, after the release, so it has the versions just released.
   website:
     needs: version
-    if: ${{ !cancelled() && github.event_name != 'schedule' }}
+    if: ${{ !cancelled() }}
     uses: apollogeddon/forgejs/.github/workflows/website.yml@main
     permissions:
       contents: read
@@ -113,7 +110,6 @@ jobs:
   # A website stage of the repository's own: every Markdown file in it, which no forge pipeline lints
   website-lint-markdown:
     name: website / lint (markdown)
-    if: ${{ github.event_name != 'schedule' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -151,16 +147,6 @@ jobs:
     permissions:
       pages: write
       id-token: write
-
-  # Weekly, by hand, or after a merge's dispatch: the site's vulnerable npm dependencies upgraded on main
-  patch:
-    if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || github.event_name == 'repository_dispatch' }}
-    uses: apollogeddon/forgejs/.github/workflows/patch.yml@main
-    permissions:
-      contents: write
-      packages: read
-    with:
-      working_directory: webpage
 
   # Dependabot's pull requests: a review request, and a squash merge once every check above passed
   merge:

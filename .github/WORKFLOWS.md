@@ -4,17 +4,16 @@ This page describes the GitHub Actions workflows that test, scan, release and do
 
 ## CI orchestration
 
-The root workflow, [`.index.yml`](./workflows/.index.yml) (`index`), runs on every pull request, every push to `main`, a manual run, the `auto-merged` dispatch the merge pipeline sends, and weekly for the patch pipeline. Each of its jobs calls one pipeline, or is a stage of one, so the run page lists every job as `<pipeline> / <stage>`. The pipelines are this repository's own [`charts.yml`](./workflows/charts.yml) and [`version.yml`](./workflows/version.yml), and [forgejs](https://github.com/apollogeddon/forgejs)'s shared `website.yml`, `pages.yml`, `patch.yml` and `merge.yml`.
+The root workflow, [`.index.yml`](./workflows/.index.yml) (`index`), runs on every pull request, every push to `main`, a manual run, and the `auto-merged` dispatch the merge pipeline sends. Each of its jobs calls one pipeline, or is a stage of one, so the run page lists every job as `<pipeline> / <stage>`. The pipelines are this repository's own [`charts.yml`](./workflows/charts.yml) and [`version.yml`](./workflows/version.yml), and [forgejs](https://github.com/apollogeddon/forgejs)'s shared `website.yml`, `pages.yml` and `merge.yml`.
 
 | Job | Pipeline | Runs |
 | --- | --- | --- |
 | `changes` | (this workflow) | Always: works out whether the charts, their examples, or the scripts and workflows that test and release them changed, and whether any shell script changed. A manual run or a merge's dispatch checks everything |
 | `charts / lint`, `scan (trivy)`, `scan (checkov)`, `test`, `test (cluster)` | `charts.yml` | On a pull request or a push to `main` that changes the charts or a script ([Charts](#charts)) |
-| `version / release` | `version.yml` | On `main`, once the chart checks pass or are skipped, except on the weekly schedule ([Releases](#releases)) |
-| `website / lint`, `scan`, `build`, `check` | forgejs's `website.yml` | Every run but the weekly one, on `main` after the release ([Documentation site](#documentation-site)) |
-| `website / lint (markdown)` | (this workflow) | Every run but the weekly one |
+| `version / release` | `version.yml` | On `main`, once the chart checks pass or are skipped ([Releases](#releases)) |
+| `website / lint`, `scan`, `build`, `check` | forgejs's `website.yml` | Every run, on `main` after the release ([Documentation site](#documentation-site)) |
+| `website / lint (markdown)` | (this workflow) | Every run |
 | `pages / deploy` | forgejs's `pages.yml` | On `main`, once the site's checks pass |
-| `patch / update` | forgejs's `patch.yml` | Weekly, on a manual run, and after the `auto-merged` dispatch ([Patches](#patches)) |
 | `merge / review`, `merge / squash` | forgejs's `merge.yml` | On Dependabot's pull requests, once every check above passed or was skipped ([Dependabot](#dependabot)) |
 
 The [`.e2e.yml`](./workflows/.e2e.yml) workflow (`e2e`), run by hand, calls `charts.yml` for its staging stage alone, `charts / test (staging)` ([End-to-end scenarios](#end-to-end-scenarios)).
@@ -74,7 +73,7 @@ The `website` job calls [forgejs](https://github.com/apollogeddon/forgejs)'s `we
 
 ## Patches
 
-`patch / update` runs forgejs's `patch.yml` on `webpage/` weekly, on a manual run, and after the `auto-merged` dispatch: OSV-Scanner upgrades the site's vulnerable npm dependencies and commits the result to `main`.
+Vulnerable dependencies, in the charts' tooling and the site's npm packages alike, are left to Dependabot security updates, which open their own pull requests that `merge` squashes like any other Dependabot update. They only run once **Dependabot security updates** are turned on in the repository's settings (Settings → Advanced Security).
 
 ## Dependabot
 
