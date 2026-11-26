@@ -28,6 +28,9 @@ spec:
       labels:
         {{- include "ignition.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/component: frontend
+      annotations:
+        # restart the gateways when what they read on start changes
+        {{- include "ignition-common.podChecksums" (dict "values" .Values.frontend "logging" .Values.backend.logging "context" .) | nindent 8 }}
     spec:
       {{- include "ignition-common.podServiceAccount" . | nindent 6 }}
       {{- include "ignition-common.podSecurityContext" (dict "values" .Values.frontend) | nindent 6 }}

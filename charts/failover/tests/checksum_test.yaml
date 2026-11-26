@@ -1,0 +1,38 @@
+suite: Ignition Failover Pod Checksums
+values:
+  - values/required.yaml
+templates:
+  - ignition-statefulset.yaml
+tests:
+  # a change to what the gateway reads only on start must roll the pods
+  - it: should hash the config, secrets, logging and scripts into the pod template
+    asserts:
+      - matchRegex:
+          path: spec.template.metadata.annotations["checksum/config"]
+          pattern: ^[0-9a-f]{64}$
+      - matchRegex:
+          path: spec.template.metadata.annotations["checksum/secrets"]
+          pattern: ^[0-9a-f]{64}$
+      - matchRegex:
+          path: spec.template.metadata.annotations["checksum/logging"]
+          pattern: ^[0-9a-f]{64}$
+      - matchRegex:
+          path: spec.template.metadata.annotations["checksum/scripts"]
+          pattern: ^[0-9a-f]{64}$
+      - exists:
+          path: spec.template.metadata.annotations["checksum/redundancy"]
+
+  # the chart can't see the contents of a Secret it doesn't render
+  - it: should not hash secrets with existingSecret
+    set:
+      ignition:
+        existingSecret: my-ignition-secrets
+        secrets:
+          GATEWAY_ADMIN_PASSWORD: ""
+          IGNITION_GAN_KEYSTORE_PASSWORD: ""
+          IGNITION_WEB_KEYSTORE_PASSWORD: ""
+    asserts:
+      - notExists:
+          path: spec.template.metadata.annotations["checksum/secrets"]
+      - exists:
+          path: spec.template.metadata.annotations["checksum/config"]

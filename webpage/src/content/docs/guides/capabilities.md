@@ -71,6 +71,10 @@ ignition:
 
 Put sensitive values, such as `GATEWAY_ADMIN_PASSWORD`, in `secrets` instead, which the chart renders as a Secret, or in a Secret of your own named by `existingSecret`.
 
+### Rolling out changes
+
+The gateways read their environment variables, logging configuration and the chart's scripts only when they start. Each StatefulSet's pod template carries a checksum of each (`checksum/config`, `checksum/secrets`, `checksum/logging` and `checksum/scripts`, besides `checksum/redundancy`), so a `helm upgrade` that changes one of them restarts the gateways one at a time, the Backup before the Master. A Secret you name with `existingSecret` has no checksum, as the chart doesn't render it: after changing it, restart the gateways with `kubectl rollout restart statefulset/<name>`.
+
 ### Gateway arguments
 
 `args` is passed to the Ignition image's entrypoint. `-m` sets the maximum heap in MB, `-n` the gateway name, and anything after `--` is passed to the gateway as wrapper and JVM settings. Setting `args` replaces the whole default list, so keep `-n` and the default `--` entry:

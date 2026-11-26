@@ -135,6 +135,28 @@ Params:
 {{- end }}
 
 {{/*
+Gateway pod-template checksum annotations, so a change to what the gateways
+read only on start rolls the pods: the environment variables (config and
+acceptEula), the chart's own Secret (none with existingSecret: the chart can't
+see a Secret it doesn't render, so roll the pods yourself when it changes), the
+logback.xml the init container installs, and the scripts. Only the scripts'
+contents are hashed, so a chart version bump alone restarts nothing.
+Params:
+  values: The component-specific values object
+  logging: The logging values the component's logback.xml is rendered from
+  context: The global context (Dot)
+*/}}
+{{- define "ignition-common.podChecksums" -}}
+{{- $logging := .logging | default dict -}}
+checksum/config: {{ dict "config" .values.config "acceptEula" .context.Values.acceptEula | toJson | sha256sum }}
+{{- if not .values.existingSecret }}
+checksum/secrets: {{ dict "secrets" .values.secrets "sealed" .values.sealedSecrets | toJson | sha256sum }}
+{{- end }}
+checksum/logging: {{ include "ignition-common.logback" (dict "level" $logging.level "loggers" $logging.loggers "sqlite" $logging.sqlite) | sha256sum }}
+checksum/scripts: {{ get (include "ignition-common.scripts" .context | fromYaml) "stringData" | toJson | sha256sum }}
+{{- end }}
+
+{{/*
 Common labels for common resources.
 */}}
 {{- define "ignition-common.labels" -}}

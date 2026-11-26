@@ -25,6 +25,7 @@ spec:
         # restart the gateways when redundancy values change; seed-redundancy.sh
         # applies them to the data volume on start
         checksum/redundancy: {{ .Values.ignition.redundancy | toJson | sha256sum }}
+        {{- include "ignition-common.podChecksums" (dict "values" .Values.ignition "logging" .Values.ignition.logging "context" .) | nindent 8 }}
     spec:
       {{- include "ignition-common.podServiceAccount" . | nindent 6 }}
       terminationGracePeriodSeconds: 60
