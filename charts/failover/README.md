@@ -33,9 +33,9 @@ helm repo add ignition-charts https://apollogeddon.github.io/ignition-helm
 helm repo update
 ```
 
-Installing needs `acceptEula=true`: read Inductive Automation's [Ignition End User License Agreement](https://inductiveautomation.com/ignition/license) first. The chart refuses to render until you accept it, and then sets `ACCEPT_IGNITION_EULA=Y` on every gateway.
+Read Inductive Automation's [Ignition End User License Agreement](https://inductiveautomation.com/ignition/license) first: the chart renders only with `acceptEula=true`, and then sets `ACCEPT_IGNITION_EULA=Y` on every gateway.
 
-The chart has no default passwords. Set `GATEWAY_ADMIN_PASSWORD`, `IGNITION_GAN_KEYSTORE_PASSWORD` and `IGNITION_WEB_KEYSTORE_PASSWORD` in `ignition.secrets`, or create a Secret that holds them and set `ignition.existingSecret` to its name; the render fails until one is done.
+The chart has no default passwords. Set `GATEWAY_ADMIN_PASSWORD`, `IGNITION_GAN_KEYSTORE_PASSWORD` and `IGNITION_WEB_KEYSTORE_PASSWORD` in `ignition.secrets`, or name a Secret that holds them in `ignition.existingSecret`.
 
 Install a single gateway with the release name `my-ignition`:
 
@@ -58,7 +58,7 @@ helm install my-ignition ignition-charts/ignition-failover \
   --set ignition.secrets.IGNITION_WEB_KEYSTORE_PASSWORD=<web keystore password>
 ```
 
-Or keep the passwords out of Helm's values in a Secret you manage (created by hand, unsealed from your own SealedSecret, or synced by External Secrets):
+Or keep the passwords out of Helm's values in a Secret you manage (by hand, from your own SealedSecret, or with External Secrets):
 
 ```bash
 kubectl create secret generic my-ignition-secrets -n <namespace> \
@@ -88,8 +88,8 @@ See [Verifying a chart](../../README.md#verifying-a-chart) for what this checks.
 
 ## Operations
 
-- **Configuration changes roll the pods**: the pod template carries `checksum/config`, `checksum/secrets`, `checksum/logging`, `checksum/scripts` and `checksum/redundancy` annotations, so changing `ignition.config`, `acceptEula`, the chart's own Secret, logging, or the chart's scripts restarts the gateways one at a time (with `OnDelete`, on your next pod deletion). A Secret named by `existingSecret` isn't hashed, as the chart doesn't render it: restart the gateways yourself after changing it (`kubectl rollout restart statefulset/<name>`).
-- **Licensing**: pass a leased license key and its activation token as `IGNITION_LICENSE_KEY` and `IGNITION_ACTIVATION_TOKEN` in `ignition.secrets` (or the Secret named by `ignition.existingSecret`); the Ignition image activates them on start. Without them the gateway runs in trial mode, two hours at a time on Ignition 8.3. See the [licensing guide](https://apollogeddon.github.io/ignition-helm/docs/guides/licensing/).
+- **Configuration changes roll the pods**: the pod template's `checksum/config`, `checksum/secrets`, `checksum/logging`, `checksum/scripts` and `checksum/redundancy` annotations restart the gateways one at a time when `ignition.config`, `acceptEula`, the chart's own Secret, logging or the chart's scripts change (with `OnDelete`, at your next pod deletion). A Secret named by `existingSecret` isn't hashed: after changing it, run `kubectl rollout restart statefulset/<name>`.
+- **Licensing**: set a leased license key and its activation token as `IGNITION_LICENSE_KEY` and `IGNITION_ACTIVATION_TOKEN` in `ignition.secrets` or the `existingSecret`; the image activates them on start. Without them the gateway runs in trial mode, two hours at a time on Ignition 8.3. See the [licensing guide](https://apollogeddon.github.io/ignition-helm/docs/guides/licensing/).
 - **Controlled rollouts**: set `ignition.updateStrategy.type` to `OnDelete` so a `helm upgrade` does not restart running gateways. Each pod then picks up the change when you delete it, in your own maintenance window.
 - **External modules**: set `ignition.externalModules.enabled` and `ignition.externalModules.pvcName` to mount a PersistentVolumeClaim of `.modl` files, instead of building a custom image.
 - **Health checks and shutdown**: the probes check that `/StatusPing` reports `RUNNING`, which works on Ignition 8.1 and 8.3. Readiness (`health-check.sh -r`) also fails while the gateway is still commissioning; liveness does not, so a gateway stuck commissioning is not restarted in a loop. There is no default `preStop` hook: on `SIGTERM` the gateway shuts down gracefully. Don't add `gwcmd.sh -p` as one: it resets the gateway login password.
@@ -97,7 +97,7 @@ See [Verifying a chart](../../README.md#verifying-a-chart) for what this checks.
 
 ## Upgrading
 
-Before any upgrade, take a gateway backup (`.gwbk`) and pin `image.tag`, so a chart upgrade doesn't also upgrade Ignition; going from Ignition 8.1 to 8.3 is one-way. This major version also needs `acceptEula: true` and the gateway passwords (`ignition.secrets`, or `ignition.existingSecret`), and refuses unknown keys in values: see [Before you upgrade](https://apollogeddon.github.io/ignition-helm/docs/guides/upgrading/#before-you-upgrade) and [Breaking changes](https://apollogeddon.github.io/ignition-helm/docs/guides/upgrading/#breaking-changes-eula-passwords-and-the-values-schema).
+Before any upgrade, take a gateway backup (`.gwbk`) and pin `image.tag`, so a chart upgrade doesn't also upgrade Ignition. Ignition 8.1 to 8.3 is one-way. This major version needs `acceptEula: true` and the passwords (`ignition.secrets` or `ignition.existingSecret`), and refuses unknown keys: see [Before you upgrade](https://apollogeddon.github.io/ignition-helm/docs/guides/upgrading/#before-you-upgrade) and [Breaking changes](https://apollogeddon.github.io/ignition-helm/docs/guides/upgrading/#breaking-changes-eula-passwords-and-the-values-schema).
 
 The StatefulSet is governed by the `<name>-headless` Service. Kubernetes does not allow `serviceName` to change on an existing StatefulSet, so if yours names another Service, `helm upgrade` is rejected. Delete only the StatefulSet object first. Its pods and volumes keep running, and the upgraded StatefulSet adopts them and replaces the Backup before the Master:
 
@@ -118,14 +118,14 @@ The [upgrading guide](https://apollogeddon.github.io/ignition-helm/docs/guides/u
 
 ## Configuration
 
-The most commonly changed values are below. See [`values.yaml`](values.yaml) for every value, and the [chart reference](https://apollogeddon.github.io/ignition-helm/docs/charts/failover/) for the full defaults. The chart validates values against its [`values.schema.json`](values.schema.json): an unknown or misspelt key (for example `ignition.redundency`) fails `helm install`, `helm template` and `helm lint` rather than being ignored. Free-form maps such as `config`, `secrets`, `resources` and annotations take any keys.
+The most commonly changed values are below. See [`values.yaml`](values.yaml) for every value, and the [chart reference](https://apollogeddon.github.io/ignition-helm/docs/charts/failover/) for the full defaults. The chart validates values against [`values.schema.json`](values.schema.json): an unknown or misspelt key (e.g. `ignition.redundency`) fails `helm install`, `helm template` and `helm lint`. Free-form maps such as `config`, `secrets`, `resources` and annotations take any keys.
 
 | Parameter | Description | Default |
 | --------- | ----------- | ------- |
 | `applicationName` | Name of every resource the chart creates. | `ignition-failover` |
 | `image.repository` | Ignition image repository. | `inductiveautomation/ignition` |
 | `image.tag` | Ignition image tag. Empty uses the chart's `appVersion`. | `""` |
-| `ignition.existingSecret` | Name of a Secret you manage that holds `GATEWAY_ADMIN_PASSWORD`, `IGNITION_GAN_KEYSTORE_PASSWORD` and `IGNITION_WEB_KEYSTORE_PASSWORD`, plus any other secret environment variables (`GATEWAY_ADMIN_USERNAME`, licensing). The gateways, the Gateway Network keystore and the rotation CronJobs read it; the chart then renders no Secret, and refuses values left in `ignition.secrets`. | `""` |
+| `ignition.existingSecret` | A Secret you manage, holding `GATEWAY_ADMIN_PASSWORD`, `IGNITION_GAN_KEYSTORE_PASSWORD`, `IGNITION_WEB_KEYSTORE_PASSWORD` and any other secret environment variables (`GATEWAY_ADMIN_USERNAME`, licensing). The gateways, the Gateway Network keystore and the rotation CronJobs read it. The chart then renders no Secret, and refuses values left in `ignition.secrets`. | `""` |
 | `ignition.secrets.GATEWAY_ADMIN_USERNAME` | Gateway admin user name. | `admin` |
 | `ignition.secrets.GATEWAY_ADMIN_PASSWORD` | Gateway admin password. Required unless `ignition.existingSecret` is set. | unset |
 | `ignition.secrets.IGNITION_GAN_KEYSTORE_PASSWORD` | Password for the Gateway Network keystore. Required unless `ignition.existingSecret` is set. | unset |
@@ -134,17 +134,17 @@ The most commonly changed values are below. See [`values.yaml`](values.yaml) for
 | `acceptEula` | Accept Inductive Automation's Ignition EULA: sets `ACCEPT_IGNITION_EULA=Y` on the gateways. The chart refuses to render while it is `false`. | `false` |
 | `ignition.config` | Gateway environment variables (edition, enabled modules). | see `values.yaml` |
 | `ignition.redundancy.enabled` | Deploy a Master/Backup pair (2 replicas) instead of one gateway. Changing it, or any other `ignition.redundancy.*` value, on an existing install restarts the gateways and applies the role (Master, Backup, or Independent when turned off) and settings to their data volumes on start. | `false` |
-| `ignition.activeRouting.enabled` | Route user traffic only to the active gateway of a redundant pair: a labeller keeps `redundancy-active=true` on the active pod, the `<name>-active` Service (which takes the configured service type, node ports and annotations) selects it, and the Ingress points at it. Readiness also requires a Backup to be in sync (or, for up to 30 minutes, `Incompatible` with its Master, as a rolling update that changes the modules leaves it until the Master is replaced). | `false` |
+| `ignition.activeRouting.enabled` | Route user traffic only to the active gateway of a redundant pair: a labeller keeps `redundancy-active=true` on the active pod, the `<name>-active` Service (which takes the configured service type, node ports and annotations) selects it, and the Ingress points at it. Readiness also requires a Backup to be in sync (or, for up to 30 minutes, `Incompatible` with it, as a rolling update that changes the modules leaves it until the Master is replaced). | `false` |
 | `ignition.resources` | Gateway CPU and memory requests and limits. | requests `500m`/`1Gi`, limits `1000m`/`2Gi` |
 | `ignition.persistence.size` | Size of each gateway's persistent volume. | `3Gi` |
 | `ignition.persistence.storageClassName` | Storage class; empty uses the cluster default. | `""` |
 | `ignition.service.type` | Service type (`ClusterIP`, `NodePort` or `LoadBalancer`). | `NodePort` |
-| `ignition.service.ports` | The Service's ports (`http`, `https`, `gan`). The gateway always listens on 8088, 8043 and 8060, and the Service maps these ports to them, so the container ports, probes, NetworkPolicy rules and headless Services stay on the gateway's own. | `8088` / `8043` / `8060` |
+| `ignition.service.ports` | The Service's ports (`http`, `https`, `gan`). They map to the gateway's own 8088, 8043 and 8060, which the container ports, probes, NetworkPolicy rules and headless Services always use. | `8088` / `8043` / `8060` |
 | `ignition.service.nodePorts` | Optional static node ports (`http`, `https`, `gan`). | unset |
 | `ignition.ingress.enabled` | Create an Ingress. | `false` |
 | `ignition.ingress.className` | IngressClass name, for example `contour`; empty uses the cluster default. | `""` |
 | `ignition.ssl.enabled` | Serve HTTPS with your own PKCS#12 keystore from the `ignition.ssl.secretName` Secret (default `<name>-web-tls`). | `false` |
-| `ignition.restore.enabled` | Restore a gateway backup (`.gwbk`) from `ignition.restore.url`, or `ignition.restore.path` on a volume from `ignition.extraVolumes`/`extraVolumeMounts` or `localMounts` (the init container mounts them too, read-only), on the gateway's first start. The backup is staged on the data volume once (a download that stalls for two minutes fails the init container, which then retries) and the gateway starts with `-r`; later restarts keep the gateway's own changes. To restore again, start from an empty data volume. | `false` |
+| `ignition.restore.enabled` | Restore a gateway backup (`.gwbk`) from `ignition.restore.url`, or `ignition.restore.path` on a volume from `ignition.extraVolumes`/`extraVolumeMounts` or `localMounts`, which the init container mounts read-only, on the gateway's first start. The backup is staged on the data volume once (a download that stalls for two minutes fails the init container, which then retries) and the gateway starts with `-r`; later restarts keep the gateway's own changes. To restore again, start from an empty data volume. | `false` |
 | `ignition.networkPolicy.enabled` | Create a NetworkPolicy that limits Gateway Network traffic to the chart's gateways and web traffic to pods in the namespace. | `true` |
 | `ignition.networkPolicy.extraIngress` | Extra NetworkPolicy ingress rules: needed for an ingress controller, Prometheus, or a NodePort or LoadBalancer Service, as in the [examples](https://github.com/Apollogeddon/ignition-helm/tree/main/examples). | `[]` |
 | `ignition.serviceMonitor.enabled` | Create a Prometheus Operator ServiceMonitor. | `false` |
@@ -152,7 +152,7 @@ The most commonly changed values are below. See [`values.yaml`](values.yaml) for
 | `ignition.externalModules.enabled` | Mount the `ignition.externalModules.pvcName` PersistentVolumeClaim of modules. | `false` |
 | `ignition.fixDataOwnership` | Change the data volume's owner to the gateway user on start (an init container running as root). Only for upgrading an install whose gateway ran as root. | `false` |
 | `ignition.readinessProbe` / `ignition.livenessProbe` | Probe settings. A configured `command` is used as-is; the chart's health check (`/StatusPing` must report `RUNNING`) is the fallback when it is empty. Readiness adds `-r`: not Ready while the gateway is still commissioning, and with active routing a Backup must also be in sync, or `Incompatible` with its Master for up to `IGNITION_READY_INCOMPATIBLE_SECONDS` (in `config`, default 1800) so a rolling update that changes the modules or Ignition version reaches the Master. | `/config/scripts/health-check.sh -t 3 -r` / `-t 5` |
-| `ignition.startupProbe.enabled` | Startup probe, so slow starts (a first start, a large `.gwbk` restore, a state transfer) are tolerated while liveness stays strict. It allows about 10 minutes (`failureThreshold` 60 × `periodSeconds` 10, after `initialDelaySeconds` 30); raise `failureThreshold` for a slower start. | `true` |
+| `ignition.startupProbe.enabled` | Startup probe, so a slow start (a first start, a large `.gwbk` restore, a state transfer) isn't killed by liveness. It allows about 10 minutes (`failureThreshold` 60 × `periodSeconds` 10, after `initialDelaySeconds` 30); raise `failureThreshold` for a slower start. | `true` |
 | `ignition.lifecycle` | Container lifecycle hooks, rendered as-is. | `{}` (none) |
 | `ignition.logging.level` | Root log level (`INFO`, `DEBUG`, `WARN`, `ERROR`). | `INFO` |
 | `ignition.logging.loggers` | Per-logger levels, for example `{"gateway.SslManager": "DEBUG"}`. | `{}` |

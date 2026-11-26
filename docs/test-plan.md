@@ -36,7 +36,7 @@ Status: **Live** verified on a real deployment, **Unit** helm-unittest only, **R
 | 4 | Upgrade from a released chart | Not tested | Live (S02) | a release whose StatefulSets name another Service needs a one-time `--cascade=orphan` delete of them; `activeRouting` goes on in a later, separate upgrade (40); a gateway volume owned by root needs `fixDataOwnership` once (39). See the chart READMEs |
 | 5 | No password-resetting preStop | Live | Live | `gwcmd.sh -p` resets the login on 8.1 and 8.3 |
 | 6 | Custom lifecycle hooks | Live | Live (CI deploy test) | |
-| 7 | Rolling update across a redundant pair in a safe order | Not tested | Live (S06, S11) | with activeRouting, readiness also waits for the Backup to be in sync before the Master is replaced; S11 changes the modules, so the new Backup is `Incompatible` with the old Master, which readiness counts as Ready for 30 minutes so the rollout reaches the Master |
+| 7 | Rolling update across a redundant pair in a safe order | Not tested | Live (S06, S11) | with activeRouting, readiness also waits for the Backup to be in sync before the Master is replaced; in S11 a module change leaves the new Backup `Incompatible`, which readiness counts as Ready for 30 minutes so the rollout reaches the Master |
 | 8 | Health check reflects gateway state | Live | Live | `/StatusPing`; `/main/system/StatusPing` is 404 on 8.3 and redirects to a 404 on 8.1 |
 | 9 | Configured probe commands honoured | Live | Live (CI deploy test) | |
 | 10 | startupProbe | Live | Live (CI deploy test) | |
@@ -70,8 +70,8 @@ Status: **Live** verified on a real deployment, **Unit** helm-unittest only, **R
 | 40 | Upgrade with activeRouting when the StatefulSets name another Service | n/a | Live (S02) | enabling activeRouting in the same upgrade deadlocks: the old Master is only reachable under the old Service name, so the new Backup never syncs and never becomes Ready (the Master keeps serving). Enabling it in a second upgrade works; documented in both READMEs |
 | 35 | Scaleout backend named after its pod on the Gateway Network | Unit | Live (S04) | the backend sets `GATEWAY_SYSTEM_NAME`, so each backend gateway takes its pod's name |
 | 41 | Restore a gateway backup (`restore`) | Not tested | CI (S09) | the backup is staged once and restored with `-r` on the first start only; a restart keeps the gateway's own changes |
-| 42 | Redundant pair under a CA-type issuer, with non-default GAN and web keystore passwords from `existingSecret` | Not tested | CI (S11) | the GAN CA is the release's own self-signed root whatever `certManager.issuer` is; the keystore passwords reach the JVM as `-D` properties. S11 checks Master/Good/Active + Backup/Good/Cold, the active label and the `-active` Service's endpoint, and web TLS on 8043 |
-| 43 | 8.3 JDBC driver modules enabled with `sql-bridge` | n/a | CI (S11) | S11 checks the gateway logs start `com.inductiveautomation.jdbc.postgresql`, `.mssql` and `.mariadb` on both gateways |
+| 42 | Redundant pair under a CA-type issuer, with non-default GAN and web keystore passwords from `existingSecret` | Not tested | CI (S11) | the GAN CA is the release's own self-signed root whatever `certManager.issuer` is; the keystore passwords reach the JVM as `-D` properties. S11 checks Master/Good/Active + Backup/Good/Cold, the active label, the `-active` Service's endpoint and web TLS on 8043 |
+| 43 | 8.3 JDBC driver modules enabled with `sql-bridge` | n/a | CI (S11) | S11 checks both gateways' logs start `com.inductiveautomation.jdbc.postgresql`, `.mssql` and `.mariadb` |
 
 ## E2E scenarios
 
@@ -158,7 +158,20 @@ The logs emptyDir then only holds `system_logs.idb` (~70-105 KB).
 
 ### S11 CA issuer pair and module upgrade (8.3.10, k3s single node)
 
-Under a CA-type ClusterIssuer, with the GAN and web keystore passwords from `existingSecret`: Master/Good/Active and Backup/Good/Cold about 5 minutes after install, the active label and the `-active` Service's only endpoint on the Master, the issued web certificate (`CN=s11-web.e2e.invalid`) on 8043, and the PostgreSQL, MSSQL and MariaDB JDBC modules started on both gateways. Adding `vision` to the modules: the new Backup reported `Incompatible` (the Master `Modules_Incompatible`) and was counted Ready, the Master was replaced next while the Backup served, and the rolling update finished in 286-309 s; the Backup then went `OutOfDate` and `Good` within about a minute. With the chart before the fix, readiness failed on the `Incompatible` Backup ("Backup is not in sync with the Master"), so the StatefulSet never went on to the Master; a Backup that is not Ready also keeps Kubernetes from replacing it when a later upgrade changes the pod template, until the pod is deleted.
+Install, under a CA-type ClusterIssuer with the keystore passwords from `existingSecret`:
+
+- Master/Good/Active and Backup/Good/Cold about 5 minutes after install.
+- The active label and the `-active` Service's only endpoint on the Master.
+- The issued web certificate (`CN=s11-web.e2e.invalid`) on 8043.
+- The PostgreSQL, MSSQL and MariaDB JDBC modules started on both gateways.
+
+Upgrade, adding `vision` to the modules:
+
+- The new Backup reported `Incompatible` (the Master `Modules_Incompatible`) and counted as Ready.
+- The Master was replaced next while the Backup served; the rolling update took 286-309 s.
+- The Backup then went `OutOfDate`, then `Good`, within about a minute.
+
+Before the fix, readiness failed on the `Incompatible` Backup ("Backup is not in sync with the Master"), so the rollout never reached the Master. A Backup that isn't Ready also isn't replaced by a later upgrade that changes the pod template, until its pod is deleted.
 
 ### Staging notes
 

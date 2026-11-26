@@ -6,13 +6,13 @@ description: Upgrade an existing installation to a newer chart version.
 
 This guide covers upgrading an installed chart, and the one-time steps some installs need.
 
-Most upgrades are a plain `helm upgrade` after `helm repo update`. Read the chart's `CHANGELOG.md` for the versions you are skipping. The StatefulSets replace one pod at a time, the Backup (pod 1) before the Master (pod 0), and a Backup only counts as Ready once it is running and, with `activeRouting`, in sync with its Master (see [Module and version changes on a redundant pair](#module-and-version-changes-on-a-redundant-pair)).
+Most upgrades are a plain `helm upgrade` after `helm repo update`. Read the chart's `CHANGELOG.md` for the versions you are skipping. The StatefulSets replace one pod at a time, the Backup (pod 1) before the Master (pod 0). A Backup counts as Ready once it is running and, with `activeRouting`, in sync with its Master (see [Module and version changes on a redundant pair](#module-and-version-changes-on-a-redundant-pair)).
 
 ## Before you upgrade
 
 ### Take a gateway backup
 
-Take a gateway backup (`.gwbk`) of every gateway with a data volume before each upgrade, and copy it out of the cluster. A chart upgrade can change the Ignition version, and if a gateway's data volume doesn't survive the upgrade, the backup is the only way back:
+Before each upgrade, take a gateway backup (`.gwbk`) of every gateway with a data volume, and copy it out of the cluster. If a data volume doesn't survive the upgrade, the backup is the only way back:
 
 ```bash
 kubectl exec -n <namespace> ignition-failover-0 -c gateway -- \
@@ -20,30 +20,35 @@ kubectl exec -n <namespace> ignition-failover-0 -c gateway -- \
 kubectl cp -n <namespace> -c gateway ignition-failover-0:/usr/local/bin/ignition/temp/pre-upgrade.gwbk ./pre-upgrade.gwbk
 ```
 
-For a redundant pair, back up the Master (pod 0); in scaleout, back up each backend gateway (`<name>-backend-0`, and `-1` for a pair). The frontends keep nothing on a volume. To restore one, see [Restore on first start](../capabilities/#restore-on-first-start).
+Back up the Master (pod 0) of a pair; in scaleout, each backend gateway (`<name>-backend-0`, and `-1` for a pair). The frontends keep nothing on a volume. To restore a backup, see [Restore on first start](../capabilities/#restore-on-first-start).
 
 ### Pin the Ignition version
 
-With `image.tag` empty, the gateways run the chart's `appVersion`, so a chart upgrade that raises `appVersion` also upgrades Ignition, without your asking for it. Pin the version you run, and change it on purpose, in its own upgrade:
+With `image.tag` empty, the gateways run the chart's `appVersion`, so a chart upgrade that raises it also upgrades Ignition. Pin the version you run, and change it on purpose, in an upgrade of its own:
 
 ```yaml
 image:
   tag: "8.3.10"
 ```
 
-Read Inductive Automation's release notes for every Ignition version you skip, and upgrade one environment (test, then production) at a time.
+Read Inductive Automation's release notes for every Ignition version you skip, and upgrade one environment at a time, test before production.
 
 ### Ignition 8.1 to 8.3 is one-way
 
-Upgrading a gateway from Ignition 8.1 to 8.3 converts its data volume to 8.3's configuration format, and an 8.3 gateway backup can't be restored on 8.1. There is no rolling back by setting `image.tag` to 8.1 again: the 8.1 gateway won't start on the converted volume. Before moving to 8.3, take an 8.1 backup (above), keep it, and check that every module and third-party module you use has an 8.3 version. To go back, restore the 8.1 backup on an empty data volume with the 8.1 image.
+Upgrading to 8.3 converts a gateway's data volume to 8.3's configuration format, and the 8.1 image won't start on it again. An 8.3 backup can't be restored on 8.1. Before moving to 8.3:
+
+1. Take an 8.1 backup (above) and keep it.
+2. Check that every module you use, third-party ones included, has an 8.3 version.
+
+To go back, restore the 8.1 backup on an empty data volume with the 8.1 image.
 
 ### Module and version changes on a redundant pair
 
-An upgrade that changes the pair's modules (`GATEWAY_MODULES_ENABLED`, or a chart upgrade that changes its default list) or its Ignition version replaces the Backup first, so for a while the new Backup runs different modules from the old Master. Ignition reports the Backup as `RedundantState=Incompatible` (and the Master as `Modules_Incompatible`), and logs `Master and backup are incompatible due to differences between installed modules` and `Could not disable module ... to match master`. Only replacing the Master fixes that.
+An upgrade that changes the pair's modules (`GATEWAY_MODULES_ENABLED`, or a chart's new default list) or its Ignition version replaces the Backup first, so for a while the Backup and Master differ. Ignition then reports the Backup as `RedundantState=Incompatible` (the Master as `Modules_Incompatible`), and logs `Master and backup are incompatible due to differences between installed modules` and `Could not disable module ... to match master`. Only replacing the Master fixes it.
 
-With `activeRouting`, readiness requires a Backup to be in sync, except in this one state: an `Incompatible` Backup counts as Ready, so the rolling update goes on to the Master, and the gateway logs `[health-check] Backup is Incompatible with the Master ...`. While the Master restarts, the Backup takes over and the `-active` Service routes to it. Once the Master is back, the Backup goes `OutOfDate` while it syncs (not Ready, for about a minute) and then `Good`, logging `[health-check] Backup is in sync with the Master again`. On a test cluster, adding or removing a module took about five minutes from `helm upgrade` to both gateways `Good`.
+With `activeRouting`, readiness counts an `Incompatible` Backup as Ready, so the rollout goes on to the Master; the gateway logs `[health-check] Backup is Incompatible with the Master ...`. While the Master restarts, the Backup takes over and the `-active` Service routes to it. The Backup then goes `OutOfDate` (not Ready, for about a minute) and `Good`, logging `[health-check] Backup is in sync with the Master again`. On a test cluster, adding or removing a module took about five minutes from `helm upgrade` to both gateways `Good`.
 
-A pair that is still `Incompatible` 30 minutes after the Backup first reported it is broken rather than mid-upgrade, for example a module installed on one gateway only, and the Backup is not Ready again until it is `Good`: check both gateways' modules and Ignition versions. To allow longer, for a Master that takes a long time to start, set the limit in seconds:
+A Backup still `Incompatible` 30 minutes after it first reported it is not Ready until it is `Good`: the pair is broken, for example by a module installed on one gateway only. Check both gateways' modules and Ignition versions. For a Master that takes longer to start, raise the limit in seconds:
 
 ```yaml
 ignition:                  # scaleout: backend
@@ -51,28 +56,28 @@ ignition:                  # scaleout: backend
     IGNITION_READY_INCOMPATIBLE_SECONDS: "3600"
 ```
 
-Kubernetes doesn't replace a StatefulSet pod that isn't Ready during a rolling update. If an upgrade with an earlier chart version is already stuck with an `Incompatible` Backup that never goes Ready, upgrading to this chart doesn't move it on by itself: after `helm upgrade`, delete the Backup's pod (`kubectl delete pod -n <namespace> ignition-failover-1`, or `<name>-backend-1`), and the StatefulSet recreates it with this chart's readiness check and then replaces the Master.
+Kubernetes doesn't replace a StatefulSet pod that isn't Ready during a rolling update. If an upgrade with an earlier chart version is stuck on an `Incompatible` Backup, upgrading to this chart doesn't free it: after `helm upgrade`, delete the Backup's pod (`kubectl delete pod -n <namespace> ignition-failover-1`, or `<name>-backend-1`). The StatefulSet recreates it with this chart's readiness check, then replaces the Master.
 
 ## Breaking changes: EULA, passwords and the values schema
 
-The charts' current major versions change what both charts need to render. Make each change below in your values before you run `helm upgrade`; an upgrade that doesn't fails to render, and nothing changes in the cluster.
+The charts' current major versions change what both charts need to render. Make each change in your values before `helm upgrade`; an upgrade without them fails to render and changes nothing in the cluster.
 
 1. **Accept the EULA**: set `acceptEula: true` (see [If you relied on the default EULA acceptance](#if-you-relied-on-the-default-eula-acceptance)).
-2. **Set the passwords**: set `GATEWAY_ADMIN_PASSWORD`, `IGNITION_GAN_KEYSTORE_PASSWORD` and `IGNITION_WEB_KEYSTORE_PASSWORD`, or name a Secret that holds them with `existingSecret` (see [If you relied on the default passwords](#if-you-relied-on-the-default-passwords)).
-3. **Fix unknown keys**: the charts now validate values against a schema, so a misspelt or unknown key, which the chart used to ignore, now fails the render with `additional properties '<key>' not allowed`. Remove the key, or correct it to the value you meant.
+2. **Set the passwords**: set `GATEWAY_ADMIN_PASSWORD`, `IGNITION_GAN_KEYSTORE_PASSWORD` and `IGNITION_WEB_KEYSTORE_PASSWORD`, or name a Secret that holds them in `existingSecret` (see [If you relied on the default passwords](#if-you-relied-on-the-default-passwords)).
+3. **Fix unknown keys**: values are validated against a schema, so a misspelt or unknown key the chart used to ignore now fails with `additional properties '<key>' not allowed`. Remove or correct it.
 
-`helm template` with your values file shows whether it renders:
+Check that your values render:
 
 ```bash
 helm template <release> ignition-charts/<chart> -n <namespace> -f my-values.yaml > /dev/null
 ```
 
-Other changes take effect on the upgrade without a step:
+These changes need no step:
 
-* **The gateways restart once**: the pod templates gain checksum annotations (config, secrets, logging, scripts) and a startup probe, so the first upgrade replaces every pod, the Backup before the Master. Upgrade in a maintenance window, or use `updateStrategy.type: OnDelete`.
-* **Startup probe on by default**: a gateway has about 10 minutes to report `RUNNING` before the kubelet restarts it. If yours takes longer to start, raise `startupProbe.failureThreshold`.
-* **Service ports**: the container ports stay on 8088, 8043 and 8060 whatever `service.ports` says, and the Service maps its ports to them. If you changed `service.ports`, NetworkPolicy rules (`networkPolicy.extraIngress`) must now name the gateway's own ports.
-* **Scaleout frontend**: `frontend.logging` now configures the frontends (they used the backend's before); the frontend Service uses `sessionAffinity: ClientIP` with more than one gateway unless you set `frontend.service.sessionAffinity`; and the frontend PodDisruptionBudget only exists with a minimum of two gateways.
+* **The gateways restart once**: the new checksum annotations (config, secrets, logging, scripts) and startup probe change the pod templates, so the first upgrade replaces every pod, the Backup before the Master. Upgrade in a maintenance window, or use `updateStrategy.type: OnDelete`.
+* **Startup probe on by default**: a gateway has about 10 minutes to report `RUNNING` before the kubelet restarts it. For a slower start, raise `startupProbe.failureThreshold`.
+* **Service ports**: the container ports stay on 8088, 8043 and 8060 whatever `service.ports` says. If you changed `service.ports`, NetworkPolicy rules (`networkPolicy.extraIngress`) must now name the gateway's own ports.
+* **Scaleout frontend**: `frontend.logging` now configures the frontends (they used the backend's); the frontend Service uses `sessionAffinity: ClientIP` with more than one gateway unless you set `frontend.service.sessionAffinity`; the frontend PodDisruptionBudget needs a minimum of two gateways.
 
 ## Install-specific steps
 
@@ -80,23 +85,23 @@ Check these before you upgrade, and take each step that applies to your install.
 
 ### If you relied on the default EULA acceptance
 
-The charts no longer accept Ignition's EULA for you: `ACCEPT_IGNITION_EULA: "Y"` is gone from the `config` defaults, and the charts refuse to render until you read Inductive Automation's [Ignition End User License Agreement](https://inductiveautomation.com/ignition/license) and set the top-level `acceptEula`:
+The charts no longer accept Ignition's EULA for you: `ACCEPT_IGNITION_EULA: "Y"` is gone from the `config` defaults. Read Inductive Automation's [Ignition End User License Agreement](https://inductiveautomation.com/ignition/license), then set the top-level `acceptEula` (or `--set acceptEula=true`):
 
 ```yaml
 acceptEula: true
 ```
 
-or `--set acceptEula=true`. The chart then sets `ACCEPT_IGNITION_EULA=Y` itself, so remove `ACCEPT_IGNITION_EULA` from your `config` values if you set it there: a value in `config` still wins over `acceptEula`. An existing gateway that already commissioned is not affected either way.
+The chart then sets `ACCEPT_IGNITION_EULA=Y` itself. Remove `ACCEPT_IGNITION_EULA` from your `config` values, as a value there still wins over `acceptEula`. A gateway that has already commissioned is unaffected either way.
 
 ### If you relied on the default passwords
 
-The charts no longer have default passwords (they were `admin` for `GATEWAY_ADMIN_PASSWORD`, `metro` for `IGNITION_GAN_KEYSTORE_PASSWORD` and `ignition` for `IGNITION_WEB_KEYSTORE_PASSWORD`). An upgrade whose values don't set all three, or name a Secret that holds them with `existingSecret`, fails to render, and nothing changes in the cluster:
+The charts no longer default the passwords (`GATEWAY_ADMIN_PASSWORD` was `admin`, `IGNITION_GAN_KEYSTORE_PASSWORD` `metro`, `IGNITION_WEB_KEYSTORE_PASSWORD` `ignition`). An upgrade whose values don't set all three, or an `existingSecret` that holds them, fails to render and changes nothing:
 
 ```text
 Error: ... the chart has no default passwords: set ignition.existingSecret to a Secret holding GATEWAY_ADMIN_PASSWORD, ...
 ```
 
-To upgrade without changing anything on the gateways, set the old values explicitly, then change them deliberately later:
+To upgrade without changing the gateways, set the old values explicitly:
 
 ```yaml
 ignition:                  # scaleout: frontend and backend
@@ -106,9 +111,12 @@ ignition:                  # scaleout: frontend and backend
     IGNITION_WEB_KEYSTORE_PASSWORD: ignition
 ```
 
-Then choose real passwords. The image applies `GATEWAY_ADMIN_PASSWORD` when the gateway commissions, so on an existing data volume change the admin password in the Gateway web UI as well. A new `IGNITION_GAN_KEYSTORE_PASSWORD` only takes effect once cert-manager reissues the Gateway Network keystore with it (`cmctl renew <name>-gan`, or `<name>-frontend-gan` and `<name>-backend-gan`), and the next gateway start installs it.
+Then change them to real passwords:
 
-To keep the passwords out of Helm's values, move them to a Secret of your own and set `existingSecret` (`ignition.existingSecret`, or `frontend.existingSecret` and `backend.existingSecret`), removing the passwords from `secrets`; see [Example: existingSecret](../capabilities/#example-existingsecret). The chart then deletes its own `<name>-secrets` Secret on the upgrade, so create yours with every key the gateways need first, including `GATEWAY_ADMIN_USERNAME` if it isn't `admin`.
+* `GATEWAY_ADMIN_PASSWORD` is applied only when the gateway commissions, so on an existing data volume also change it in the Gateway web UI.
+* A new `IGNITION_GAN_KEYSTORE_PASSWORD` takes effect once cert-manager reissues the Gateway Network keystore (`cmctl renew <name>-gan`, or `<name>-frontend-gan` and `<name>-backend-gan`) and the gateway next starts.
+
+To keep the passwords out of Helm's values, move them to a Secret of your own, set `existingSecret` (`ignition.existingSecret`, or `frontend.existingSecret` and `backend.existingSecret`) and remove them from `secrets`; see [Example: existingSecret](../capabilities/#example-existingsecret). The upgrade deletes the chart's own `<name>-secrets`, so first create yours with every key the gateways need, including `GATEWAY_ADMIN_USERNAME` if it isn't `admin`.
 
 ### If your StatefulSets name another Service
 

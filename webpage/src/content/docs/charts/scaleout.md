@@ -34,7 +34,7 @@ sequenceDiagram
 
 ## Values
 
-The tables below list the chart's values and defaults, grouped by layer and area. [`values.yaml`](https://github.com/Apollogeddon/ignition-helm/blob/main/charts/scaleout/values.yaml) is the authoritative list. The chart validates values against its `values.schema.json`, so an unknown or misspelt key (for example `backend.redundency`) fails the install, template or lint instead of being ignored; free-form maps (`config`, `secrets`, `resources`, annotations) take any keys.
+The tables below list the chart's values and defaults, grouped by layer and area. [`values.yaml`](https://github.com/Apollogeddon/ignition-helm/blob/main/charts/scaleout/values.yaml) is the authoritative list. The chart validates values against its `values.schema.json`: an unknown or misspelt key (e.g. `backend.redundency`) fails the install, template or lint. Free-form maps (`config`, `secrets`, `resources`, annotations) take any keys.
 
 ### General
 
@@ -43,7 +43,7 @@ Settings that apply to both layers. `affinity.enabled` spreads each layer's pods
 | Parameter | Type | Default |
 | --- | --- | --- |
 | `applicationName` | string | `"ignition-scaleout"` |
-| `acceptEula` | bool | `false` (must be `true`: the chart refuses to render until you accept Inductive Automation's [Ignition EULA](https://inductiveautomation.com/ignition/license), then sets `ACCEPT_IGNITION_EULA=Y` on every gateway) |
+| `acceptEula` | bool | `false` (the chart renders only with `true`, once you accept Inductive Automation's [Ignition EULA](https://inductiveautomation.com/ignition/license), and then sets `ACCEPT_IGNITION_EULA=Y` on every gateway) |
 | `componentSelectors` | bool | `false` |
 | `image.repository` | string | `"inductiveautomation/ignition"` |
 | `image.tag` | string | `""` (the chart's `appVersion`) |
@@ -174,7 +174,7 @@ The timings, `maxDiskMb` and `pingMaxMissed`, and `backend.activeRouting.interva
 
 #### Resources and security (backend)
 
-There are no default passwords: set `GATEWAY_ADMIN_PASSWORD`, `IGNITION_GAN_KEYSTORE_PASSWORD` and `IGNITION_WEB_KEYSTORE_PASSWORD` in `backend.secrets`, or set `backend.existingSecret` to a Secret you manage that holds them (and any other secret environment variables); the chart then renders no Secret and refuses values left in `backend.secrets`. With `backend.sealedSecrets`, every `backend.secrets` value, the user name included, must be encrypted with `kubeseal` (see [SealedSecrets](../../guides/capabilities/#example-sealedsecrets)).
+There are no default passwords: set `GATEWAY_ADMIN_PASSWORD`, `IGNITION_GAN_KEYSTORE_PASSWORD` and `IGNITION_WEB_KEYSTORE_PASSWORD` in `backend.secrets`, or name a Secret you manage that holds them (and any other secret environment variables) in `backend.existingSecret`. The chart then renders no Secret, and refuses values left in `backend.secrets`. With `backend.sealedSecrets`, every `backend.secrets` value, the user name included, must be encrypted with `kubeseal` (see [SealedSecrets](../../guides/capabilities/#example-sealedsecrets)).
 
 | Parameter | Type | Default |
 | --- | --- | --- |
@@ -310,7 +310,7 @@ GATEWAY_MODULES_ENABLED: perspective,symbol-factory
 
 #### Resources and security (frontend)
 
-There are no default passwords: set `GATEWAY_ADMIN_PASSWORD`, `IGNITION_GAN_KEYSTORE_PASSWORD` and `IGNITION_WEB_KEYSTORE_PASSWORD` in `frontend.secrets`, or set `frontend.existingSecret` to a Secret you manage that holds them (and any other secret environment variables); the chart then renders no Secret and refuses values left in `frontend.secrets`. With `frontend.sealedSecrets`, every `frontend.secrets` value, the user name included, must be encrypted with `kubeseal` (see [SealedSecrets](../../guides/capabilities/#example-sealedsecrets)).
+There are no default passwords: set `GATEWAY_ADMIN_PASSWORD`, `IGNITION_GAN_KEYSTORE_PASSWORD` and `IGNITION_WEB_KEYSTORE_PASSWORD` in `frontend.secrets`, or name a Secret you manage that holds them (and any other secret environment variables) in `frontend.existingSecret`. The chart then renders no Secret, and refuses values left in `frontend.secrets`. With `frontend.sealedSecrets`, every `frontend.secrets` value, the user name included, must be encrypted with `kubeseal` (see [SealedSecrets](../../guides/capabilities/#example-sealedsecrets)).
 
 | Parameter | Type | Default |
 | --- | --- | --- |

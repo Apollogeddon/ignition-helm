@@ -39,7 +39,7 @@ sequenceDiagram
 
 ## Values
 
-The tables below list the chart's values and defaults, grouped by area. [`values.yaml`](https://github.com/Apollogeddon/ignition-helm/blob/main/charts/failover/values.yaml) is the authoritative list. The chart validates values against its `values.schema.json`, so an unknown or misspelt key (for example `ignition.redundency`) fails the install, template or lint instead of being ignored; free-form maps (`config`, `secrets`, `resources`, annotations) take any keys.
+The tables below list the chart's values and defaults, grouped by area. [`values.yaml`](https://github.com/Apollogeddon/ignition-helm/blob/main/charts/failover/values.yaml) is the authoritative list. The chart validates values against its `values.schema.json`: an unknown or misspelt key (e.g. `ignition.redundency`) fails the install, template or lint. Free-form maps (`config`, `secrets`, `resources`, annotations) take any keys.
 
 ### General
 
@@ -76,7 +76,7 @@ Serve HTTPS with your own PKCS#12 keystore. `ignition.ssl.secretName` defaults t
 
 ### Gateway
 
-Gateway environment variables (including enabled modules), arguments, logging and the EAM role. `acceptEula` (top level, default `false`) must be `true`: the chart refuses to render until you accept Inductive Automation's [Ignition EULA](https://inductiveautomation.com/ignition/license), and then adds `ACCEPT_IGNITION_EULA=Y` to the gateway's environment variables.
+Gateway environment variables (including enabled modules), arguments, logging and the EAM role. The chart renders only with the top-level `acceptEula: true`, once you accept Inductive Automation's [Ignition EULA](https://inductiveautomation.com/ignition/license), and then adds `ACCEPT_IGNITION_EULA=Y` to the gateway's environment.
 
 | Parameter | Type | Default |
 | --- | --- | --- |
@@ -157,7 +157,7 @@ The timings, `maxDiskMb` and `pingMaxMissed`, and `ignition.activeRouting.interv
 
 ### Networking and certificates
 
-Service, Ingress and cert-manager settings. `ignition.service.ports` sets only the Service's ports: the gateway always listens on 8088, 8043 and 8060, the Service maps its ports to those, and the container ports, probes, NetworkPolicy rules, headless Services and redundancy peer address use the gateway's own.
+Service, Ingress and cert-manager settings. `ignition.service.ports` sets only the Service's ports, which map to the gateway's own 8088, 8043 and 8060. The container ports, probes, NetworkPolicy rules, headless Services and redundancy peer address always use the gateway's own.
 
 | Parameter | Type | Default |
 | --- | --- | --- |
@@ -234,7 +234,7 @@ command:
 
 ### Security and accounts
 
-Security context, secrets and the ServiceAccount. There are no default passwords: set `GATEWAY_ADMIN_PASSWORD`, `IGNITION_GAN_KEYSTORE_PASSWORD` and `IGNITION_WEB_KEYSTORE_PASSWORD` in `ignition.secrets`, or set `ignition.existingSecret` to a Secret you manage that holds them (and any other secret environment variables); the chart then renders no Secret and refuses values left in `ignition.secrets`. With `ignition.sealedSecrets`, every `ignition.secrets` value, the user name included, must be encrypted with `kubeseal` (see [SealedSecrets](../../guides/capabilities/#example-sealedsecrets)).
+Security context, secrets and the ServiceAccount. There are no default passwords: set `GATEWAY_ADMIN_PASSWORD`, `IGNITION_GAN_KEYSTORE_PASSWORD` and `IGNITION_WEB_KEYSTORE_PASSWORD` in `ignition.secrets`, or name a Secret you manage that holds them (and any other secret environment variables) in `ignition.existingSecret`. The chart then renders no Secret, and refuses values left in `ignition.secrets`. With `ignition.sealedSecrets`, every `ignition.secrets` value, the user name included, must be encrypted with `kubeseal` (see [SealedSecrets](../../guides/capabilities/#example-sealedsecrets)).
 
 | Parameter | Type | Default |
 | --- | --- | --- |

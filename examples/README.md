@@ -1,6 +1,6 @@
 # Examples
 
-Example values files for the `ignition-failover` and `ignition-scaleout` charts. Each one shows a single setup; combine them, or copy the parts you need into your own values file. The charts have no default passwords, so each example sets them (or names a Secret that holds them); replace the example passwords before you use them.
+Example values files for the `ignition-failover` and `ignition-scaleout` charts. Each one shows a single setup; combine them, or copy the parts you need into your own values file. The charts have no default passwords, so each example sets them or names a Secret that holds them. Replace the example passwords before you use them.
 
 The charts' default NetworkPolicy admits only pods in the release's namespace, so each example that exposes a gateway (a LoadBalancer, a NodePort, an Ingress or Prometheus scraping) adds the `networkPolicy.extraIngress` rule it needs. Narrow its namespace or CIDR to yours. CI renders every example and checks this.
 

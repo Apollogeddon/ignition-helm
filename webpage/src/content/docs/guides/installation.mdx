@@ -103,7 +103,7 @@ helm search repo ignition-charts --versions
 
 ### Failover
 
-Install a single gateway. Installing needs `acceptEula=true`: read Inductive Automation's [Ignition End User License Agreement](https://inductiveautomation.com/ignition/license) first. The charts refuse to render until you accept it, and then set `ACCEPT_IGNITION_EULA=Y` on every gateway. The charts also have no default passwords: set the gateway admin password and the Gateway Network and web keystore passwords, or point `ignition.existingSecret` at a Secret that holds them. The render fails until you do.
+Install a single gateway. Read Inductive Automation's [Ignition End User License Agreement](https://inductiveautomation.com/ignition/license) first: the charts render only with `acceptEula=true`, and then set `ACCEPT_IGNITION_EULA=Y` on every gateway. The charts have no default passwords: set the admin, Gateway Network keystore and web keystore passwords, or point `ignition.existingSecret` at a Secret that holds them.
 
 ```bash
 helm install my-ignition ignition-charts/ignition-failover \
