@@ -498,6 +498,23 @@ Params:
 {{- end }}
 {{- $args = append $args "wrapper.logfile=/dev/stdout" }}
 {{- end }}
+{{- /* The gateway opens the keystores the chart writes with these JVM properties, which
+default to Ignition's own "metro" and "ignition": without them a gateway whose secrets
+set other passwords can't read its Gateway Network keystore, and a redundant pair never
+connects. Kubernetes expands $(VAR) from the gateway's environment (its Secret). */}}
+{{- $keystores := list (list "ignition.metro.keystorePassword" "IGNITION_GAN_KEYSTORE_PASSWORD") }}
+{{- if and .values.ssl .values.ssl.enabled }}
+{{- $keystores = append $keystores (list "ignition.gateway.ssl.keystorePassword" "IGNITION_WEB_KEYSTORE_PASSWORD") }}
+{{- end }}
+{{- range $keystores }}
+{{- $prop := index . 0 }}
+{{- if not (regexMatch (printf "(^| )-D%s=" (regexQuoteMeta $prop)) (join " " $args)) }}
+{{- if not (has "--" $args) }}
+{{- $args = append $args "--" }}
+{{- end }}
+{{- $args = append $args (printf "-D%s=$(%s)" $prop (index . 1)) }}
+{{- end }}
+{{- end }}
 {{- with $args }}
 args:
 {{- toStrings . | toYaml | nindent 2 }}
