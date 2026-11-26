@@ -150,7 +150,7 @@ affinity:
 
 ### Pod disruption budgets
 
-To keep a gateway available during voluntary disruptions such as node drains, the charts create a PodDisruptionBudget with `minAvailable: 1` for a redundant pair (failover or scaleout backend), and for the scaleout frontend when it has more than one replica or an autoscaler.
+To keep a gateway available during voluntary disruptions such as node drains, the charts create a PodDisruptionBudget with `minAvailable: 1` for a redundant pair (failover or scaleout backend), and for the scaleout frontend when it has at least two gateways (`frontend.redundancy.replicas`, or `frontend.hpa.minReplicas` with an autoscaler): with a minimum of one, `minAvailable: 1` would block every node drain.
 
 ## Security
 
@@ -211,7 +211,7 @@ The gateways, the `preconfigure` init container, the Gateway Network keystore (c
 
 ### Ingress and sticky sessions
 
-Perspective and Vision sessions are stateful. When more than one gateway can serve a client, for example scaleout frontends behind an Ingress, enable sticky sessions so each client stays on the same pod. With ingress-nginx:
+Perspective and Vision sessions are stateful. When more than one gateway can serve a client, for example scaleout frontends behind an Ingress, enable sticky sessions so each client stays on the same pod. The scaleout frontend Service already uses `sessionAffinity: ClientIP` when it has more than one gateway or an autoscaler, unless you set `frontend.service.sessionAffinity`; behind an Ingress, clients all arrive from the controller's addresses, so make the Ingress sticky too. With ingress-nginx:
 
 ```yaml
 frontend:

@@ -110,7 +110,8 @@ frontend:
   With the autoscaler already on, the recreated frontend StatefulSet starts at one gateway until the autoscaler raises it to `minReplicas`, so do it in a quiet period. Turning `componentSelectors` off again needs the same step.
 - While the autoscaler is enabled, the frontend StatefulSet leaves out `replicas`, so `helm upgrade` doesn't reset the count it has set. When you enable it on an existing release, Helm removes the field and Kubernetes briefly scales the StatefulSet to one gateway, until the autoscaler raises it to `minReplicas`. Enable it in a quiet period.
 - A new frontend gateway takes minutes to start and commission, and scaling down ends the Perspective sessions on the gateways it removes, so scale down slowly with `behavior.scaleDown`.
-- A PodDisruptionBudget (`minAvailable: 1`) protects the frontend while the autoscaler is enabled.
+- A PodDisruptionBudget (`minAvailable: 1`) protects the frontend while it has at least two gateways: `frontend.redundancy.replicas` of 2 or more, or, with the autoscaler, `frontend.hpa.minReplicas` of 2 or more. With a minimum of one it would block every node drain, so the chart leaves it out.
+- With more than one frontend gateway, or the autoscaler, the frontend Service uses `sessionAffinity: ClientIP` unless you set `frontend.service.sessionAffinity`, so a Perspective session stays on the gateway it started on.
 - The backend doesn't autoscale, and `backend.hpa.enabled` is refused. A backend is one gateway, or a Master/Backup pair, each with its own data volume, redundancy role and device connections: an extra backend pod would be neither Master nor Backup, and would open its own connections to the same devices and databases. Scale user load on the frontend instead.
 
 ## Upgrading
@@ -146,7 +147,8 @@ The most commonly changed values are below. Most `frontend.*` and `backend.*` va
 | `frontend.secrets.IGNITION_WEB_KEYSTORE_PASSWORD` / `backend.secrets.IGNITION_WEB_KEYSTORE_PASSWORD` | Password for each layer's web server TLS keystore. Required unless the layer's `existingSecret` is set. | unset |
 | `frontend.config.GATEWAY_MODULES_ENABLED` | Modules enabled on the frontend. | `perspective,symbol-factory` |
 | `backend.config.GATEWAY_MODULES_ENABLED` | Modules enabled on the backend. | drivers, SQL Bridge, tag historian, reporting, alarm notification |
-| `frontend.redundancy.replicas` | Number of frontend gateways. | `1` |
+| `frontend.redundancy.replicas` | Number of frontend gateways. With 2 or more the chart adds a PodDisruptionBudget and `ClientIP` session affinity. | `1` |
+| `frontend.service.sessionAffinity` | `ClientIP` or `None`. Empty picks `ClientIP` while there is more than one frontend gateway (or the autoscaler), else `None`. | `""` |
 | `frontend.hpa.enabled` | Scale the frontend with a HorizontalPodAutoscaler. The StatefulSet then leaves out `replicas`, so `frontend.redundancy.replicas` is ignored and the autoscaler owns the count. See [Autoscaling the frontend](#autoscaling-the-frontend). | `false` |
 | `frontend.hpa.minReplicas` / `frontend.hpa.maxReplicas` | Fewest and most frontend gateways: whole numbers from 1 to 2147483647, with the minimum no higher than the maximum. | `1` / `10` |
 | `frontend.hpa.targetCPUUtilizationPercentage` / `frontend.hpa.targetMemoryUtilizationPercentage` | Target average utilization, as a percentage of `frontend.resources.requests`; at least one is needed. Empty leaves that metric out. | `80` / `""` |

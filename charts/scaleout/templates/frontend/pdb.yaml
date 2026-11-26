@@ -1,3 +1,11 @@
-{{- if or .Values.frontend.hpa.enabled (gt (int .Values.frontend.redundancy.replicas) 1) }}
+{{- /* minAvailable: 1 with only one frontend gateway would block every node
+drain, so the PodDisruptionBudget exists only while the frontend has at least two:
+redundancy.replicas, or hpa.minReplicas while the autoscaler owns the count */}}
+{{- $hpa := .Values.frontend.hpa }}
+{{- $min := int .Values.frontend.redundancy.replicas }}
+{{- if $hpa.enabled }}
+{{- $min = int ($hpa.minReplicas | default 1) }}
+{{- end }}
+{{- if ge $min 2 }}
 {{- include "ignition-common.pdb" (dict "name" "frontend" "context" .) }}
 {{- end }}

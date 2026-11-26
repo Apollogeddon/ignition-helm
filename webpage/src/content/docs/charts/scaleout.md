@@ -302,7 +302,7 @@ GATEWAY_MODULES_ENABLED: perspective,symbol-factory
 | `frontend.service.type` | string | `"NodePort"` |
 | `frontend.service.ports` | object | `{"http":8088,"https":8043,"gan":8060}` (the Service's ports only: they map to the gateway's own 8088, 8043 and 8060) |
 | `frontend.service.nodePorts` | object | unset |
-| `frontend.service.sessionAffinity` | string | `"None"` |
+| `frontend.service.sessionAffinity` | string | `""` (`ClientIP` with more than one frontend gateway or an autoscaler, else `None`) |
 | `frontend.ingress.enabled` | bool | `false` |
 | `frontend.ingress.className` | string | `""` |
 | `frontend.ingress.hosts` | list | unset |

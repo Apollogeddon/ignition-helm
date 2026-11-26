@@ -237,8 +237,10 @@ frontend:
   service:
     # -- Service type (LoadBalancer, NodePort, ClusterIP)
     type: NodePort
-    # -- Session affinity (ClientIP or None)
-    sessionAffinity: None
+    # -- Session affinity (ClientIP or None). Empty picks one: ClientIP while
+    # there is more than one frontend (redundancy.replicas > 1 or hpa.enabled),
+    # so a Perspective session stays on its gateway, else None
+    sessionAffinity: ""
     # -- The Service's ports. The gateway always listens on 8088 (http), 8043
     # (https) and 8060 (gan): these map to them with targetPort, so the
     # containerPorts, probes and NetworkPolicy stay on the gateway's own ports
