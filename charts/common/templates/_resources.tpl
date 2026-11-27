@@ -23,13 +23,41 @@ automountServiceAccountToken: {{ .values.serviceAccount.automountServiceAccountT
 
 {{/*
 Standard ConfigMap
+The gateway's environment variables: the config dictionary plus
+ACCEPT_IGNITION_EULA=Y from the top-level acceptEula, without which the render
+fails. An ACCEPT_IGNITION_EULA in config wins, so a test can withhold it.
 Params:
   name: The component name suffix (e.g. "frontend" or "")
   config: The config dictionary
   context: The global context (Dot)
 */}}
 {{- define "ignition-common.configMap" -}}
-{{- if .config }}
+{{- if ne (toString .context.Values.acceptEula) "true" }}
+{{- fail "acceptEula: Ignition's EULA is not accepted. Read Inductive Automation's End User License Agreement (https://inductiveautomation.com/ignition/license) and, if you accept it, set acceptEula=true (e.g. --set acceptEula=true)" }}
+{{- end }}
+{{- $config := merge (deepCopy (.config | default dict)) (dict "ACCEPT_IGNITION_EULA" "Y") }}
+{{- /* GATEWAY_MODULES_ENABLED names 8.1's modules. 8.3 has no tag-historian, and ships its
+JDBC drivers and historians as modules of their own that it enables only by module id,
+while 8.1's entrypoint refuses any identifier it doesn't know. So on 8.3, tag-historian
+becomes the historian modules, and a list with sql-bridge gains the JDBC drivers. */}}
+{{- $tag := toString (.context.Values.image.tag | default .context.Chart.AppVersion) }}
+{{- if and (hasKey $config "GATEWAY_MODULES_ENABLED") (not (hasPrefix "8.1" $tag)) }}
+{{- $modules := list }}
+{{- $named := splitList "," (toString (get $config "GATEWAY_MODULES_ENABLED")) }}
+{{- range $named }}
+{{- $m := trim . }}
+{{- if eq $m "tag-historian" }}
+{{- $modules = concat $modules (list "com.inductiveautomation.historian" "com.inductiveautomation.historian.sql") }}
+{{- else if $m }}
+{{- $modules = append $modules $m }}
+{{- end }}
+{{- end }}
+{{- if has "sql-bridge" $modules }}
+{{- $modules = concat $modules (list "com.inductiveautomation.jdbc.postgresql" "com.inductiveautomation.jdbc.mssql" "com.inductiveautomation.jdbc.mariadb") }}
+{{- end }}
+{{- $_ := set $config "GATEWAY_MODULES_ENABLED" (join "," (uniq $modules)) }}
+{{- end }}
+{{- if $config }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -43,7 +71,7 @@ metadata:
   namespace: {{ .context.Release.Namespace }}
   labels:
     {{- include "ignition.labels" .context | nindent 4 }}
-data: {{ .config | toYaml | nindent 2 }}
+data: {{ $config | toYaml | nindent 2 }}
 {{- end }}
 {{ end }}
 
@@ -53,10 +81,11 @@ Params:
   name: The component name suffix (e.g. "frontend" or "")
   secrets: The secrets dictionary
   sealedSecrets: Boolean, whether to use SealedSecrets
+  existingSecret: A Secret the user manages; when set, nothing is rendered
   context: The global context (Dot)
 */}}
 {{- define "ignition-common.secret" -}}
-{{- if .secrets }}
+{{- if and .secrets (not .existingSecret) }}
 {{- $fullname := include "ignition.name" .context }}
 {{- if .name }}
 {{- $fullname = printf "%s-%s-secrets" $fullname .name }}
@@ -109,6 +138,20 @@ Params:
   context: The global context (Dot)
 */}}
 {{- define "ignition-common.ganCA" -}}
+{{- /* The GAN CA is a self-signed root of the release's own, not one certManager.issuer
+signs: Ignition trusts a Gateway Network peer only when the end of the chain it presents
+is in its trusted folder, so a CA under a cluster root (a CA-type issuer) would make the
+peers trust that whole root, or each other not at all. */}}
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: {{ include "ignition.name" .context }}-gan-selfsigned
+  namespace: {{ .context.Release.Namespace }}
+  labels:
+    {{- include "ignition.labels" .context | nindent 4 }}
+spec:
+  selfSigned: {}
+---
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
@@ -127,8 +170,8 @@ spec:
     rotationPolicy: Never
   duration: 17520h0m0s  # 2 years
   issuerRef:
-    name: {{ .context.Values.certManager.issuer.name }}
-    kind: {{ .context.Values.certManager.issuer.kind }}
+    name: {{ include "ignition.name" .context }}-gan-selfsigned
+    kind: Issuer
     group: cert-manager.io
 ---
 apiVersion: cert-manager.io/v1
@@ -222,7 +265,7 @@ spec:
 Redundancy Headless Services (Primary/Backup)
 Params:
   name: The component name suffix (e.g. "backend")
-  values: The component-specific values object (containing service ports)
+  values: The component-specific values object
   context: The global context (Dot)
 */}}
 {{- define "ignition-common.redundancyServices" -}}
@@ -248,15 +291,15 @@ spec:
     {{- include "ignition.selectorLabels" .context | nindent 4 }}
   ports:
   - name: http
-    port: {{ .values.service.ports.http }}
+    port: {{ include "ignition-common.gatewayPort" "http" }}
     protocol: TCP
     targetPort: http
   - name: https
-    port: {{ .values.service.ports.https }}
+    port: {{ include "ignition-common.gatewayPort" "https" }}
     protocol: TCP
     targetPort: https
   - name: gan
-    port: {{ .values.service.ports.gan }}
+    port: {{ include "ignition-common.gatewayPort" "gan" }}
     protocol: TCP
     targetPort: gan
   type: ClusterIP
@@ -277,15 +320,15 @@ spec:
     {{- include "ignition.selectorLabels" .context | nindent 4 }}
   ports:
   - name: http
-    port: {{ .values.service.ports.http }}
+    port: {{ include "ignition-common.gatewayPort" "http" }}
     protocol: TCP
     targetPort: http
   - name: https
-    port: {{ .values.service.ports.https }}
+    port: {{ include "ignition-common.gatewayPort" "https" }}
     protocol: TCP
     targetPort: https
   - name: gan
-    port: {{ .values.service.ports.gan }}
+    port: {{ include "ignition-common.gatewayPort" "gan" }}
     protocol: TCP
     targetPort: gan
   type: ClusterIP
@@ -327,9 +370,9 @@ spec:
         - podSelector: {}
       ports:
         - protocol: TCP
-          port: {{ .values.service.ports.http }}
+          port: {{ include "ignition-common.gatewayPort" "http" }}
         - protocol: TCP
-          port: {{ .values.service.ports.https }}
+          port: {{ include "ignition-common.gatewayPort" "https" }}
     # Allow GAN traffic only from other Ignition pods
     - from:
         - podSelector:
@@ -340,7 +383,7 @@ spec:
                   - {{ include "ignition.name" .context }}
       ports:
         - protocol: TCP
-          port: {{ .values.service.ports.gan }}
+          port: {{ include "ignition-common.gatewayPort" "gan" }}
     {{- with .values.networkPolicy.extraIngress }}
     # Additional ingress rules (e.g. the ingress controller's namespace, node
     # CIDRs for NodePorts/load balancers)

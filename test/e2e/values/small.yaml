@@ -1,5 +1,12 @@
 # Small requests so test gateways fit beside other workloads on a shared node
+# the charts refuse to render until the EULA is accepted
+acceptEula: true
 ignition:
+  # the charts have no default passwords
+  secrets:
+    GATEWAY_ADMIN_PASSWORD: e2e-admin-password
+    IGNITION_GAN_KEYSTORE_PASSWORD: e2e-gan-password
+    IGNITION_WEB_KEYSTORE_PASSWORD: e2e-web-password
   resources:
     requests: {cpu: 100m, memory: 200Mi}
     limits: {cpu: "2", memory: 2Gi}

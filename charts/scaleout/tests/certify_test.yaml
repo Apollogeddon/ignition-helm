@@ -1,4 +1,6 @@
 suite: Ignition Scaleout Restart On Renewal
+values:
+  - values/required.yaml
 templates:
   - templates/certify.yaml
 tests:

@@ -7,7 +7,7 @@ on:
     inputs:
       scenarios:
         description: Scenarios to run (test/e2e script names without .sh); empty runs the default list
-        default: s07-uncommissioned s08-wrapper-log s01-ingress-failover s06-restart-on-renewal s10-partition
+        default: s07-uncommissioned s08-wrapper-log s01-ingress-failover s06-restart-on-renewal s11-ca-pair s10-partition
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}

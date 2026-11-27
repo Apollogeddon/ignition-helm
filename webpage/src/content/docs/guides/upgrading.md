@@ -6,11 +6,52 @@ description: Upgrade an existing installation to a newer chart version.
 
 This guide covers upgrading an installed chart, and the one-time steps some installs need.
 
-Most upgrades are a plain `helm upgrade` after `helm repo update`. Read the chart's `CHANGELOG.md` for the versions you are skipping. The StatefulSets replace one pod at a time, the Backup (pod 1) before the Master (pod 0), and a Backup only counts as Ready once it is running.
+Most upgrades are a plain `helm upgrade` after `helm repo update`; read `CHANGELOG.md` for the versions you skip. Pods are replaced one at a time, the Backup (pod 1) before the Master (pod 0).
+
+## Before you upgrade
+
+1. **Back up** each gateway with a data volume (a pair's Master; each scaleout backend gateway) and copy the `.gwbk` off the cluster ([restoring](../capabilities/#restore-on-first-start)).
+
+   ```bash
+   kubectl exec -n <namespace> ignition-failover-0 -c gateway -- \
+     /usr/local/bin/ignition/gwcmd.sh -b /usr/local/bin/ignition/temp/pre-upgrade.gwbk
+   kubectl cp -n <namespace> -c gateway ignition-failover-0:/usr/local/bin/ignition/temp/pre-upgrade.gwbk ./pre-upgrade.gwbk
+   ```
+
+2. **Pin `image.tag`** (e.g. `"8.3.10"`): empty, a chart upgrade can upgrade Ignition. Change it in an upgrade of its own, one environment at a time.
+3. **8.1 to 8.3 is one-way**: 8.3 converts the data volume. Keep the 8.1 backup and check every module has an 8.3 version; to go back, restore it on an empty volume with the 8.1 image.
+
+### Module and version changes on a redundant pair
+
+A change to the modules or the Ignition version leaves the new Backup `Incompatible` with the old Master until the Master is replaced. With `activeRouting`, readiness counts an `Incompatible` Backup as Ready for up to 30 minutes (`IGNITION_READY_INCOMPATIBLE_SECONDS` in `config`, default `1800`), so the rollout reaches the Master. Still `Incompatible` after that, the pair is broken: compare both gateways' modules.
+
+If an upgrade with an earlier chart is already stuck on an `Incompatible` Backup, run `helm upgrade`, then delete the Backup's pod (`kubectl delete pod -n <namespace> ignition-failover-1`, or `<name>-backend-1`).
+
+## Breaking changes: EULA, passwords and the values schema
+
+Check your values render with `helm template <release> ignition-charts/<chart> -n <namespace> -f my-values.yaml > /dev/null`; a failed render changes nothing in the cluster.
+
+| Change | What breaks | What to set |
+| --- | --- | --- |
+| No default EULA acceptance | The render fails | `acceptEula: true`, once you've read the [Ignition EULA](https://inductiveautomation.com/ignition/license); remove `ACCEPT_IGNITION_EULA` from `config`, as it wins over `acceptEula` |
+| No default passwords (were `admin`, `metro`, `ignition`) | The render fails: `the chart has no default passwords` | `GATEWAY_ADMIN_PASSWORD`, `IGNITION_GAN_KEYSTORE_PASSWORD` and `IGNITION_WEB_KEYSTORE_PASSWORD` in `secrets`, or an `existingSecret` holding them |
+| A values schema | An unknown key fails: `additional properties '<key>' not allowed` | Remove or correct the key |
+| Checksum annotations | Every pod restarts once, Backup first | Upgrade in a window, or `updateStrategy.type: OnDelete` |
+| Startup probe on | A gateway not `RUNNING` within about 10 minutes restarts | `startupProbe.failureThreshold` |
+| Container ports fixed at 8088, 8043, 8060 | `networkPolicy.extraIngress` rules on a changed `service.ports` | The gateway's own ports in those rules |
+| Scaleout frontend | `frontend.logging` now configures the frontends; `ClientIP` affinity with more than one; a PDB only with two or more | `frontend.service.sessionAffinity` to override |
+
+To upgrade unchanged, set the old passwords explicitly (in scaleout, for both layers), then change them:
+
+- `GATEWAY_ADMIN_PASSWORD` applies only on commissioning: also change it in the Gateway web UI.
+- `IGNITION_GAN_KEYSTORE_PASSWORD` applies after `cmctl renew <name>-gan` (or `<name>-frontend-gan` and `<name>-backend-gan`) and a gateway restart.
+- Moving to `existingSecret` deletes the chart's `<name>-secrets`: create yours first, with every key, including `GATEWAY_ADMIN_USERNAME` if it isn't `admin` (see [Example: existingSecret](../capabilities/#example-existingsecret)).
+
+## Install-specific steps
 
 Check these before you upgrade, and take each step that applies to your install.
 
-## If your StatefulSets name another Service
+### If your StatefulSets name another Service
 
 Each StatefulSet is governed by a `<name>-headless` Service (`<name>-frontend-headless` and `<name>-backend-headless` in scaleout). Check what yours name:
 
@@ -35,7 +76,7 @@ On start, the gateways apply the chart's redundancy settings to their volumes, i
 
 If you want `activeRouting` too, enable it in a **second** upgrade, after every pod has been replaced. Until the Master's pod is replaced it can only be reached under the other Service's name, so the new Backup cannot sync with it. With `activeRouting` a Backup must be in sync to be Ready, so a single upgrade that does both would wait indefinitely (the Master keeps serving meanwhile).
 
-## If your data volumes are owned by root
+### If your data volumes are owned by root
 
 The gateways run as user 2003. On storage that does not apply `fsGroup` (for example local-path), a data volume a gateway running as root wrote is owned by root, and the gateway cannot update it: its `preconfigure` init container fails with `Permission denied`. If your install ran the gateway as root, add this for the upgrade and remove it again once the pods are running:
 
@@ -46,7 +87,7 @@ ignition:
 
 It adds an init container that chowns the volume as root (with only the `CHOWN`, `DAC_OVERRIDE` and `FOWNER` capabilities), so the namespace must allow the baseline Pod Security level while it is on.
 
-## If traffic reaches the gateways from outside the namespace
+### If traffic reaches the gateways from outside the namespace
 
 The charts create a NetworkPolicy by default, and it admits web traffic only from pods in the release's namespace. If your release has no NetworkPolicy from the chart yet, the upgrade cuts off traffic that reaches the gateways through a NodePort or LoadBalancer Service, an ingress controller in another namespace, or Prometheus, unless you allow it **in the same upgrade**. Add a rule for each of those, as the [examples](https://github.com/Apollogeddon/ignition-helm/tree/main/examples) do:
 
@@ -69,15 +110,15 @@ ignition:                  # scaleout: frontend (and backend, if reached from ou
 
 Or turn the NetworkPolicy off with `networkPolicy.enabled: false` (`ignition.networkPolicy` in failover, `frontend.networkPolicy` and `backend.networkPolicy` in scaleout). See [Network security](../advanced-config/#network-security-gateway-network-isolation).
 
-## If other gateways join yours with your own CA
+### If other gateways join yours with your own CA
 
 Each gateway trusts only its release's own Gateway Network CA, not the root of the issuer that signed it. With the default self-signed issuer the two are the same certificate. With your own CA issuer (`certManager.issuer.name`), a gateway outside the release whose certificate that issuer signs, such as another release or an external gateway, is refused on the Gateway Network. Give each such peer trust explicitly in the gateway's Gateway Network settings. An issuer that publishes no `ca.crt` (for example ACME) works too.
 
-## If you use SealedSecrets
+### If you use SealedSecrets
 
-Each Gateway Network keystore takes its password from the release's own secrets (`<name>-secrets`, or `<name>-frontend-secrets` and `<name>-backend-secrets`), and the chart refuses a value in `secrets` that isn't sealed, the defaults included. If your release has a separate `<name>-gan-metro-keystore` Secret, the upgrade deletes it, and the keystore keeps the password from that Secret until cert-manager next issues the certificate. Once the upgrade has rendered, renew it (`cmctl renew <name>-gan`, or `<name>-frontend-gan` and `<name>-backend-gan`).
+Each Gateway Network keystore takes its password from the release's own secrets (`<name>-secrets`, or `<name>-frontend-secrets` and `<name>-backend-secrets`, or the `existingSecret` you name), and the chart refuses a value in `secrets` that isn't sealed, the default user name included. If your release has a separate `<name>-gan-metro-keystore` Secret, the upgrade deletes it, and the keystore keeps the password from that Secret until cert-manager next issues the certificate. Once the upgrade has rendered, renew it (`cmctl renew <name>-gan`, or `<name>-frontend-gan` and `<name>-backend-gan`).
 
-## If you autoscale the scaleout frontend
+### If you autoscale the scaleout frontend
 
 `frontend.hpa.enabled` needs `componentSelectors: true`, as without it the autoscaler also counts the backend's pods, and the chart fails to render. If your StatefulSets use the shared selector (`componentSelectors: false`), setting it changes both StatefulSets' selectors, which Kubernetes doesn't allow on an existing object. Delete only the StatefulSet objects first; the upgraded StatefulSets adopt the running pods:
 

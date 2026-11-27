@@ -1,4 +1,6 @@
 suite: Ignition Scaleout Pod Security
+values:
+  - values/required.yaml
 templates:
   - templates/frontend/frontend-statefulset.yaml
   - templates/backend/backend-statefulset.yaml

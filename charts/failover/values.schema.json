@@ -1,0 +1,529 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ignition-failover values",
+  "type": "object",
+  "properties": {
+    "applicationName": {
+      "type": "string"
+    },
+    "acceptEula": {
+      "type": "boolean",
+      "description": "Accept Inductive Automation's Ignition EULA; the chart refuses to render while it is false"
+    },
+    "serviceAccount": {
+      "type": "object",
+      "properties": {
+        "create": {
+          "type": "boolean"
+        },
+        "annotations": {
+          "type": "object"
+        },
+        "name": {
+          "type": "string"
+        },
+        "automountServiceAccountToken": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "image": {
+      "type": "object",
+      "properties": {
+        "repository": {
+          "type": "string"
+        },
+        "pullPolicy": {
+          "type": "string"
+        },
+        "tag": {
+          "type": [
+            "string",
+            "number"
+          ]
+        },
+        "imagePullSecrets": {
+          "type": "array"
+        }
+      },
+      "additionalProperties": false
+    },
+    "certManager": {
+      "type": "object",
+      "properties": {
+        "issuer": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "kind": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        "rotation": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "schedule": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        "restartOnRenewal": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "schedule": {
+              "type": "string"
+            },
+            "image": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "affinity": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "type": {
+          "type": "string"
+        },
+        "topologyKey": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "ignition": {
+      "type": "object",
+      "properties": {
+        "securityContext": {
+          "type": "object",
+          "properties": {
+            "runAsUser": {},
+            "runAsGroup": {},
+            "fsGroup": {},
+            "runAsNonRoot": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": false
+        },
+        "fixDataOwnership": {
+          "type": "boolean"
+        },
+        "networkPolicy": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "extraIngress": {
+              "type": "array"
+            }
+          },
+          "additionalProperties": false
+        },
+        "updateStrategy": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "enum": [
+                "RollingUpdate",
+                "OnDelete"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "externalModules": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "pvcName": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        "serviceMonitor": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "interval": {
+              "type": "string"
+            },
+            "path": {
+              "type": "string"
+            },
+            "additionalLabels": {
+              "type": "object"
+            }
+          },
+          "additionalProperties": false
+        },
+        "logging": {
+          "type": "object",
+          "properties": {
+            "level": {
+              "type": "string"
+            },
+            "loggers": {
+              "type": "object"
+            },
+            "sqlite": {
+              "type": "object"
+            },
+            "wrapperLogToStdout": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": false
+        },
+        "ssl": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "secretName": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        "eam": {
+          "type": "object",
+          "properties": {
+            "role": {
+              "enum": [
+                "Controller",
+                "Agent",
+                "Standalone"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "initResources": {
+          "type": "object"
+        },
+        "resources": {
+          "type": "object"
+        },
+        "persistence": {
+          "type": "object",
+          "properties": {
+            "accessModes": {
+              "type": "array"
+            },
+            "size": {
+              "type": "string"
+            },
+            "storageClassName": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        "args": {
+          "type": "array"
+        },
+        "localMounts": {
+          "type": "array"
+        },
+        "config": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number",
+              "boolean",
+              "null"
+            ]
+          },
+          "description": "Gateway environment variables (ConfigMap)"
+        },
+        "existingSecret": {
+          "type": "string",
+          "description": "A Secret you manage holding GATEWAY_ADMIN_PASSWORD, IGNITION_GAN_KEYSTORE_PASSWORD and IGNITION_WEB_KEYSTORE_PASSWORD; the chart then renders no Secret"
+        },
+        "sealedSecrets": {
+          "type": "boolean"
+        },
+        "secrets": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number",
+              "boolean",
+              "null"
+            ]
+          },
+          "description": "Secret environment variables; the three passwords are required unless existingSecret is set"
+        },
+        "service": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "enum": [
+                "ClusterIP",
+                "NodePort",
+                "LoadBalancer"
+              ]
+            },
+            "sessionAffinity": {
+              "enum": [
+                "",
+                "None",
+                "ClientIP"
+              ]
+            },
+            "ports": {
+              "type": "object",
+              "properties": {
+                "http": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 65535
+                },
+                "https": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 65535
+                },
+                "gan": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 65535
+                }
+              },
+              "additionalProperties": false
+            },
+            "nodePorts": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "http": {
+                  "type": "integer"
+                },
+                "https": {
+                  "type": "integer"
+                },
+                "gan": {
+                  "type": "integer"
+                }
+              }
+            },
+            "annotations": {
+              "type": "object"
+            }
+          },
+          "additionalProperties": false
+        },
+        "ingress": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "className": {
+              "type": "string"
+            },
+            "tls": {
+              "type": "array"
+            },
+            "annotations": {
+              "type": "object"
+            },
+            "hosts": {
+              "type": "array"
+            }
+          },
+          "additionalProperties": false
+        },
+        "restore": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "url": {
+              "type": "string"
+            },
+            "path": {
+              "type": "string",
+              "description": "Path to a .gwbk on a mounted volume"
+            }
+          },
+          "additionalProperties": false
+        },
+        "redundancy": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "pingRate": {},
+            "pingTimeout": {},
+            "pingMaxMissed": {},
+            "enableSsl": {
+              "type": "boolean"
+            },
+            "joinWaitTime": {},
+            "websocketTimeout": {},
+            "syncTimeoutSecs": {},
+            "maxDiskMb": {},
+            "masterRecoveryMode": {
+              "type": "string"
+            },
+            "httpConnectTimeout": {},
+            "httpReadTimeout": {},
+            "backupFailoverTimeout": {}
+          },
+          "additionalProperties": false
+        },
+        "activeRouting": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "image": {
+              "type": "string"
+            },
+            "intervalSeconds": {},
+            "unknownHold": {},
+            "resources": {
+              "type": "object"
+            }
+          },
+          "additionalProperties": false
+        },
+        "readinessProbe": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "initialDelaySeconds": {},
+            "periodSeconds": {},
+            "failureThreshold": {},
+            "timeoutSeconds": {},
+            "command": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        "livenessProbe": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "initialDelaySeconds": {},
+            "periodSeconds": {},
+            "failureThreshold": {},
+            "timeoutSeconds": {},
+            "command": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        "startupProbe": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "initialDelaySeconds": {},
+            "periodSeconds": {},
+            "failureThreshold": {},
+            "timeoutSeconds": {},
+            "command": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        "lifecycle": {
+          "type": "object"
+        },
+        "emptyDirSizeLimit": {
+          "type": "object",
+          "properties": {
+            "logs": {
+              "type": "string"
+            },
+            "temp": {
+              "type": "string"
+            },
+            "dotIgnition": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        "extraVolumes": {
+          "type": "array",
+          "description": "Extra volumes for the gateway pod (Volume objects)"
+        },
+        "extraVolumeMounts": {
+          "type": "array",
+          "description": "Extra volume mounts for the gateway container, also mounted read-only in the preconfigure init container"
+        }
+      },
+      "additionalProperties": false
+    },
+    "nameOverride": {
+      "type": "string"
+    },
+    "fullnameOverride": {
+      "type": "string"
+    },
+    "global": {
+      "type": "object"
+    },
+    "ignition-common": {
+      "type": "object"
+    }
+  },
+  "additionalProperties": false
+}

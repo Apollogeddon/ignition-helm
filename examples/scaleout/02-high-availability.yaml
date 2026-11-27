@@ -3,6 +3,11 @@
 # - 2 Backend nodes (Master/Backup redundancy)
 # - 3 Frontend nodes (Load balanced)
 
+# Read and accept Inductive Automation's Ignition EULA
+# (https://inductiveautomation.com/ignition/license); the charts refuse to
+# render without it
+acceptEula: true
+
 frontend:
   redundancy:
     replicas: 3

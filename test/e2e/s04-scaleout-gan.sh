@@ -16,11 +16,22 @@ e2e_require_memory "$ns"
 
 values="$E2E_OUT/s04-values.yaml"
 cat > "$values" <<'EOF'
+acceptEula: true
 frontend:
+  # the charts have no default passwords
+  secrets:
+    GATEWAY_ADMIN_PASSWORD: e2e-admin-password
+    IGNITION_GAN_KEYSTORE_PASSWORD: e2e-gan-password
+    IGNITION_WEB_KEYSTORE_PASSWORD: e2e-web-password
   resources:
     requests: {cpu: 100m, memory: 200Mi}
     limits: {cpu: "2", memory: 2Gi}
 backend:
+  # the charts have no default passwords
+  secrets:
+    GATEWAY_ADMIN_PASSWORD: e2e-admin-password
+    IGNITION_GAN_KEYSTORE_PASSWORD: e2e-gan-password
+    IGNITION_WEB_KEYSTORE_PASSWORD: e2e-web-password
   resources:
     requests: {cpu: 100m, memory: 200Mi}
     limits: {cpu: "2", memory: 2Gi}

@@ -1,4 +1,6 @@
 suite: Ignition Scaleout Scaling, Disruption Budgets and Persistence
+values:
+  - values/required.yaml
 templates:
   - templates/frontend/hpa.yaml
   - templates/backend/hpa.yaml
@@ -234,12 +236,27 @@ tests:
       - hasDocuments:
           count: 0
 
-  - it: should create a frontend PDB when the frontend autoscales
+  # minAvailable: 1 over a single gateway would block node drains
+  - it: should not create a frontend PDB while the autoscaler may go down to one gateway
     template: templates/frontend/pdb.yaml
     set:
       frontend:
         hpa:
           enabled: true
+          minReplicas: 1
+        redundancy:
+          replicas: 3
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should create a frontend PDB when the frontend autoscales from two gateways
+    template: templates/frontend/pdb.yaml
+    set:
+      frontend:
+        hpa:
+          enabled: true
+          minReplicas: 2
     asserts:
       - isKind:
           of: PodDisruptionBudget

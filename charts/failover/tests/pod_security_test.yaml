@@ -1,4 +1,6 @@
 suite: Ignition Failover Pod Security
+values:
+  - values/required.yaml
 templates:
   - ignition-statefulset.yaml
   - cronjobs.yaml

@@ -7,7 +7,7 @@ root="$(cd "$(dirname "$0")/../.." && pwd)"
 HELM="${HELM:-helm}"
 work=$(mktemp -d); trap 'rm -rf "$work"' EXIT
 
-"$HELM" template t "$root/charts/failover" --show-only templates/configmap-scripts.yaml |
+"$HELM" template t "$root/charts/failover" -f "$root/charts/failover/ci/deploy-values.yaml" --show-only templates/configmap-scripts.yaml |
   awk '/^  active-routing.sh: \|-/ {on=1; next} on && /^  [^ ]/ {on=0} on {sub(/^    /, ""); print}' > "$work/active-routing.sh"
 [ -s "$work/active-routing.sh" ] || { echo "could not extract active-routing.sh"; exit 1; }
 
@@ -16,11 +16,17 @@ mkdir "$work/bin"
 # "label pod <name> ... <label>=true|<label>-" is recorded in $CALLS
 cat > "$work/bin/kubectl" <<'STUB'
 #!/usr/bin/env bash
-echo "$*" >> "${CALLS%calls}kubectl.args"
+echo "${BOUNDED:+bounded }$*" >> "${CALLS%calls}kubectl.args"
 case "$1 $2" in
   "get pods") printf '%s\n' "$PODS" ;;
   "label pod") echo "$3 ${!#}" >> "$CALLS" ;;
 esac
+STUB
+# timeout: runs the command, marking it bounded (kubectl records the mark)
+cat > "$work/bin/timeout" <<'STUB'
+#!/usr/bin/env bash
+shift
+BOUNDED=1 exec "$@"
 STUB
 # curl: answers http://<ip>:8088/system/gwinfo from $GW_<ip with dots as _>
 cat > "$work/bin/curl" <<'STUB'

@@ -1,4 +1,6 @@
 suite: Ignition Scaleout Active Routing
+values:
+  - values/required.yaml
 templates:
   - templates/backend/active-routing.yaml
 tests:

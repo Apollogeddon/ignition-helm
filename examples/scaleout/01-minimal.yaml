@@ -2,6 +2,11 @@
 # A basic scaleout deployment with 1 Frontend node and 1 Backend node.
 # Useful for testing the architecture without the resource overhead of HA.
 
+# Read and accept Inductive Automation's Ignition EULA
+# (https://inductiveautomation.com/ignition/license); the charts refuse to
+# render without it
+acceptEula: true
+
 frontend:
   redundancy:
     replicas: 1
@@ -20,10 +25,11 @@ frontend:
           - protocol: TCP
             port: 8043
 
+  # The charts have no default passwords; set your own
   secrets:
-    GATEWAY_ADMIN_PASSWORD: "admin"
-    IGNITION_GAN_KEYSTORE_PASSWORD: "metro"
-    IGNITION_WEB_KEYSTORE_PASSWORD: "ignition"
+    GATEWAY_ADMIN_PASSWORD: "strong-password"
+    IGNITION_GAN_KEYSTORE_PASSWORD: "metro-password"
+    IGNITION_WEB_KEYSTORE_PASSWORD: "web-password"
 
 backend:
   redundancy:
@@ -34,6 +40,6 @@ backend:
   # IGNITION_GAN_KEYSTORE_PASSWORD must match the frontend's: both layers'
   # Gateway Network keystores are created with the frontend's value
   secrets:
-    GATEWAY_ADMIN_PASSWORD: "admin"
-    IGNITION_GAN_KEYSTORE_PASSWORD: "metro"
-    IGNITION_WEB_KEYSTORE_PASSWORD: "ignition"
+    GATEWAY_ADMIN_PASSWORD: "strong-password"
+    IGNITION_GAN_KEYSTORE_PASSWORD: "metro-password"
+    IGNITION_WEB_KEYSTORE_PASSWORD: "web-password"

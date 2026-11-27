@@ -45,6 +45,8 @@ ignition:
       mountPath: /usr/local/bin/ignition/user-lib/jdbc
 ```
 
+The `preconfigure` init container mounts these read-only too, so a [restore](#restore-on-first-start) can read from them.
+
 ### Local development mounts
 
 For local development (kind or Docker Desktop), mount a host directory into the gateway's installation directory. `mountPath` is relative to `/usr/local/bin/ignition`.
@@ -69,7 +71,11 @@ ignition:
     GATEWAY_MODULES_ENABLED: "perspective,opc-ua"
 ```
 
-Put sensitive values, such as `GATEWAY_ADMIN_PASSWORD`, in `secrets` instead, which the chart renders as a Secret.
+Put sensitive values, such as `GATEWAY_ADMIN_PASSWORD`, in `secrets` instead, which the chart renders as a Secret, or in your own Secret named by `existingSecret`.
+
+### Rolling out changes
+
+Checksum annotations (`checksum/config`, `secrets`, `logging`, `scripts`, `redundancy`) restart the gateways one at a time, Backup first, when a `helm upgrade` changes what they read on start. An `existingSecret` isn't hashed: after changing it, run `kubectl rollout restart statefulset/<name>`.
 
 ### Gateway arguments
 
@@ -103,15 +109,17 @@ ignition:
     logs: 512Mi              # optional cap on the logs volume
 ```
 
+In scaleout, `frontend.logging` and `backend.logging` each configure their own layer.
+
 ## High availability
 
 ### Probes
 
 Kubernetes uses the probes to decide whether a gateway is alive and ready for traffic.
 
-* **Readiness** (`health-check.sh -t 3 -r`): `/StatusPing` must report `RUNNING`, and the gateway must have finished commissioning. With `activeRouting`, a Backup must also be in sync with its Master.
+* **Readiness** (`health-check.sh -t 3 -r`): `/StatusPing` must report `RUNNING`, and the gateway must have finished commissioning. With `activeRouting`, a Backup must also be in sync (`RedundantState=Good`), or `Incompatible` for up to 30 minutes during a module or version change (see [Upgrading](../upgrading/#module-and-version-changes-on-a-redundant-pair)).
 * **Liveness** (`health-check.sh -t 5`): `/StatusPing` must report `RUNNING`. A gateway stuck commissioning is not restarted in a loop.
-* **Startup** (optional, `startupProbe.enabled`): holds liveness off during slow starts, such as a Backup restoring a state transfer from its Master.
+* **Startup** (on by default): holds the other probes off for about 10 minutes (`failureThreshold` 60 × `periodSeconds` 10, after `initialDelaySeconds` 30), for a first start, a large restore or a state transfer; raise `startupProbe.failureThreshold` for longer.
 
 The checks use `/StatusPing`, which works on Ignition 8.1 and 8.3. A probe `command` you set is used as-is.
 
@@ -142,12 +150,13 @@ affinity:
 
 ### Pod disruption budgets
 
-To keep a gateway available during voluntary disruptions such as node drains, the charts create a PodDisruptionBudget with `minAvailable: 1` for a redundant pair (failover or scaleout backend), and for the scaleout frontend when it has more than one replica or an autoscaler.
+To keep a gateway available during voluntary disruptions such as node drains, the charts create a PodDisruptionBudget with `minAvailable: 1` for a redundant pair (failover or scaleout backend), and for the scaleout frontend with at least two gateways (`frontend.redundancy.replicas` or `frontend.hpa.minReplicas`).
 
 ## Security
 
 * **Non-root user**: the gateways run as UID `2003` with `runAsNonRoot: true`, no privilege escalation and all capabilities dropped. The charts' pods meet the Kubernetes restricted Pod Security level (except the optional `fixDataOwnership` init container).
 * **No API token**: the gateways never call the Kubernetes API, so their pods don't mount a service account token (`serviceAccount.automountServiceAccountToken: false`). Only the optional active-routing and certificate-restart pods, which run kubectl, get one, each for a service account of its own.
+* **No default passwords**: set the three passwords in `secrets` or an [`existingSecret`](#example-existingsecret).
 * **SealedSecrets**: `sealedSecrets: true` renders the `secrets` map as a Bitnami SealedSecret, so you can keep encrypted values in Git.
 * **Network isolation**: a NetworkPolicy, on by default, allows web traffic only from pods in the release's namespace and Gateway Network traffic (port `8060`) only from the chart's own gateways. An ingress controller, Prometheus, or a NodePort or LoadBalancer Service needs a rule in `networkPolicy.extraIngress` (see [Network security](../advanced-config/#network-security-gateway-network-isolation)).
 
@@ -162,7 +171,7 @@ ignition:
 With the SealedSecrets controller in the cluster and the `kubeseal` CLI:
 
 1. Set `sealedSecrets: true` in your values.
-2. Encrypt **every** key in the `secrets` map, the chart's defaults included: `GATEWAY_ADMIN_USERNAME`, `GATEWAY_ADMIN_PASSWORD`, `IGNITION_GAN_KEYSTORE_PASSWORD` and `IGNITION_WEB_KEYSTORE_PASSWORD`, plus any you add. The controller unseals all of a SealedSecret or none of it, so one plain value left in stops the gateways from starting. The chart refuses to render a value that isn't sealed.
+2. Encrypt **every** key in the `secrets` map, the default user name included: `GATEWAY_ADMIN_USERNAME`, `GATEWAY_ADMIN_PASSWORD`, `IGNITION_GAN_KEYSTORE_PASSWORD` and `IGNITION_WEB_KEYSTORE_PASSWORD`, plus any you add. The controller unseals all of a SealedSecret or none of it, so one plain value left in stops the gateways from starting. The chart refuses to render a value that isn't sealed.
 
 The chart's SealedSecret is namespace-wide, so seal each value for the release's namespace with that scope:
 
@@ -182,9 +191,30 @@ ignition:
 
 The Gateway Network keystore takes its password from the unsealed Secret, so it matches what the gateway reads. For scaleout, seal `frontend.secrets` and `backend.secrets` the same way, with `frontend.sealedSecrets` and `backend.sealedSecrets`.
 
+### Example: existingSecret
+
+To keep the passwords out of Helm's values, create the Secret yourself (by hand, SealedSecret or External Secrets) and name it in `existingSecret`. Every key becomes a gateway environment variable, so add `GATEWAY_ADMIN_USERNAME` (default `admin`), [licensing](../licensing/) and database passwords there too.
+
+```bash
+kubectl create secret generic my-ignition-secrets -n <namespace> \
+  --from-literal=GATEWAY_ADMIN_PASSWORD=<admin password> \
+  --from-literal=IGNITION_GAN_KEYSTORE_PASSWORD=<gan keystore password> \
+  --from-literal=IGNITION_WEB_KEYSTORE_PASSWORD=<web keystore password>
+```
+
+```yaml
+ignition:
+  existingSecret: my-ignition-secrets
+```
+
+* The gateways, init container, Gateway Network keystore and rotation CronJobs all read it; the chart renders no Secret and ignores `sealedSecrets`.
+* The render fails while `secrets` sets anything but the default user name.
+* Scaleout: set `frontend.existingSecret` and `backend.existingSecret` (one Secret or two).
+* Create it before installing: the pods wait for it.
+
 ### Ingress and sticky sessions
 
-Perspective and Vision sessions are stateful. When more than one gateway can serve a client, for example scaleout frontends behind an Ingress, enable sticky sessions so each client stays on the same pod. With ingress-nginx:
+Perspective and Vision sessions are stateful. When more than one gateway can serve a client, for example scaleout frontends behind an Ingress, enable sticky sessions so each client stays on the same pod. The scaleout frontend Service's `ClientIP` affinity doesn't help behind an Ingress, where every client arrives from the controller, so make the Ingress sticky. With ingress-nginx:
 
 ```yaml
 frontend:
@@ -285,6 +315,22 @@ ignition:
   restore:
     enabled: true
     url: "https://internal-server/backups/production.gwbk"
+```
+
+Or mount the backup with `extraVolumes`/`extraVolumeMounts` (or `localMounts`, under `/usr/local/bin/ignition/`) and set `restore.path`; a path on no mounted volume fails with "File not found".
+
+```yaml
+ignition:
+  extraVolumes:
+    - name: backups
+      persistentVolumeClaim:
+        claimName: gateway-backups
+  extraVolumeMounts:
+    - name: backups
+      mountPath: /mnt/backup
+  restore:
+    enabled: true
+    path: /mnt/backup/production.gwbk
 ```
 
 ### Manual backup

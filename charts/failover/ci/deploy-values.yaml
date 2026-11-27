@@ -1,6 +1,13 @@
 # Values for the deployment test (.github/scripts/tests/deploy-test.sh) and for
 # chart-testing's lint: options that only show on a running gateway.
+# the charts refuse to render until the EULA is accepted
+acceptEula: true
 ignition:
+  # the charts have no default passwords
+  secrets:
+    GATEWAY_ADMIN_PASSWORD: ci-admin-password
+    IGNITION_GAN_KEYSTORE_PASSWORD: ci-gan-password
+    IGNITION_WEB_KEYSTORE_PASSWORD: ci-web-password
   networkPolicy:
     enabled: true
   lifecycle:

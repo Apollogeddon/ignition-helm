@@ -1,20 +1,36 @@
 suite: Ignition Scaleout Startup Probe
+values:
+  - values/required.yaml
 templates:
   - templates/frontend/frontend-statefulset.yaml
   - templates/backend/backend-statefulset.yaml
 tests:
-  - it: should not render a frontend startupProbe by default
+  - it: should render a frontend startupProbe by default with a 10 minute budget
     template: templates/frontend/frontend-statefulset.yaml
     asserts:
-      - notExists:
-          path: spec.template.spec.containers[0].startupProbe
+      - equal:
+          path: spec.template.spec.containers[0].startupProbe.failureThreshold
+          value: 60
+      - equal:
+          path: spec.template.spec.containers[0].startupProbe.periodSeconds
+          value: 10
 
-  - it: should render a backend startupProbe when enabled
+  - it: should render a backend startupProbe by default with a 10 minute budget
     template: templates/backend/backend-statefulset.yaml
-    set:
-      backend:
-        startupProbe:
-          enabled: true
     asserts:
-      - exists:
+      - equal:
+          path: spec.template.spec.containers[0].startupProbe.failureThreshold
+          value: 60
+      - equal:
+          path: spec.template.spec.containers[0].startupProbe.exec.command
+          value: ["/config/scripts/health-check.sh", "-t", "5"]
+
+  - it: should not render a frontend startupProbe when disabled
+    template: templates/frontend/frontend-statefulset.yaml
+    set:
+      frontend:
+        startupProbe:
+          enabled: false
+    asserts:
+      - notExists:
           path: spec.template.spec.containers[0].startupProbe

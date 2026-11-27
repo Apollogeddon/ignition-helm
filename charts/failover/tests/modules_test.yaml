@@ -1,0 +1,38 @@
+suite: Ignition Failover Modules
+values:
+  - values/required.yaml
+templates:
+  - configmap.yaml
+tests:
+  # 8.3 ships its JDBC drivers and historians as modules enabled only by id; without them
+  # a gateway can't reach PostgreSQL, SQL Server or MariaDB
+  - it: should enable 8.3's historian and JDBC driver modules by id
+    set:
+      image:
+        tag: 8.3.10
+    asserts:
+      - equal:
+          path: data.GATEWAY_MODULES_ENABLED
+          value: perspective,symbol-factory,alarm-notification,modbus-driver-v2,opc-ua,reporting,siemens-drivers,sql-bridge,com.inductiveautomation.historian,com.inductiveautomation.historian.sql,udp-tcp-drivers,com.inductiveautomation.jdbc.postgresql,com.inductiveautomation.jdbc.mssql,com.inductiveautomation.jdbc.mariadb
+
+  # 8.1's entrypoint refuses an identifier it doesn't know, so its list stays as given
+  - it: should leave an 8.1 list alone
+    set:
+      image:
+        tag: 8.1.55
+    asserts:
+      - equal:
+          path: data.GATEWAY_MODULES_ENABLED
+          value: perspective,symbol-factory,alarm-notification,modbus-driver-v2,opc-ua,reporting,siemens-drivers,sql-bridge,tag-historian,udp-tcp-drivers
+
+  - it: should add no JDBC drivers to a list without sql-bridge
+    set:
+      image:
+        tag: 8.3.10
+      ignition:
+        config:
+          GATEWAY_MODULES_ENABLED: perspective,com.inductiveautomation.jdbc.postgresql
+    asserts:
+      - equal:
+          path: data.GATEWAY_MODULES_ENABLED
+          value: perspective,com.inductiveautomation.jdbc.postgresql

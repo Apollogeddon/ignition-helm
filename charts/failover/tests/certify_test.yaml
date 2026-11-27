@@ -1,4 +1,6 @@
 suite: Ignition Failover Restart On Renewal
+values:
+  - values/required.yaml
 templates:
   - certify.yaml
 tests:

@@ -1,4 +1,6 @@
 suite: Ignition Failover ConfigMaps
+values:
+  - values/required.yaml
 templates:
   - configmap.yaml
   - configmap-scripts.yaml

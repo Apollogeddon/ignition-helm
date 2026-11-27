@@ -1,4 +1,6 @@
 suite: Ignition Scaleout Other Resources
+values:
+  - values/required.yaml
 templates:
   - secrets.yaml
   - serviceaccount.yaml

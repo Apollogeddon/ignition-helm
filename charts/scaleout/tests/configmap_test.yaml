@@ -1,4 +1,6 @@
 suite: Ignition Scaleout ConfigMaps
+values:
+  - values/required.yaml
 templates:
   - configmap.yaml
 tests:

@@ -1,7 +1,10 @@
 suite: Ignition Failover Probes and Health Check
+values:
+  - values/required.yaml
 templates:
   - ignition-statefulset.yaml
   - configmap-scripts.yaml
+  - configmap.yaml
 tests:
   # Probes: values win over the chart default (a plain merge used to discard them)
   - it: should use the probe commands from values by default
@@ -58,3 +61,33 @@ tests:
       - notMatchRegex:
           path: stringData["health-check.sh"]
           pattern: 'gwcmd'
+
+  # A rolling update replaces the Backup first, so a module or version change
+  # leaves it Incompatible with the old Master: readiness lets that one state
+  # through, for a limited time, so the rollout can reach the Master
+  - it: should count an Incompatible Backup as Ready for a limited time
+    template: configmap-scripts.yaml
+    asserts:
+      - matchRegex:
+          path: stringData["health-check.sh"]
+          pattern: '\*"RedundantState=Incompatible;"\*\)'
+      - matchRegex:
+          path: stringData["health-check.sh"]
+          pattern: 'INCOMPATIBLE_SECONDS=\$\{IGNITION_READY_INCOMPATIBLE_SECONDS:-1800\}'
+      - matchRegex:
+          path: stringData["health-check.sh"]
+          pattern: '/proc/1/fd/1'
+      - matchRegex:
+          path: stringData["health-check.sh"]
+          pattern: 'Backup is not in sync with the Master'
+
+  - it: should pass the Incompatible limit from config to the gateway
+    template: configmap.yaml
+    set:
+      ignition:
+        config:
+          IGNITION_READY_INCOMPATIBLE_SECONDS: "3600"
+    asserts:
+      - equal:
+          path: data.IGNITION_READY_INCOMPATIBLE_SECONDS
+          value: "3600"

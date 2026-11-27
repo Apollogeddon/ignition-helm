@@ -1,4 +1,6 @@
 suite: Ignition Scaleout Wrapper Log
+values:
+  - values/required.yaml
 templates:
   - templates/frontend/frontend-statefulset.yaml
 tests:
@@ -18,7 +20,7 @@ tests:
     asserts:
       - equal:
           path: spec.template.spec.containers[0].args
-          value: ["-m", "512", "--", "wrapper.logfile=/dev/stdout"]
+          value: ["-m", "512", "--", "wrapper.logfile=/dev/stdout", "-Dignition.metro.keystorePassword=$(IGNITION_GAN_KEYSTORE_PASSWORD)"]
 
   - it: should keep a wrapper.logfile already set in args
     set:
@@ -27,7 +29,7 @@ tests:
     asserts:
       - equal:
           path: spec.template.spec.containers[0].args
-          value: ["--", "wrapper.logfile=/var/log/w.log"]
+          value: ["--", "wrapper.logfile=/var/log/w.log", "-Dignition.metro.keystorePassword=$(IGNITION_GAN_KEYSTORE_PASSWORD)"]
 
   - it: should leave args alone when disabled
     set:

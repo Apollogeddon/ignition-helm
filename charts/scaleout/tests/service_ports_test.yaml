@@ -1,0 +1,59 @@
+suite: Ignition Scaleout Service Ports
+values:
+  - values/required.yaml
+templates:
+  - templates/frontend/frontend-service.yaml
+  - templates/frontend/frontend-statefulset.yaml
+  - templates/backend/backend-statefulset.yaml
+  - templates/backend/networkpolicy.yaml
+  - templates/configmap-ignition-files.yaml
+set:
+  frontend:
+    service:
+      ports: {http: 80, https: 443, gan: 9060}
+  backend:
+    service:
+      ports: {http: 81, https: 444, gan: 9061}
+tests:
+  - it: should map the frontend Service ports to the gateway's ports
+    template: templates/frontend/frontend-service.yaml
+    documentIndex: 0
+    asserts:
+      - equal:
+          path: spec.ports[0]
+          value: {port: 80, targetPort: http, protocol: TCP, name: http}
+
+  - it: should keep the frontend's container ports on the gateway's own ports
+    template: templates/frontend/frontend-statefulset.yaml
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].ports
+          value:
+            - {name: http, containerPort: 8088}
+            - {name: https, containerPort: 8043}
+            - {name: gan, containerPort: 8060}
+
+  - it: should keep the backend's container ports on the gateway's own ports
+    template: templates/backend/backend-statefulset.yaml
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].ports
+          value:
+            - {name: http, containerPort: 8088}
+            - {name: https, containerPort: 8043}
+            - {name: gan, containerPort: 8060}
+
+  - it: should admit Gateway Network traffic on the backend's own gan port
+    template: templates/backend/networkpolicy.yaml
+    asserts:
+      - equal:
+          path: spec.ingress[1].ports
+          value:
+            - {protocol: TCP, port: 8060}
+
+  - it: should point the backend's redundancy peer at its own gan port
+    template: templates/configmap-ignition-files.yaml
+    asserts:
+      - matchRegex:
+          path: stringData["redundancy-backup.xml"]
+          pattern: '<entry key="redundancy.gan.port">8060</entry>'

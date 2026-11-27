@@ -1,4 +1,6 @@
 suite: Ignition Scaleout Component Selectors
+values:
+  - values/required.yaml
 templates:
   - templates/frontend/frontend-service.yaml
   - templates/backend/backend-service.yaml
@@ -89,6 +91,7 @@ tests:
       frontend:
         hpa:
           enabled: true
+          minReplicas: 2
     asserts:
       - equal:
           path: spec.selector.matchLabels["app.kubernetes.io/component"]

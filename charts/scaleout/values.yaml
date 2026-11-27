@@ -12,6 +12,12 @@ applicationName: "ignition-scaleout"
 # migration in the README's "Autoscaling the frontend"
 componentSelectors: false
 
+# -- Accept Inductive Automation's Ignition End User License Agreement
+# (https://inductiveautomation.com/ignition/license). Read it first: true sets
+# ACCEPT_IGNITION_EULA=Y on every gateway, and the chart refuses to render
+# while it is false
+acceptEula: false
+
 serviceAccount:
   # -- Specifies whether a service account should be created
   create: false
@@ -196,32 +202,53 @@ frontend:
   #   mountPath: "assets/projects/SiteA"
   localMounts: []
 
-  # -- Environment variables for configuration (will be mapped to ConfigMap)
+  # -- Environment variables for configuration (will be mapped to ConfigMap).
+  # ACCEPT_IGNITION_EULA comes from the top-level acceptEula
   config:
     IGNITION_EDITION: "standard"
-    ACCEPT_IGNITION_EULA: "Y"
     DISABLE_QUICKSTART: "true"
     GATEWAY_NETWORK_SECURITYPOLICY: "Unrestricted"
     GATEWAY_NETWORK_REQUIRETWOWAYAUTH: "true"
     GATEWAY_MODULES_ENABLED: "perspective,symbol-factory"
 
+  # -- Name of a Secret you manage (e.g. one unsealed from your own SealedSecret
+  # or synced by External Secrets) holding at least GATEWAY_ADMIN_PASSWORD,
+  # IGNITION_GAN_KEYSTORE_PASSWORD and IGNITION_WEB_KEYSTORE_PASSWORD, plus any
+  # other secret environment variables (GATEWAY_ADMIN_USERNAME, licensing). When
+  # set, the chart renders no Secret of its own, `secrets` and `sealedSecrets`
+  # are not used, and the render fails if `secrets` still sets a value
+  existingSecret: ""
+
   # -- Use SealedSecrets instead of plain Kubernetes Secrets: every key in `secrets`,
-  # the defaults included, must then be encrypted with `kubeseal --raw --scope namespace-wide`
+  # the username included, must then be encrypted with `kubeseal --raw --scope namespace-wide`
   sealedSecrets: false
 
-  # -- Sensitive configuration values (will be mapped to Secret/SealedSecret)
+  # -- Sensitive configuration values (will be mapped to Secret/SealedSecret).
+  # There are no default passwords: unless existingSecret is set, the render
+  # fails until GATEWAY_ADMIN_PASSWORD, IGNITION_GAN_KEYSTORE_PASSWORD and
+  # IGNITION_WEB_KEYSTORE_PASSWORD are all set, e.g.
+  # --set frontend.secrets.GATEWAY_ADMIN_PASSWORD=...,frontend.secrets.IGNITION_GAN_KEYSTORE_PASSWORD=...,frontend.secrets.IGNITION_WEB_KEYSTORE_PASSWORD=...
   secrets:
     GATEWAY_ADMIN_USERNAME: "admin"
-    GATEWAY_ADMIN_PASSWORD: "admin"
-    IGNITION_GAN_KEYSTORE_PASSWORD: "metro"
-    IGNITION_WEB_KEYSTORE_PASSWORD: "ignition"
+    # GATEWAY_ADMIN_PASSWORD: ""
+    # IGNITION_GAN_KEYSTORE_PASSWORD: ""
+    # IGNITION_WEB_KEYSTORE_PASSWORD: ""
+    # Leased licensing (see the Licensing guide): the image activates the
+    # 8-character leased key with its activation token on start. Without them
+    # the gateway runs in trial mode (2 hours at a time on Ignition 8.3)
+    # IGNITION_LICENSE_KEY: "XXXX-XXXX"
+    # IGNITION_ACTIVATION_TOKEN: ""
 
   service:
     # -- Service type (LoadBalancer, NodePort, ClusterIP)
     type: NodePort
-    # -- Session affinity (ClientIP or None)
-    sessionAffinity: None
-    # -- Port configuration
+    # -- Session affinity (ClientIP or None). Empty picks one: ClientIP while
+    # there is more than one frontend (redundancy.replicas > 1 or hpa.enabled),
+    # so a Perspective session stays on its gateway, else None
+    sessionAffinity: ""
+    # -- The Service's ports. The gateway always listens on 8088 (http), 8043
+    # (https) and 8060 (gan): these map to them with targetPort, so the
+    # containerPorts, probes and NetworkPolicy stay on the gateway's own ports
     ports:
       http: 8088
       https: 8043
@@ -275,14 +302,17 @@ frontend:
       - -t
       - "5"
 
-  # -- Startup Probe configuration (off by default). While it runs, liveness and
-  # readiness are held off, so livenessProbe.failureThreshold can stay low and
-  # slow starts (e.g. a redundant state transfer restart) are still tolerated.
+  # -- Startup Probe configuration. While it runs, liveness and readiness are
+  # held off, so livenessProbe.failureThreshold can stay low and slow starts are
+  # still tolerated: a first start (commissioning, module installs), a large
+  # .gwbk restore or a redundant state transfer. failureThreshold x periodSeconds
+  # (60 x 10s) gives the gateway about 10 minutes after initialDelaySeconds to
+  # answer /StatusPing with RUNNING before the kubelet restarts it
   startupProbe:
-    enabled: false
+    enabled: true
     initialDelaySeconds: 30
     periodSeconds: 10
-    failureThreshold: 30
+    failureThreshold: 60
     timeoutSeconds: 5
     command:
       - /config/scripts/health-check.sh
@@ -427,32 +457,51 @@ backend:
   #   mountPath: "assets/projects/SiteA"
   localMounts: []
 
-  # -- Environment variables for configuration (will be mapped to ConfigMap)
+  # -- Environment variables for configuration (will be mapped to ConfigMap).
+  # ACCEPT_IGNITION_EULA comes from the top-level acceptEula
   config:
     IGNITION_EDITION: "standard"
-    ACCEPT_IGNITION_EULA: "Y"
     DISABLE_QUICKSTART: "true"
     GATEWAY_NETWORK_SECURITYPOLICY: "Unrestricted"
     GATEWAY_NETWORK_REQUIRETWOWAYAUTH: "true"
     GATEWAY_MODULES_ENABLED: "alarm-notification,modbus-driver-v2,opc-ua,reporting,siemens-drivers,sql-bridge,tag-historian,udp-tcp-drivers"
 
+  # -- Name of a Secret you manage (e.g. one unsealed from your own SealedSecret
+  # or synced by External Secrets) holding at least GATEWAY_ADMIN_PASSWORD,
+  # IGNITION_GAN_KEYSTORE_PASSWORD and IGNITION_WEB_KEYSTORE_PASSWORD, plus any
+  # other secret environment variables (GATEWAY_ADMIN_USERNAME, licensing). When
+  # set, the chart renders no Secret of its own, `secrets` and `sealedSecrets`
+  # are not used, and the render fails if `secrets` still sets a value
+  existingSecret: ""
+
   # -- Use SealedSecrets instead of plain Kubernetes Secrets: every key in `secrets`,
-  # the defaults included, must then be encrypted with `kubeseal --raw --scope namespace-wide`
+  # the username included, must then be encrypted with `kubeseal --raw --scope namespace-wide`
   sealedSecrets: false
 
-  # -- Sensitive configuration values (will be mapped to Secret/SealedSecret)
+  # -- Sensitive configuration values (will be mapped to Secret/SealedSecret).
+  # There are no default passwords: unless existingSecret is set, the render
+  # fails until GATEWAY_ADMIN_PASSWORD, IGNITION_GAN_KEYSTORE_PASSWORD and
+  # IGNITION_WEB_KEYSTORE_PASSWORD are all set, e.g.
+  # --set backend.secrets.GATEWAY_ADMIN_PASSWORD=...,backend.secrets.IGNITION_GAN_KEYSTORE_PASSWORD=...,backend.secrets.IGNITION_WEB_KEYSTORE_PASSWORD=...
   secrets:
     GATEWAY_ADMIN_USERNAME: "admin"
-    GATEWAY_ADMIN_PASSWORD: "admin"
-    IGNITION_GAN_KEYSTORE_PASSWORD: "metro"
-    IGNITION_WEB_KEYSTORE_PASSWORD: "ignition"
+    # GATEWAY_ADMIN_PASSWORD: ""
+    # IGNITION_GAN_KEYSTORE_PASSWORD: ""
+    # IGNITION_WEB_KEYSTORE_PASSWORD: ""
+    # Leased licensing (see the Licensing guide): the image activates the
+    # 8-character leased key with its activation token on start. Without them
+    # the gateway runs in trial mode (2 hours at a time on Ignition 8.3)
+    # IGNITION_LICENSE_KEY: "XXXX-XXXX"
+    # IGNITION_ACTIVATION_TOKEN: ""
 
   service:
     # -- Service type (LoadBalancer, NodePort, ClusterIP)
     type: NodePort
     # -- Session affinity (ClientIP or None)
     sessionAffinity: None
-    # -- Port configuration
+    # -- The Service's ports. The gateway always listens on 8088 (http), 8043
+    # (https) and 8060 (gan): these map to them with targetPort, so the
+    # containerPorts, probes and NetworkPolicy stay on the gateway's own ports
     ports:
       http: 8088
       https: 8043
@@ -491,7 +540,9 @@ backend:
     enabled: false
     # -- URL to download the .gwbk file from
     url: ""
-    # -- OR, path to a mounted .gwbk file
+    # -- OR, path to a .gwbk file on a volume mounted with extraVolumes/
+    # extraVolumeMounts or localMounts (the preconfigure init container that
+    # copies it mounts them too, read-only)
     # path: ""
 
   # -- Route user traffic only to the Active gateway of a redundant pair
@@ -499,7 +550,10 @@ backend:
   # redundancy-active=true on the Active gateway and a <name>-active Service
   # selects it; that Service takes service.type/nodePorts/annotations, the main
   # Service becomes ClusterIP, and the Ingress points at it. Readiness then
-  # also requires a Backup to be in sync, so rolling updates wait for it.
+  # also requires a Backup to be in sync, so rolling updates wait for it, except
+  # a Backup Incompatible with its Master (modules or version differ), which is
+  # Ready for up to config.IGNITION_READY_INCOMPATIBLE_SECONDS (default 1800) so
+  # the rollout can replace the Master.
   activeRouting:
     enabled: false
     # -- Labeller image; needs /bin/sh, curl and kubectl
@@ -539,14 +593,17 @@ backend:
       - -t
       - "5"
 
-  # -- Startup Probe configuration (off by default). While it runs, liveness and
-  # readiness are held off, so livenessProbe.failureThreshold can stay low and
-  # slow starts (e.g. a redundant state transfer restart) are still tolerated.
+  # -- Startup Probe configuration. While it runs, liveness and readiness are
+  # held off, so livenessProbe.failureThreshold can stay low and slow starts are
+  # still tolerated: a first start (commissioning, module installs), a large
+  # .gwbk restore or a redundant state transfer. failureThreshold x periodSeconds
+  # (60 x 10s) gives the gateway about 10 minutes after initialDelaySeconds to
+  # answer /StatusPing with RUNNING before the kubelet restarts it
   startupProbe:
-    enabled: false
+    enabled: true
     initialDelaySeconds: 30
     periodSeconds: 10
-    failureThreshold: 30
+    failureThreshold: 60
     timeoutSeconds: 5
     command:
       - /config/scripts/health-check.sh

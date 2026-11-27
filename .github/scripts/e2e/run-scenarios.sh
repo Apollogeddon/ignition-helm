@@ -48,6 +48,10 @@ for s in ${SCENARIOS}; do
       THEN_SET=ignition.activeRouting.enabled=true ;;
     # chart 3.1.0 with its default root user: the volume needs fixDataOwnership
     s02-upgrade:root) run "$s" FROM_VERSION=3.1.0 UPGRADE_SET=ignition.fixDataOwnership=true ;;
+    # the CA ClusterIssuer setup-cluster.sh creates; s11-ca-pair:namespaced uses
+    # a CA Issuer in the test namespace instead, as on a shared cluster
+    s11-ca-pair) run "$s" CA_ISSUER=e2e-ca-issuer ;;
+    s11-ca-pair:namespaced) run "$s" CA_ISSUER= ;;
     *) run "$s" ;;
   esac
 done

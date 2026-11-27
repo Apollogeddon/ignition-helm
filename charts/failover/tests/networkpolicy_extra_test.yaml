@@ -1,4 +1,6 @@
 suite: Ignition Failover NetworkPolicy Extra Ingress
+values:
+  - values/required.yaml
 templates:
   - networkpolicy.yaml
 tests:

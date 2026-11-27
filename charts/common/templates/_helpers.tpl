@@ -82,6 +82,81 @@ Create the name for the common scripts ConfigMap.
 {{- end -}}
 
 {{/*
+The Secret a component's gateways take their passwords and other secret
+environment variables from: <values>.existingSecret when set, else the chart's
+own <name>[-<component>]-secrets
+Params:
+  name: The component name suffix (e.g. "frontend" or "")
+  values: The component-specific values object
+  context: The global context (Dot)
+*/}}
+{{- define "ignition-common.secretName" -}}
+{{- if .values.existingSecret }}
+{{- .values.existingSecret }}
+{{- else if .name }}
+{{- printf "%s-%s-secrets" (include "ignition.name" .context) .name }}
+{{- else }}
+{{- printf "%s-secrets" (include "ignition.name" .context) }}
+{{- end }}
+{{- end }}
+
+{{/*
+The passwords a gateway needs. There are no defaults: the render fails unless
+<path>.existingSecret names a Secret holding them, or <path>.secrets sets all
+three. With existingSecret, the chart renders no Secret, so a value left in
+<path>.secrets would be dropped: the render fails on it too (except the
+default GATEWAY_ADMIN_USERNAME, which the image also defaults to admin).
+Params:
+  path: The values path, for the errors (e.g. "ignition" or "frontend")
+  values: The component-specific values object
+*/}}
+{{- define "ignition-common.requireSecrets" -}}
+{{- $required := list "GATEWAY_ADMIN_PASSWORD" "IGNITION_GAN_KEYSTORE_PASSWORD" "IGNITION_WEB_KEYSTORE_PASSWORD" }}
+{{- $secrets := .values.secrets | default dict }}
+{{- if .values.existingSecret }}
+{{- range $key, $value := $secrets }}
+{{- if and $value (not (and (eq $key "GATEWAY_ADMIN_USERNAME") (eq (toString $value) "admin"))) }}
+{{- fail (printf "%s.secrets.%s is set, but %s.existingSecret (%s) replaces the chart's Secret, so it would be ignored: put %s in that Secret instead" $.path $key $.path $.values.existingSecret $key) }}
+{{- end }}
+{{- end }}
+{{- else }}
+{{- $missing := list }}
+{{- $example := list }}
+{{- range $key := $required }}
+{{- if not (get $secrets $key) }}
+{{- $missing = append $missing (printf "%s.secrets.%s" $.path $key) }}
+{{- $example = append $example (printf "%s.secrets.%s=<password>" $.path $key) }}
+{{- end }}
+{{- end }}
+{{- if $missing }}
+{{- fail (printf "the chart has no default passwords: set %s.existingSecret to a Secret holding %s, or set %s (e.g. --set %s, or --set %s.existingSecret=<secret>)" .path (join ", " $required) (join ", " $missing) (join "," $example) .path) }}
+{{- end }}
+{{- end }}
+{{- end }}
+
+{{/*
+Gateway pod-template checksum annotations, so a change to what the gateways
+read only on start rolls the pods: the environment variables (the rendered
+ConfigMap's data, so a chart change to it rolls them too), the chart's own Secret (none with existingSecret: the chart can't
+see a Secret it doesn't render, so roll the pods yourself when it changes), the
+logback.xml the init container installs, and the scripts. Only the scripts'
+contents are hashed, so a chart version bump alone restarts nothing.
+Params:
+  values: The component-specific values object
+  logging: The logging values the component's logback.xml is rendered from
+  context: The global context (Dot)
+*/}}
+{{- define "ignition-common.podChecksums" -}}
+{{- $logging := .logging | default dict -}}
+checksum/config: {{ get (include "ignition-common.configMap" (dict "config" .values.config "context" .context) | fromYaml) "data" | toJson | sha256sum }}
+{{- if not .values.existingSecret }}
+checksum/secrets: {{ dict "secrets" .values.secrets "sealed" .values.sealedSecrets | toJson | sha256sum }}
+{{- end }}
+checksum/logging: {{ include "ignition-common.logback" (dict "level" $logging.level "loggers" $logging.loggers "sqlite" $logging.sqlite) | sha256sum }}
+checksum/scripts: {{ get (include "ignition-common.scripts" .context | fromYaml) "stringData" | toJson | sha256sum }}
+{{- end }}
+
+{{/*
 Common labels for common resources.
 */}}
 {{- define "ignition-common.labels" -}}
@@ -239,15 +314,15 @@ metadata:
 spec:
   clusterIP: None
   ports:
-    - port: {{ .values.service.ports.http }}
+    - port: {{ include "ignition-common.gatewayPort" "http" }}
       targetPort: http
       protocol: TCP
       name: http
-    - port: {{ .values.service.ports.https }}
+    - port: {{ include "ignition-common.gatewayPort" "https" }}
       targetPort: https
       protocol: TCP
       name: https
-    - port: {{ .values.service.ports.gan }}
+    - port: {{ include "ignition-common.gatewayPort" "gan" }}
       targetPort: gan
       protocol: TCP
       name: gan
@@ -423,6 +498,23 @@ Params:
 {{- end }}
 {{- $args = append $args "wrapper.logfile=/dev/stdout" }}
 {{- end }}
+{{- /* The gateway opens the keystores the chart writes with these JVM properties, which
+default to Ignition's own "metro" and "ignition": without them a gateway whose secrets
+set other passwords can't read its Gateway Network keystore, and a redundant pair never
+connects. Kubernetes expands $(VAR) from the gateway's environment (its Secret). */}}
+{{- $keystores := list (list "ignition.metro.keystorePassword" "IGNITION_GAN_KEYSTORE_PASSWORD") }}
+{{- if and .values.ssl .values.ssl.enabled }}
+{{- $keystores = append $keystores (list "ignition.gateway.ssl.keystorePassword" "IGNITION_WEB_KEYSTORE_PASSWORD") }}
+{{- end }}
+{{- range $keystores }}
+{{- $prop := index . 0 }}
+{{- if not (regexMatch (printf "(^| )-D%s=" (regexQuoteMeta $prop)) (join " " $args)) }}
+{{- if not (has "--" $args) }}
+{{- $args = append $args "--" }}
+{{- end }}
+{{- $args = append $args (printf "-D%s=$(%s)" $prop (index . 1)) }}
+{{- end }}
+{{- end }}
 {{- with $args }}
 args:
 {{- toStrings . | toYaml | nindent 2 }}
@@ -552,14 +644,6 @@ Params:
 {{- end }}
 
 {{/*
-Preconfigure Init Container
-Params:
-  name: The base name of the application/component
-  image: The image definition (repository and tag)
-  values: The component-specific values object
-  replicas: Number of replicas (for redundancy initialization)
-*/}}
-{{/*
 Init container that gives the data volume to the gateway user
 (<values>.fixDataOwnership). Charts up to 3.1.0 ran the gateway as root by
 default, so their data volumes are owned by root and the non-root gateway
@@ -592,6 +676,19 @@ Params:
 {{- end }}
 {{- end }}
 
+{{/*
+Preconfigure init container: seeds the data volume, applies the redundancy
+settings, installs the certificates and logback.xml, and stages a restore.
+It also mounts the gateway's localMounts and extraVolumeMounts, read-only, so
+restore.path can name a backup on one of them.
+Params:
+  name: The base name of the application/component
+  secretName: The Secret holding the keystore passwords
+  logbackFile: The config-files key with the component's logback.xml (default logback.xml)
+  image: The image definition (repository and tag)
+  values: The component-specific values object
+  replicas: Number of replicas (for redundancy initialization)
+*/}}
 {{- define "ignition-common.initContainer.preconfigure" -}}
 {{- $secretName := .secretName | default (printf "%s-secrets" .name) -}}
 - name: preconfigure
@@ -644,7 +741,7 @@ Params:
   {{- if and .values.ssl .values.ssl.enabled }}
   - {{ include "ignition-common.scriptMountPath" . }}/prepare-tls-certificates.sh
   {{- end }}
-  - cp /config/files/logback.xml /data/logback.xml
+  - cp /config/files/{{ .logbackFile | default "logback.xml" }} /data/logback.xml
   - {{ include "ignition-common.scriptMountPath" . }}/configure-ignition.sh
   volumeMounts:
   - mountPath: /data
@@ -663,6 +760,27 @@ Params:
   - mountPath: /run/secrets/ignition-gan-ca
     name: {{ .name }}-gan-ca
     readOnly: true
+  {{- /* the gateway's own mounts, read-only, so restore.path can name a .gwbk on one */}}
+  {{- range $index, $m := .values.localMounts | default list }}
+  - mountPath: /usr/local/bin/ignition/{{ $m.mountPath }}
+    name: local-mount-{{ $index }}
+    readOnly: true
+  {{- end }}
+  {{- range $m := .values.extraVolumeMounts | default list }}
+  - {{ merge (dict "readOnly" true) (omit $m "readOnly") | toYaml | indent 4 | trim }}
+  {{- end }}
+{{- end }}
+
+{{/*
+The port the gateway listens on for http, https or gan: the Ignition image's
+8088, 8043 and 8060, whatever service.ports says. service.ports only sets the
+Services' ports, which map to these through the named targetPorts; anything
+that reaches a pod directly (probes, NetworkPolicies, headless Services, the
+redundancy peer and the active-routing labeller) uses these.
+Params: the port name (a string)
+*/}}
+{{- define "ignition-common.gatewayPort" -}}
+{{- get (dict "http" 8088 "https" 8043 "gan" 8060) . }}
 {{- end }}
 
 {{/*
@@ -772,11 +890,11 @@ Params:
   {{- include "ignition-common.args" (dict "values" .values) | nindent 2 }}
   ports:
   - name: http
-    containerPort: {{ .values.service.ports.http }}
+    containerPort: {{ include "ignition-common.gatewayPort" "http" }}
   - name: https
-    containerPort: {{ .values.service.ports.https }}
+    containerPort: {{ include "ignition-common.gatewayPort" "https" }}
   - name: gan
-    containerPort: {{ .values.service.ports.gan }}
+    containerPort: {{ include "ignition-common.gatewayPort" "gan" }}
 {{- end }}
 
 {{/*

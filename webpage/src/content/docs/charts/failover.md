@@ -39,7 +39,7 @@ sequenceDiagram
 
 ## Values
 
-The tables below list the chart's values and defaults, grouped by area. [`values.yaml`](https://github.com/Apollogeddon/ignition-helm/blob/main/charts/failover/values.yaml) is the authoritative list.
+The tables below list the chart's values and defaults, grouped by area. [`values.yaml`](https://github.com/Apollogeddon/ignition-helm/blob/main/charts/failover/values.yaml) is the authoritative list. The chart validates values against its `values.schema.json`: an unknown or misspelt key (e.g. `ignition.redundency`) fails the install, template or lint. Free-form maps (`config`, `secrets`, `resources`, annotations) take any keys.
 
 ### General
 
@@ -48,6 +48,7 @@ Resource naming and the container image.
 | Parameter | Type | Default |
 | --- | --- | --- |
 | `applicationName` | string | `"ignition-failover"` |
+| `acceptEula` | bool | `false` |
 | `image.repository` | string | `"inductiveautomation/ignition"` |
 | `image.tag` | string | `""` (the chart's `appVersion`) |
 | `image.pullPolicy` | string | `"IfNotPresent"` |
@@ -75,7 +76,7 @@ Serve HTTPS with your own PKCS#12 keystore. `ignition.ssl.secretName` defaults t
 
 ### Gateway
 
-Gateway environment variables (including EULA acceptance and enabled modules), arguments, logging and the EAM role.
+Gateway environment variables (including enabled modules), arguments, logging and the EAM role. The chart renders only with the top-level `acceptEula: true`, once you accept Inductive Automation's [Ignition EULA](https://inductiveautomation.com/ignition/license), and then adds `ACCEPT_IGNITION_EULA=Y` to the gateway's environment.
 
 | Parameter | Type | Default |
 | --- | --- | --- |
@@ -91,7 +92,6 @@ Gateway environment variables (including EULA acceptance and enabled modules), a
 
 ```yaml
 IGNITION_EDITION: standard
-ACCEPT_IGNITION_EULA: "Y"
 DISABLE_QUICKSTART: "true"
 GATEWAY_NETWORK_SECURITYPOLICY: Unrestricted
 GATEWAY_NETWORK_REQUIRETWOWAYAUTH: "true"
@@ -157,7 +157,7 @@ The timings, `maxDiskMb` and `pingMaxMissed`, and `ignition.activeRouting.interv
 
 ### Networking and certificates
 
-Service, Ingress and cert-manager settings.
+Service, Ingress and cert-manager settings. `ignition.service.ports` sets only the Service's ports, which map to the gateway's own 8088, 8043 and 8060. The container ports, probes, NetworkPolicy rules, headless Services and redundancy peer address always use the gateway's own.
 
 | Parameter | Type | Default |
 | --- | --- | --- |
@@ -200,7 +200,7 @@ Health checks for the gateway container. A `command` you set is used as-is.
 | --- | --- | --- |
 | `ignition.livenessProbe` | object | *(See below)* |
 | `ignition.readinessProbe` | object | *(See below)* |
-| `ignition.startupProbe` | object | `{"enabled":false,"initialDelaySeconds":30,"periodSeconds":10,"failureThreshold":30,"timeoutSeconds":5,"command":["/config/scripts/health-check.sh","-t","5"]}` |
+| `ignition.startupProbe` | object | `{"enabled":true,"initialDelaySeconds":30,"periodSeconds":10,"failureThreshold":60,"timeoutSeconds":5,"command":["/config/scripts/health-check.sh","-t","5"]}` |
 | `ignition.lifecycle` | object | `{}` |
 
 **Default `ignition.livenessProbe`:**
@@ -234,12 +234,13 @@ command:
 
 ### Security and accounts
 
-Security context, secrets and the ServiceAccount. With `ignition.sealedSecrets`, every `ignition.secrets` value, the defaults included, must be encrypted with `kubeseal` (see [SealedSecrets](../../guides/capabilities/#example-sealedsecrets)).
+Security context, secrets and the ServiceAccount. There are no default passwords: set `GATEWAY_ADMIN_PASSWORD`, `IGNITION_GAN_KEYSTORE_PASSWORD` and `IGNITION_WEB_KEYSTORE_PASSWORD` in `ignition.secrets`, or name a Secret you manage that holds them (and any other secret environment variables) in `ignition.existingSecret`. The chart then renders no Secret, and refuses values left in `ignition.secrets`. With `ignition.sealedSecrets`, every `ignition.secrets` value, the user name included, must be encrypted with `kubeseal` (see [SealedSecrets](../../guides/capabilities/#example-sealedsecrets)).
 
 | Parameter | Type | Default |
 | --- | --- | --- |
 | `ignition.securityContext` | object | `{"runAsUser":2003,"runAsGroup":2003,"fsGroup":2003,"runAsNonRoot":true}` |
-| `ignition.secrets` | object | `{"GATEWAY_ADMIN_USERNAME":"admin","GATEWAY_ADMIN_PASSWORD":"admin","IGNITION_GAN_KEYSTORE_PASSWORD":"metro","IGNITION_WEB_KEYSTORE_PASSWORD":"ignition"}` |
+| `ignition.existingSecret` | string | `""` |
+| `ignition.secrets` | object | `{"GATEWAY_ADMIN_USERNAME":"admin"}` |
 | `ignition.sealedSecrets` | bool | `false` |
 | `serviceAccount.create` | bool | `false` |
 | `serviceAccount.name` | string | `""` |

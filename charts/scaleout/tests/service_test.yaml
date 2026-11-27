@@ -1,4 +1,6 @@
 suite: Ignition Scaleout Services
+values:
+  - values/required.yaml
 templates:
   - templates/backend/backend-service.yaml
   - templates/frontend/frontend-service.yaml

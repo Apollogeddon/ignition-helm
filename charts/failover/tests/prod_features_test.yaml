@@ -1,4 +1,6 @@
 suite: Ignition Failover Production Features
+values:
+  - values/required.yaml
 templates:
   - networkpolicy.yaml
   - servicemonitor.yaml

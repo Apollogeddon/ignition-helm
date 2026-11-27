@@ -1,22 +1,37 @@
 suite: Ignition Failover Startup Probe
+values:
+  - values/required.yaml
 templates:
   - ignition-statefulset.yaml
 tests:
-  - it: should not render a startupProbe by default
+  # about 10 minutes for a first start or a large .gwbk restore
+  - it: should render a startupProbe by default with a 10 minute budget
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].startupProbe
+          value:
+            exec:
+              command: ["/config/scripts/health-check.sh", "-t", "5"]
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 60
+            timeoutSeconds: 5
+
+  - it: should not render a startupProbe when disabled
+    set:
+      ignition:
+        startupProbe:
+          enabled: false
     asserts:
       - notExists:
           path: spec.template.spec.containers[0].startupProbe
 
-  - it: should render a startupProbe when enabled
+  - it: should take the configured failureThreshold
     set:
       ignition:
         startupProbe:
-          enabled: true
-          failureThreshold: 60
+          failureThreshold: 120
     asserts:
       - equal:
           path: spec.template.spec.containers[0].startupProbe.failureThreshold
-          value: 60
-      - equal:
-          path: spec.template.spec.containers[0].startupProbe.exec.command
-          value: ["/config/scripts/health-check.sh", "-t", "5"]
+          value: 120

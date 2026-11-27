@@ -1,0 +1,53 @@
+suite: Ignition Scaleout Pod Checksums
+values:
+  - values/required.yaml
+templates:
+  - templates/frontend/frontend-statefulset.yaml
+  - templates/backend/backend-statefulset.yaml
+tests:
+  - it: should hash the frontend's config, secrets, logging and scripts into its pod template
+    template: templates/frontend/frontend-statefulset.yaml
+    asserts:
+      - matchRegex:
+          path: spec.template.metadata.annotations["checksum/config"]
+          pattern: ^[0-9a-f]{64}$
+      - matchRegex:
+          path: spec.template.metadata.annotations["checksum/secrets"]
+          pattern: ^[0-9a-f]{64}$
+      - matchRegex:
+          path: spec.template.metadata.annotations["checksum/logging"]
+          pattern: ^[0-9a-f]{64}$
+      - matchRegex:
+          path: spec.template.metadata.annotations["checksum/scripts"]
+          pattern: ^[0-9a-f]{64}$
+
+  - it: should hash the backend's config, secrets, logging and scripts into its pod template
+    template: templates/backend/backend-statefulset.yaml
+    asserts:
+      - matchRegex:
+          path: spec.template.metadata.annotations["checksum/config"]
+          pattern: ^[0-9a-f]{64}$
+      - matchRegex:
+          path: spec.template.metadata.annotations["checksum/secrets"]
+          pattern: ^[0-9a-f]{64}$
+      - matchRegex:
+          path: spec.template.metadata.annotations["checksum/logging"]
+          pattern: ^[0-9a-f]{64}$
+      - matchRegex:
+          path: spec.template.metadata.annotations["checksum/scripts"]
+          pattern: ^[0-9a-f]{64}$
+      - exists:
+          path: spec.template.metadata.annotations["checksum/redundancy"]
+
+  - it: should not hash the frontend's secrets with existingSecret
+    template: templates/frontend/frontend-statefulset.yaml
+    set:
+      frontend:
+        existingSecret: frontend-passwords
+        secrets:
+          GATEWAY_ADMIN_PASSWORD: ""
+          IGNITION_GAN_KEYSTORE_PASSWORD: ""
+          IGNITION_WEB_KEYSTORE_PASSWORD: ""
+    asserts:
+      - notExists:
+          path: spec.template.metadata.annotations["checksum/secrets"]

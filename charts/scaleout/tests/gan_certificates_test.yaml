@@ -1,20 +1,22 @@
 suite: Ignition Scaleout GAN Certificates
+values:
+  - values/required.yaml
 templates:
   - gan-certificates.yaml
 tests:
   - it: should create GAN CA and Issuer
     asserts:
-      - documentIndex: 0
+      - documentIndex: 1
         isKind:
           of: Certificate
-      - documentIndex: 0
+      - documentIndex: 1
         matchRegex:
           path: metadata.name
           pattern: -gan-ca$
-      - documentIndex: 1
+      - documentIndex: 2
         isKind:
           of: Issuer
-      - documentIndex: 1
+      - documentIndex: 2
         matchRegex:
           path: metadata.name
           pattern: -gan-issuer$
@@ -22,21 +24,21 @@ tests:
   - it: should create Frontend GAN Certificate
     asserts:
       - hasDocuments:
-          count: 4
-      - documentIndex: 2
+          count: 5
+      - documentIndex: 3
         isKind:
           of: Certificate
-      - documentIndex: 2
+      - documentIndex: 3
         matchRegex:
           path: metadata.name
           pattern: -frontend-gan$
 
   - it: should create Backend GAN Certificate
     asserts:
-      - documentIndex: 3
+      - documentIndex: 4
         isKind:
           of: Certificate
-      - documentIndex: 3
+      - documentIndex: 4
         matchRegex:
           path: metadata.name
           pattern: -backend-gan$
@@ -44,13 +46,13 @@ tests:
   # each layer's keystore takes its own layer's passphrase, the one its preconfigure container reads
   - it: should take each keystore password from its own layer's secret
     asserts:
-      - documentIndex: 2
+      - documentIndex: 3
         equal:
           path: spec.keystores.pkcs12.passwordSecretRef
           value:
             name: ignition-scaleout-frontend-secrets
             key: IGNITION_GAN_KEYSTORE_PASSWORD
-      - documentIndex: 3
+      - documentIndex: 4
         equal:
           path: spec.keystores.pkcs12.passwordSecretRef
           value:
@@ -59,14 +61,44 @@ tests:
 
   - it: should keep the CA key on renewal
     asserts:
-      - documentIndex: 0
+      - documentIndex: 1
         equal:
           path: spec.privateKey.rotationPolicy
           value: Never
 
   - it: should rotate the GAN certificate key on renewal
     asserts:
-      - documentIndex: 2
+      - documentIndex: 3
         equal:
           path: spec.privateKey.rotationPolicy
           value: Always
+
+  # Ignition trusts a peer only when the end of its chain is trusted, so the GAN CA is a
+  # root of the release's own, never one a cluster CA issuer signs
+  - it: should issue the GAN CA from the release's own self-signed issuer
+    set:
+      certManager:
+        issuer:
+          name: cluster-ca
+          kind: ClusterIssuer
+    asserts:
+      - documentIndex: 0
+        isKind:
+          of: Issuer
+      - documentIndex: 0
+        matchRegex:
+          path: metadata.name
+          pattern: -gan-selfsigned$
+      - documentIndex: 0
+        equal:
+          path: spec
+          value:
+            selfSigned: {}
+      - documentIndex: 1
+        matchRegex:
+          path: spec.issuerRef.name
+          pattern: -gan-selfsigned$
+      - documentIndex: 1
+        equal:
+          path: spec.issuerRef.kind
+          value: Issuer

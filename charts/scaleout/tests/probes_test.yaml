@@ -1,4 +1,6 @@
 suite: Ignition Scaleout Probes and Health Check
+values:
+  - values/required.yaml
 templates:
   - templates/frontend/frontend-statefulset.yaml
   - templates/backend/backend-statefulset.yaml
@@ -33,3 +35,13 @@ tests:
           pattern: 'localhost:\$\{HTTP_PORT\}/StatusPing'
       - notExists:
           path: stringData["shutdown.sh"]
+
+  - it: should count an Incompatible Backup as Ready for a limited time
+    template: templates/configmap-scripts.yaml
+    asserts:
+      - matchRegex:
+          path: stringData["health-check.sh"]
+          pattern: '\*"RedundantState=Incompatible;"\*\)'
+      - matchRegex:
+          path: stringData["health-check.sh"]
+          pattern: 'INCOMPATIBLE_SECONDS=\$\{IGNITION_READY_INCOMPATIBLE_SECONDS:-1800\}'

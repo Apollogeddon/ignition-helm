@@ -17,6 +17,8 @@ failed=""
 for tag in $IMAGE_TAGS; do
   e2e_require_memory "$ns"
   args=(s07 "$CHART" -n "$ns" -f "$(dirname "$0")/values/small.yaml" --set "image.tag=$tag"
+    # acceptEula is on in small.yaml (the chart refuses to render without it);
+    # an ACCEPT_IGNITION_EULA in config wins over it, so the gateway can't commission
     --set-string ignition.config.ACCEPT_IGNITION_EULA=N
     --set ignition.readinessProbe.initialDelaySeconds=30)
   e2e_render_check "${args[@]}"

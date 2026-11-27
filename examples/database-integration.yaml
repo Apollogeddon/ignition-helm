@@ -3,6 +3,11 @@
 # Note: You still need to configure the Database Connection in the Ignition Gateway UI
 # or via a .gwbk restore, but this ensures the credentials are managed by Kubernetes.
 
+# Read and accept Inductive Automation's Ignition EULA
+# (https://inductiveautomation.com/ignition/license); the charts refuse to
+# render without it
+acceptEula: true
+
 ignition:
   # 1. Provide database credentials via Secret
   secrets:

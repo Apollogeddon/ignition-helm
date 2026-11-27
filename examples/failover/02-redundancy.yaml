@@ -2,6 +2,11 @@
 # Configuration for Master/Backup redundancy.
 # Deploys 2 replicas (ignition-failover-0 and ignition-failover-1).
 
+# Read and accept Inductive Automation's Ignition EULA
+# (https://inductiveautomation.com/ignition/license); the charts refuse to
+# render without it
+acceptEula: true
+
 ignition:
   # Enable redundancy
   redundancy:

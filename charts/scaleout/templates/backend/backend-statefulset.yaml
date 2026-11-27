@@ -1,3 +1,5 @@
+{{- include "ignition-common.requireSecrets" (dict "path" "backend" "values" .Values.backend) }}
+{{- $secretName := include "ignition-common.secretName" (dict "name" "backend" "values" .Values.backend "context" .) }}
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -27,6 +29,7 @@ spec:
         # restart the gateways when redundancy values change; seed-redundancy.sh
         # applies them to the data volume on start
         checksum/redundancy: {{ .Values.backend.redundancy | toJson | sha256sum }}
+        {{- include "ignition-common.podChecksums" (dict "values" .Values.backend "logging" .Values.backend.logging "context" .) | nindent 8 }}
     spec:
       {{- include "ignition-common.podServiceAccount" . | nindent 6 }}
       {{- include "ignition-common.podSecurityContext" (dict "values" .Values.backend) | nindent 6 }}
@@ -41,7 +44,7 @@ spec:
         - configMapRef:
             name: {{ include "ignition.name" . }}-backend-config
         - secretRef:
-            name: {{ include "ignition.name" . }}-backend-secrets
+            name: {{ $secretName }}
         env:
         - name: EAM_SETUP_INSTALLSELECTION
           value: {{ .Values.backend.eam.role | quote }}
@@ -61,7 +64,7 @@ spec:
         {{- include "ignition-common.containerProbes" (dict "values" .Values.backend) | trim | nindent 8 }}
       initContainers:
 {{- with include "ignition-common.initContainer.fixDataOwnership" (dict "image" .Values.image "values" .Values.backend "context" .) }}{{ . | trim | nindent 6 }}{{ end }}
-{{ include "ignition-common.initContainer.preconfigure" (dict "name" (include "ignition.name" .) "secretName" (printf "%s-backend-secrets" (include "ignition.name" .)) "image" .Values.image "values" .Values.backend "replicas" (ternary 2 1 .Values.backend.redundancy.enabled) "context" .) | nindent 6 }}
+{{ include "ignition-common.initContainer.preconfigure" (dict "name" (include "ignition.name" .) "secretName" $secretName "logbackFile" "logback-backend.xml" "image" .Values.image "values" .Values.backend "replicas" (ternary 2 1 .Values.backend.redundancy.enabled) "context" .) | nindent 6 }}
       volumes:
 {{ include "ignition-common.volumes" (dict "name" (include "ignition.name" .) "values" .Values.backend "ganTlsSecretName" (printf "%s-backend-gan-tls" (include "ignition.name" .)) "commonScriptsConfigMapName" (include "ignition-common.scriptsName" .)) | nindent 6 }}
 

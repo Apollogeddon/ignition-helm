@@ -100,8 +100,8 @@ jobs:
         if: inputs.charts
         run: |
           mkdir rendered
-          helm template failover charts/failover > rendered/failover.yaml
-          helm template scaleout charts/scaleout > rendered/scaleout.yaml
+          helm template failover charts/failover -f charts/failover/ci/deploy-values.yaml > rendered/failover.yaml
+          helm template scaleout charts/scaleout -f charts/scaleout/ci/deploy-values.yaml > rendered/scaleout.yaml
 
       - name: Lint the rendered manifests
         if: inputs.charts
@@ -293,7 +293,7 @@ jobs:
 
       - name: Test
         env:
-          SCENARIOS: ${{ inputs.scenarios || 's07-uncommissioned s08-wrapper-log s01-ingress-failover s06-restart-on-renewal s10-partition' }}
+          SCENARIOS: ${{ inputs.scenarios || 's07-uncommissioned s08-wrapper-log s01-ingress-failover s06-restart-on-renewal s11-ca-pair s10-partition' }}
           E2E_OUT: ${{ github.workspace }}/e2e-out
         run: bash .github/scripts/e2e/run-scenarios.sh
 

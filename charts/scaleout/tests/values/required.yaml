@@ -1,0 +1,13 @@
+# The values every suite needs to render: the chart has no default passwords
+# the charts refuse to render until the EULA is accepted
+acceptEula: true
+frontend:
+  secrets:
+    GATEWAY_ADMIN_PASSWORD: test-admin-password
+    IGNITION_GAN_KEYSTORE_PASSWORD: test-gan-password
+    IGNITION_WEB_KEYSTORE_PASSWORD: test-web-password
+backend:
+  secrets:
+    GATEWAY_ADMIN_PASSWORD: test-admin-password
+    IGNITION_GAN_KEYSTORE_PASSWORD: test-gan-password
+    IGNITION_WEB_KEYSTORE_PASSWORD: test-web-password

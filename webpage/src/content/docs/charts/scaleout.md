@@ -34,7 +34,7 @@ sequenceDiagram
 
 ## Values
 
-The tables below list the chart's values and defaults, grouped by layer and area. [`values.yaml`](https://github.com/Apollogeddon/ignition-helm/blob/main/charts/scaleout/values.yaml) is the authoritative list.
+The tables below list the chart's values and defaults, grouped by layer and area. [`values.yaml`](https://github.com/Apollogeddon/ignition-helm/blob/main/charts/scaleout/values.yaml) is the authoritative list. The chart validates values against its `values.schema.json`: an unknown or misspelt key (e.g. `backend.redundency`) fails the install, template or lint. Free-form maps (`config`, `secrets`, `resources`, annotations) take any keys.
 
 ### General
 
@@ -43,6 +43,7 @@ Settings that apply to both layers. `affinity.enabled` spreads each layer's pods
 | Parameter | Type | Default |
 | --- | --- | --- |
 | `applicationName` | string | `"ignition-scaleout"` |
+| `acceptEula` | bool | `false` (the chart renders only with `true`, once you accept Inductive Automation's [Ignition EULA](https://inductiveautomation.com/ignition/license), and then sets `ACCEPT_IGNITION_EULA=Y` on every gateway) |
 | `componentSelectors` | bool | `false` |
 | `image.repository` | string | `"inductiveautomation/ignition"` |
 | `image.tag` | string | `""` (the chart's `appVersion`) |
@@ -81,7 +82,6 @@ The backend is the EAM controller and runs devices, databases and tag history.
 
 ```yaml
 IGNITION_EDITION: standard
-ACCEPT_IGNITION_EULA: "Y"
 DISABLE_QUICKSTART: "true"
 GATEWAY_NETWORK_SECURITYPOLICY: Unrestricted
 GATEWAY_NETWORK_REQUIRETWOWAYAUTH: "true"
@@ -164,7 +164,7 @@ The timings, `maxDiskMb` and `pingMaxMissed`, and `backend.activeRouting.interva
 | Parameter | Type | Default |
 | --- | --- | --- |
 | `backend.service.type` | string | `"NodePort"` |
-| `backend.service.ports` | object | `{"http":8088,"https":8043,"gan":8060}` |
+| `backend.service.ports` | object | `{"http":8088,"https":8043,"gan":8060}` (the Service's ports only: they map to the gateway's own 8088, 8043 and 8060) |
 | `backend.service.nodePorts` | object | unset |
 | `backend.service.sessionAffinity` | string | `"None"` |
 | `backend.ingress.enabled` | bool | `false` |
@@ -174,7 +174,7 @@ The timings, `maxDiskMb` and `pingMaxMissed`, and `backend.activeRouting.interva
 
 #### Resources and security (backend)
 
-With `backend.sealedSecrets`, every `backend.secrets` value, the defaults included, must be encrypted with `kubeseal` (see [SealedSecrets](../../guides/capabilities/#example-sealedsecrets)).
+There are no default passwords: set `GATEWAY_ADMIN_PASSWORD`, `IGNITION_GAN_KEYSTORE_PASSWORD` and `IGNITION_WEB_KEYSTORE_PASSWORD` in `backend.secrets`, or name a Secret you manage that holds them (and any other secret environment variables) in `backend.existingSecret`. The chart then renders no Secret, and refuses values left in `backend.secrets`. With `backend.sealedSecrets`, every `backend.secrets` value, the user name included, must be encrypted with `kubeseal` (see [SealedSecrets](../../guides/capabilities/#example-sealedsecrets)).
 
 | Parameter | Type | Default |
 | --- | --- | --- |
@@ -186,7 +186,8 @@ With `backend.sealedSecrets`, every `backend.secrets` value, the defaults includ
 | `backend.externalModules.enabled` | bool | `false` |
 | `backend.externalModules.pvcName` | string | `""` |
 | `backend.securityContext` | object | `{"runAsUser":2003,"runAsGroup":2003,"fsGroup":2003,"runAsNonRoot":true}` |
-| `backend.secrets` | object | `{"GATEWAY_ADMIN_USERNAME":"admin","GATEWAY_ADMIN_PASSWORD":"admin","IGNITION_GAN_KEYSTORE_PASSWORD":"metro","IGNITION_WEB_KEYSTORE_PASSWORD":"ignition"}` |
+| `backend.existingSecret` | string | `""` |
+| `backend.secrets` | object | `{"GATEWAY_ADMIN_USERNAME":"admin"}` |
 | `backend.sealedSecrets` | bool | `false` |
 
 #### Probes (backend)
@@ -195,7 +196,7 @@ With `backend.sealedSecrets`, every `backend.secrets` value, the defaults includ
 | --- | --- | --- |
 | `backend.livenessProbe` | object | *(See below)* |
 | `backend.readinessProbe` | object | *(See below)* |
-| `backend.startupProbe` | object | `{"enabled":false,"initialDelaySeconds":30,"periodSeconds":10,"failureThreshold":30,"timeoutSeconds":5,"command":["/config/scripts/health-check.sh","-t","5"]}` |
+| `backend.startupProbe` | object | `{"enabled":true,"initialDelaySeconds":30,"periodSeconds":10,"failureThreshold":60,"timeoutSeconds":5,"command":["/config/scripts/health-check.sh","-t","5"]}` |
 | `backend.lifecycle` | object | `{}` |
 
 **Default `backend.livenessProbe`:**
@@ -247,7 +248,6 @@ The frontend gateways are EAM agents and serve user sessions. They have no persi
 
 ```yaml
 IGNITION_EDITION: standard
-ACCEPT_IGNITION_EULA: "Y"
 DISABLE_QUICKSTART: "true"
 GATEWAY_NETWORK_SECURITYPOLICY: Unrestricted
 GATEWAY_NETWORK_REQUIRETWOWAYAUTH: "true"
@@ -300,9 +300,9 @@ GATEWAY_MODULES_ENABLED: perspective,symbol-factory
 | Parameter | Type | Default |
 | --- | --- | --- |
 | `frontend.service.type` | string | `"NodePort"` |
-| `frontend.service.ports` | object | `{"http":8088,"https":8043,"gan":8060}` |
+| `frontend.service.ports` | object | `{"http":8088,"https":8043,"gan":8060}` (the Service's ports only: they map to the gateway's own 8088, 8043 and 8060) |
 | `frontend.service.nodePorts` | object | unset |
-| `frontend.service.sessionAffinity` | string | `"None"` |
+| `frontend.service.sessionAffinity` | string | `""` (`ClientIP` with more than one frontend gateway or an autoscaler, else `None`) |
 | `frontend.ingress.enabled` | bool | `false` |
 | `frontend.ingress.className` | string | `""` |
 | `frontend.ingress.hosts` | list | unset |
@@ -310,7 +310,7 @@ GATEWAY_MODULES_ENABLED: perspective,symbol-factory
 
 #### Resources and security (frontend)
 
-With `frontend.sealedSecrets`, every `frontend.secrets` value, the defaults included, must be encrypted with `kubeseal` (see [SealedSecrets](../../guides/capabilities/#example-sealedsecrets)).
+There are no default passwords: set `GATEWAY_ADMIN_PASSWORD`, `IGNITION_GAN_KEYSTORE_PASSWORD` and `IGNITION_WEB_KEYSTORE_PASSWORD` in `frontend.secrets`, or name a Secret you manage that holds them (and any other secret environment variables) in `frontend.existingSecret`. The chart then renders no Secret, and refuses values left in `frontend.secrets`. With `frontend.sealedSecrets`, every `frontend.secrets` value, the user name included, must be encrypted with `kubeseal` (see [SealedSecrets](../../guides/capabilities/#example-sealedsecrets)).
 
 | Parameter | Type | Default |
 | --- | --- | --- |
@@ -325,7 +325,8 @@ With `frontend.sealedSecrets`, every `frontend.secrets` value, the defaults incl
 | `frontend.emptyDirSizeLimit` | object | `{"logs":"","temp":"","dotIgnition":""}` |
 | `frontend.fixDataOwnership` | bool | `false` |
 | `frontend.securityContext` | object | `{"runAsUser":2003,"runAsGroup":2003,"fsGroup":2003,"runAsNonRoot":true}` |
-| `frontend.secrets` | object | `{"GATEWAY_ADMIN_USERNAME":"admin","GATEWAY_ADMIN_PASSWORD":"admin","IGNITION_GAN_KEYSTORE_PASSWORD":"metro","IGNITION_WEB_KEYSTORE_PASSWORD":"ignition"}` |
+| `frontend.existingSecret` | string | `""` |
+| `frontend.secrets` | object | `{"GATEWAY_ADMIN_USERNAME":"admin"}` |
 | `frontend.sealedSecrets` | bool | `false` |
 
 #### Probes (frontend)
@@ -334,7 +335,7 @@ With `frontend.sealedSecrets`, every `frontend.secrets` value, the defaults incl
 | --- | --- | --- |
 | `frontend.livenessProbe` | object | *(See below)* |
 | `frontend.readinessProbe` | object | *(See below)* |
-| `frontend.startupProbe` | object | `{"enabled":false,"initialDelaySeconds":30,"periodSeconds":10,"failureThreshold":30,"timeoutSeconds":5,"command":["/config/scripts/health-check.sh","-t","5"]}` |
+| `frontend.startupProbe` | object | `{"enabled":true,"initialDelaySeconds":30,"periodSeconds":10,"failureThreshold":60,"timeoutSeconds":5,"command":["/config/scripts/health-check.sh","-t","5"]}` |
 | `frontend.lifecycle` | object | `{}` |
 
 **Default `frontend.livenessProbe`:**

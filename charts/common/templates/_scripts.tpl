@@ -532,12 +532,33 @@ stringData:
     # also fails on a Backup whose RedundantState is not Good, so a rolling
     # update only restarts the Master once the Backup has caught up.
     #
+    # One exception: RedundantState=Incompatible, a Backup whose modules (or
+    # Ignition version) differ from its Master's. A rolling update replaces the
+    # Backup first, so any upgrade that changes the modules leaves the new
+    # Backup Incompatible with the old Master, and only replacing the Master
+    # can fix that. The Backup counts as Ready then, so the StatefulSet goes on
+    # to the Master, for IGNITION_READY_INCOMPATIBLE_SECONDS (default 1800)
+    # from the first Incompatible check: a pair still Incompatible after that
+    # is broken, and the Backup is not Ready again until it is Good. Each
+    # change is written to the gateway's log (HEALTH_CHECK_LOG, default PID 1's
+    # stdout), and the start time is kept in HEALTH_CHECK_STATE_DIR (default
+    # /tmp, which a container restart clears).
+    #
     # Usage: health-check.sh [-t <timeout seconds>] [-s <expected state>] [-r]
 
     HTTP_PORT=${IGNITION_HTTP_PORT:-8088}
     TIMEOUT=5
     EXPECTED_STATE=RUNNING
     READINESS=false
+    INCOMPATIBLE_SECONDS=${IGNITION_READY_INCOMPATIBLE_SECONDS:-1800}
+    INCOMPATIBLE_SINCE="${HEALTH_CHECK_STATE_DIR:-/tmp}/health-check.incompatible-since"
+    case "${INCOMPATIBLE_SECONDS}" in '' | *[!0-9]*) INCOMPATIBLE_SECONDS=1800 ;; esac
+
+    # note <message>: one line in the gateway's own log, so the change of state
+    # shows in kubectl logs (a passing probe's output is not kept anywhere)
+    note() {
+      { printf '[health-check] %s\n' "$*" >> "${HEALTH_CHECK_LOG:-/proc/1/fd/1}"; } 2>/dev/null || true
+    }
 
     while getopts ":t:s:r" opt; do
       case "${opt}" in
@@ -570,7 +591,27 @@ stringData:
         case "${info}" in
           *"RedundancyStatus=Backup;"*)
             case "${info}" in
-              *"RedundantState=Good;"*) ;;
+              *"RedundantState=Good;"*)
+                if [ -f "${INCOMPATIBLE_SINCE}" ]; then
+                  rm -f "${INCOMPATIBLE_SINCE}"
+                  note "Backup is in sync with the Master again (RedundantState=Good)"
+                fi
+                ;;
+              *"RedundantState=Incompatible;"*)
+                now=$(date +%s)
+                since=$(cat "${INCOMPATIBLE_SINCE}" 2>/dev/null)
+                case "${since}" in '' | *[!0-9]*) since="" ;; esac
+                if [ -z "${since}" ]; then
+                  since=${now}
+                  { echo "${since}" > "${INCOMPATIBLE_SINCE}"; } 2>/dev/null
+                  note "Backup is Incompatible with the Master (their modules or Ignition version differ): counted as Ready for up to ${INCOMPATIBLE_SECONDS}s so a rolling update goes on to replace the Master, the only fix"
+                fi
+                if [ $((now - since)) -ge "${INCOMPATIBLE_SECONDS}" ]; then
+                  echo "Backup has been Incompatible with the Master for $((now - since))s (limit ${INCOMPATIBLE_SECONDS}s); check both gateways' modules and Ignition version: ${info}"
+                  exit 1
+                fi
+                echo "Backup is Incompatible with the Master ($((now - since))s of ${INCOMPATIBLE_SECONDS}s): counted as Ready so the Master can be updated"
+                ;;
               *) echo "Backup is not in sync with the Master: ${info}"; exit 1 ;;
             esac
             ;;

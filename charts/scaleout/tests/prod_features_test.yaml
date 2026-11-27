@@ -1,4 +1,6 @@
 suite: Ignition Scaleout Production Features
+values:
+  - values/required.yaml
 templates:
   - templates/frontend/hpa.yaml
   - templates/frontend/networkpolicy.yaml

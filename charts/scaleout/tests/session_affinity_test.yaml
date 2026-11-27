@@ -1,0 +1,49 @@
+suite: Ignition Scaleout Frontend Session Affinity
+values:
+  - values/required.yaml
+templates:
+  - templates/frontend/frontend-service.yaml
+tests:
+  - it: should leave one frontend gateway without affinity
+    documentIndex: 0
+    asserts:
+      - equal:
+          path: spec.sessionAffinity
+          value: None
+
+  # a Perspective session must stay on the gateway it started on
+  - it: should pin clients with more than one frontend replica
+    documentIndex: 0
+    set:
+      frontend:
+        redundancy:
+          replicas: 2
+    asserts:
+      - equal:
+          path: spec.sessionAffinity
+          value: ClientIP
+
+  - it: should pin clients while the frontend autoscales
+    documentIndex: 0
+    set:
+      componentSelectors: true
+      frontend:
+        hpa:
+          enabled: true
+    asserts:
+      - equal:
+          path: spec.sessionAffinity
+          value: ClientIP
+
+  - it: should keep an explicit sessionAffinity
+    documentIndex: 0
+    set:
+      frontend:
+        redundancy:
+          replicas: 3
+        service:
+          sessionAffinity: None
+    asserts:
+      - equal:
+          path: spec.sessionAffinity
+          value: None

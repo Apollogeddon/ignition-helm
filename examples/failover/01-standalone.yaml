@@ -2,6 +2,11 @@
 # Minimal configuration for a single Ignition Gateway.
 # This setup is suitable for development or simple testing.
 
+# Read and accept Inductive Automation's Ignition EULA
+# (https://inductiveautomation.com/ignition/license); the charts refuse to
+# render without it
+acceptEula: true
+
 ignition:
   # Define sensitive passwords (required)
   secrets:

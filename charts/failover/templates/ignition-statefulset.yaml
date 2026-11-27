@@ -1,3 +1,5 @@
+{{- include "ignition-common.requireSecrets" (dict "path" "ignition" "values" .Values.ignition) }}
+{{- $secretName := include "ignition-common.secretName" (dict "values" .Values.ignition "context" .) }}
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -23,6 +25,7 @@ spec:
         # restart the gateways when redundancy values change; seed-redundancy.sh
         # applies them to the data volume on start
         checksum/redundancy: {{ .Values.ignition.redundancy | toJson | sha256sum }}
+        {{- include "ignition-common.podChecksums" (dict "values" .Values.ignition "logging" .Values.ignition.logging "context" .) | nindent 8 }}
     spec:
       {{- include "ignition-common.podServiceAccount" . | nindent 6 }}
       terminationGracePeriodSeconds: 60
@@ -38,7 +41,7 @@ spec:
         - configMapRef:
             name: {{ include "ignition.name" . }}-config
         - secretRef:
-            name: {{ include "ignition.name" . }}-secrets
+            name: {{ $secretName }}
         env:
         - name: EAM_SETUP_INSTALLSELECTION
           value: {{ .Values.ignition.eam.role | quote }}
@@ -56,7 +59,7 @@ spec:
         {{- include "ignition-common.containerProbes" (dict "values" .Values.ignition) | trim | nindent 8 }}
       initContainers:
 {{- with include "ignition-common.initContainer.fixDataOwnership" (dict "image" .Values.image "values" .Values.ignition "context" .) }}{{ . | trim | nindent 6 }}{{ end }}
-{{ include "ignition-common.initContainer.preconfigure" (dict "name" (include "ignition.name" .) "image" .Values.image "values" .Values.ignition "replicas" (ternary 2 1 .Values.ignition.redundancy.enabled) "context" .) | nindent 6 }}
+{{ include "ignition-common.initContainer.preconfigure" (dict "name" (include "ignition.name" .) "secretName" $secretName "image" .Values.image "values" .Values.ignition "replicas" (ternary 2 1 .Values.ignition.redundancy.enabled) "context" .) | nindent 6 }}
       volumes:
 {{ include "ignition-common.volumes" (dict "name" (include "ignition.name" .) "values" .Values.ignition "ganTlsSecretName" (printf "%s-gan-tls" (include "ignition.name" .)) "commonScriptsConfigMapName" (include "ignition-common.scriptsName" .)) | nindent 6 }}
 

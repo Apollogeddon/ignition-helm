@@ -1,4 +1,6 @@
 suite: Ignition Scaleout GAN Certificate Rotation CronJob
+values:
+  - values/required.yaml
 templates:
   - frontend/cronjobs.yaml
   - backend/cronjobs.yaml
