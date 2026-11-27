@@ -1,5 +1,13 @@
 # Changelog
 
+## [5.1.0](https://github.com/Apollogeddon/ignition-helm/compare/ignition-failover-v5.0.0...ignition-failover-v5.1.0) (2026-11-27)
+
+
+### Features
+
+* **charts:** Add podAnnotations to the gateway pods, so a hash of an existingSecret rolls them through the same install or upgrade ([13e008e](https://github.com/Apollogeddon/ignition-helm/commit/13e008e889eb71bc8cf3306f0716d002a9284d43))
+* **charts:** Add podAnnotations to the gateway pods, so a hash of an existingSecret rolls them through the same install or upgrade ([1b648b7](https://github.com/Apollogeddon/ignition-helm/commit/1b648b7f992318c9cfdbdd0c6a0f95088be3a85b))
+
 ## [5.0.0](https://github.com/Apollogeddon/ignition-helm/compare/ignition-failover-v4.2.6...ignition-failover-v5.0.0) (2026-11-27)
 
 
