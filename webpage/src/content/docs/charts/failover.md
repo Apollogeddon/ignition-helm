@@ -234,12 +234,13 @@ command:
 
 ### Security and accounts
 
-Security context, secrets and the ServiceAccount. There are no default passwords: set `GATEWAY_ADMIN_PASSWORD`, `IGNITION_GAN_KEYSTORE_PASSWORD` and `IGNITION_WEB_KEYSTORE_PASSWORD` in `ignition.secrets`, or name a Secret you manage that holds them (and any other secret environment variables) in `ignition.existingSecret`. The chart then renders no Secret, and refuses values left in `ignition.secrets`. With `ignition.sealedSecrets`, every `ignition.secrets` value, the user name included, must be encrypted with `kubeseal` (see [SealedSecrets](../../guides/capabilities/#example-sealedsecrets)).
+Security context, secrets and the ServiceAccount. There are no default passwords: set `GATEWAY_ADMIN_PASSWORD`, `IGNITION_GAN_KEYSTORE_PASSWORD` and `IGNITION_WEB_KEYSTORE_PASSWORD` in `ignition.secrets`, or name a Secret you manage that holds them (and any other secret environment variables) in `ignition.existingSecret`. The chart then renders no Secret, and refuses values left in `ignition.secrets`. The chart can't see inside a Secret it doesn't render, so to restart the gateways when it changes, put a hash of its data in `ignition.podAnnotations`: a change to any pod annotation rolls the pods, through the same install or upgrade. Names under `checksum/` are the chart's own. With `ignition.sealedSecrets`, every `ignition.secrets` value, the user name included, must be encrypted with `kubeseal` (see [SealedSecrets](../../guides/capabilities/#example-sealedsecrets)).
 
 | Parameter | Type | Default |
 | --- | --- | --- |
 | `ignition.securityContext` | object | `{"runAsUser":2003,"runAsGroup":2003,"fsGroup":2003,"runAsNonRoot":true}` |
 | `ignition.existingSecret` | string | `""` |
+| `ignition.podAnnotations` | object | `{}` |
 | `ignition.secrets` | object | `{"GATEWAY_ADMIN_USERNAME":"admin"}` |
 | `ignition.sealedSecrets` | bool | `false` |
 | `serviceAccount.create` | bool | `false` |

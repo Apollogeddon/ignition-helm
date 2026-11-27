@@ -174,7 +174,7 @@ The timings, `maxDiskMb` and `pingMaxMissed`, and `backend.activeRouting.interva
 
 #### Resources and security (backend)
 
-There are no default passwords: set `GATEWAY_ADMIN_PASSWORD`, `IGNITION_GAN_KEYSTORE_PASSWORD` and `IGNITION_WEB_KEYSTORE_PASSWORD` in `backend.secrets`, or name a Secret you manage that holds them (and any other secret environment variables) in `backend.existingSecret`. The chart then renders no Secret, and refuses values left in `backend.secrets`. With `backend.sealedSecrets`, every `backend.secrets` value, the user name included, must be encrypted with `kubeseal` (see [SealedSecrets](../../guides/capabilities/#example-sealedsecrets)).
+There are no default passwords: set `GATEWAY_ADMIN_PASSWORD`, `IGNITION_GAN_KEYSTORE_PASSWORD` and `IGNITION_WEB_KEYSTORE_PASSWORD` in `backend.secrets`, or name a Secret you manage that holds them (and any other secret environment variables) in `backend.existingSecret`. The chart then renders no Secret, and refuses values left in `backend.secrets`. The chart can't see inside a Secret it doesn't render, so to restart the gateways when it changes, put a hash of its data in `backend.podAnnotations`: a change to any pod annotation rolls the pods, through the same install or upgrade. Names under `checksum/` are the chart's own. With `backend.sealedSecrets`, every `backend.secrets` value, the user name included, must be encrypted with `kubeseal` (see [SealedSecrets](../../guides/capabilities/#example-sealedsecrets)).
 
 | Parameter | Type | Default |
 | --- | --- | --- |
@@ -187,6 +187,7 @@ There are no default passwords: set `GATEWAY_ADMIN_PASSWORD`, `IGNITION_GAN_KEYS
 | `backend.externalModules.pvcName` | string | `""` |
 | `backend.securityContext` | object | `{"runAsUser":2003,"runAsGroup":2003,"fsGroup":2003,"runAsNonRoot":true}` |
 | `backend.existingSecret` | string | `""` |
+| `backend.podAnnotations` | object | `{}` |
 | `backend.secrets` | object | `{"GATEWAY_ADMIN_USERNAME":"admin"}` |
 | `backend.sealedSecrets` | bool | `false` |
 
@@ -310,7 +311,7 @@ GATEWAY_MODULES_ENABLED: perspective,symbol-factory
 
 #### Resources and security (frontend)
 
-There are no default passwords: set `GATEWAY_ADMIN_PASSWORD`, `IGNITION_GAN_KEYSTORE_PASSWORD` and `IGNITION_WEB_KEYSTORE_PASSWORD` in `frontend.secrets`, or name a Secret you manage that holds them (and any other secret environment variables) in `frontend.existingSecret`. The chart then renders no Secret, and refuses values left in `frontend.secrets`. With `frontend.sealedSecrets`, every `frontend.secrets` value, the user name included, must be encrypted with `kubeseal` (see [SealedSecrets](../../guides/capabilities/#example-sealedsecrets)).
+There are no default passwords: set `GATEWAY_ADMIN_PASSWORD`, `IGNITION_GAN_KEYSTORE_PASSWORD` and `IGNITION_WEB_KEYSTORE_PASSWORD` in `frontend.secrets`, or name a Secret you manage that holds them (and any other secret environment variables) in `frontend.existingSecret`. The chart then renders no Secret, and refuses values left in `frontend.secrets`. The chart can't see inside a Secret it doesn't render, so to restart the gateways when it changes, put a hash of its data in `frontend.podAnnotations`: a change to any pod annotation rolls the pods, through the same install or upgrade. Names under `checksum/` are the chart's own. With `frontend.sealedSecrets`, every `frontend.secrets` value, the user name included, must be encrypted with `kubeseal` (see [SealedSecrets](../../guides/capabilities/#example-sealedsecrets)).
 
 | Parameter | Type | Default |
 | --- | --- | --- |
@@ -326,6 +327,7 @@ There are no default passwords: set `GATEWAY_ADMIN_PASSWORD`, `IGNITION_GAN_KEYS
 | `frontend.fixDataOwnership` | bool | `false` |
 | `frontend.securityContext` | object | `{"runAsUser":2003,"runAsGroup":2003,"fsGroup":2003,"runAsNonRoot":true}` |
 | `frontend.existingSecret` | string | `""` |
+| `frontend.podAnnotations` | object | `{}` |
 | `frontend.secrets` | object | `{"GATEWAY_ADMIN_USERNAME":"admin"}` |
 | `frontend.sealedSecrets` | bool | `false` |
 

@@ -270,6 +270,13 @@
           "type": "string",
           "description": "A Secret you manage holding GATEWAY_ADMIN_PASSWORD, IGNITION_GAN_KEYSTORE_PASSWORD and IGNITION_WEB_KEYSTORE_PASSWORD; the chart then renders no Secret"
         },
+        "podAnnotations": {
+          "type": "object",
+          "description": "Extra annotations on the gateway pods; a change to any rolls them, so a hash of an existingSecret's data here restarts the gateways when it changes. Names under checksum/ are the chart's own",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
         "sealedSecrets": {
           "type": "boolean"
         },
