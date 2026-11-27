@@ -319,7 +319,9 @@ ignition:
       - "3"
       - -r
 
-  # -- Liveness Probe configuration
+  # -- Liveness Probe configuration. -l also restarts a Backup of a redundant
+  # pair that has been Active and out of sync, while its Master is Active too,
+  # for config.IGNITION_LIVE_SPLIT_SECONDS (default 300; "0" turns it off)
   livenessProbe:
     enabled: true
     initialDelaySeconds: 120
@@ -330,6 +332,7 @@ ignition:
       - /config/scripts/health-check.sh
       - -t
       - "5"
+      - -l
 
   # -- Startup Probe configuration. While it runs, liveness and readiness are
   # held off, so livenessProbe.failureThreshold can stay low and slow starts are

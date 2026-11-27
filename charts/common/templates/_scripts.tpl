@@ -544,15 +544,28 @@ stringData:
     # stdout), and the start time is kept in HEALTH_CHECK_STATE_DIR (default
     # /tmp, which a container restart clears).
     #
-    # Usage: health-check.sh [-t <timeout seconds>] [-s <expected state>] [-r]
+    # -l (liveness) also fails on a Backup of a redundant pair that has been
+    # Active, and out of sync, for IGNITION_LIVE_SPLIT_SECONDS (default 300; 0
+    # turns it off) while its Master answers as the Active Master at
+    # IGNITION_REDUNDANCY_MASTER_URL: both gateways serving at once. A Backup
+    # whose first download of the Master's state fails can stay so, and a
+    # restart, with the configuration already synced, pairs it again. A Backup
+    # that took over from a Master that is down, or that doesn't answer, is
+    # never restarted. The start time is kept beside the Incompatible one.
+    #
+    # Usage: health-check.sh [-t <timeout seconds>] [-s <expected state>] [-r] [-l]
 
     HTTP_PORT=${IGNITION_HTTP_PORT:-8088}
     TIMEOUT=5
     EXPECTED_STATE=RUNNING
     READINESS=false
+    LIVENESS=false
     INCOMPATIBLE_SECONDS=${IGNITION_READY_INCOMPATIBLE_SECONDS:-1800}
     INCOMPATIBLE_SINCE="${HEALTH_CHECK_STATE_DIR:-/tmp}/health-check.incompatible-since"
     case "${INCOMPATIBLE_SECONDS}" in '' | *[!0-9]*) INCOMPATIBLE_SECONDS=1800 ;; esac
+    SPLIT_SECONDS=${IGNITION_LIVE_SPLIT_SECONDS:-300}
+    SPLIT_SINCE="${HEALTH_CHECK_STATE_DIR:-/tmp}/health-check.split-since"
+    case "${SPLIT_SECONDS}" in '' | *[!0-9]*) SPLIT_SECONDS=300 ;; esac
 
     # note <message>: one line in the gateway's own log, so the change of state
     # shows in kubectl logs (a passing probe's output is not kept anywhere)
@@ -560,12 +573,13 @@ stringData:
       { printf '[health-check] %s\n' "$*" >> "${HEALTH_CHECK_LOG:-/proc/1/fd/1}"; } 2>/dev/null || true
     }
 
-    while getopts ":t:s:r" opt; do
+    while getopts ":t:s:rl" opt; do
       case "${opt}" in
         t) TIMEOUT="${OPTARG}" ;;
         s) EXPECTED_STATE="${OPTARG}" ;;
         r) READINESS=true ;;
-        *) echo "Usage: $0 [-t timeout] [-s state] [-r]" >&2; exit 2 ;;
+        l) LIVENESS=true ;;
+        *) echo "Usage: $0 [-t timeout] [-s state] [-r] [-l]" >&2; exit 2 ;;
       esac
     done
 
@@ -578,6 +592,44 @@ stringData:
       *"\"state\":\"${EXPECTED_STATE}\""*) ;;
       *) echo "Gateway state is not ${EXPECTED_STATE}: ${body}"; exit 1 ;;
     esac
+
+    if [ "${LIVENESS}" = true ] && [ -n "${IGNITION_REDUNDANCY_MASTER_URL:-}" ] && [ "${SPLIT_SECONDS}" -gt 0 ]; then
+      split=false
+      if info=$(curl -s -f --max-time "${TIMEOUT}" "http://localhost:${HTTP_PORT}/system/gwinfo"); then
+        case "${info}" in *"RedundancyStatus=Backup;"*) backup=true ;; *) backup=false ;; esac
+        case "${info}" in *"RedundantNodeActiveStatus=Active;"*) active=true ;; *) active=false ;; esac
+        case "${info}" in *"RedundantState=Good;"*) synced=true ;; *) synced=false ;; esac
+        if [ "${backup}" = true ] && [ "${active}" = true ] && [ "${synced}" = false ] &&
+          master=$(curl -s -f --max-time "${TIMEOUT}" "${IGNITION_REDUNDANCY_MASTER_URL%/}/system/gwinfo"); then
+          case "${master}" in
+            *"ContextStatus=RUNNING;"*)
+              case "${master}" in
+                *"RedundancyStatus=Master;"*)
+                  case "${master}" in *"RedundantNodeActiveStatus=Active;"*) split=true ;; esac
+                  ;;
+              esac
+              ;;
+          esac
+        fi
+      fi
+      if [ "${split}" = true ]; then
+        now=$(date +%s)
+        since=$(cat "${SPLIT_SINCE}" 2>/dev/null)
+        case "${since}" in '' | *[!0-9]*) since="" ;; esac
+        if [ -z "${since}" ]; then
+          since=${now}
+          { echo "${since}" > "${SPLIT_SINCE}"; } 2>/dev/null
+          note "Backup is Active and out of sync while its Master is Active too: restarted after ${SPLIT_SECONDS}s unless it pairs again"
+        fi
+        if [ $((now - since)) -ge "${SPLIT_SECONDS}" ]; then
+          echo "Backup has been Active and out of sync, with the Master Active too, for $((now - since))s (limit ${SPLIT_SECONDS}s): restarting it pairs it again: ${info}"
+          exit 1
+        fi
+      elif [ -f "${SPLIT_SINCE}" ]; then
+        rm -f "${SPLIT_SINCE}"
+        note "Backup is no longer Active alongside its Master"
+      fi
+    fi
 
     if [ "${READINESS}" = true ]; then
       case "${body}" in
