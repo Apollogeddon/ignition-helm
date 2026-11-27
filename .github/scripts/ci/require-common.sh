@@ -7,7 +7,10 @@
 set -euo pipefail
 
 common=$(sed -n 's/^version: *//p' charts/common/Chart.yaml | tr -d '"')
-want="^$common"
+# a minimum, not a caret range: each chart takes common from this repository
+# (file://../common), so an upper bound guards nothing, and a ^range stops the release
+# pull request that takes common to its next major version from building the charts
+want=">=$common"
 
 # the range each chart gives on the line after its ignition-common dependency
 range() { sed -n '/- name: ignition-common/{n;s/^ *version: *//p;}' "$1" | tr -d '"'; }
