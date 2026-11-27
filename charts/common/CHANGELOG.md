@@ -1,5 +1,33 @@
 # Changelog
 
+## [5.0.0](https://github.com/Apollogeddon/ignition-helm/compare/ignition-common-v4.0.0...ignition-common-v5.0.0) (2026-11-27)
+
+
+### ⚠ BREAKING CHANGES
+
+* **charts:** make accepting the ignition eula opt-in with a top-level acceptEula, so a user reads it before deploying; renders without acceptEula=true now fail
+* **charts:** drop the default admin, gan and web keystore passwords and add existingSecret, so no gateway starts with a known password; installs that relied on admin/metro/ignition must now set them
+
+### Features
+
+* **charts:** Add config, secrets, logging and scripts checksums to the gateway pod templates, so a helm upgrade that changes them restarts the gateways ([a97d8dd](https://github.com/Apollogeddon/ignition-helm/commit/a97d8ddbde8921d153255d26318792179176bd44))
+* **charts:** Drop the default admin, gan and web keystore passwords and add existingSecret, so no gateway starts with a known password; installs that relied on admin/metro/ignition must now set them ([4619934](https://github.com/Apollogeddon/ignition-helm/commit/4619934627d8c857098eed1d121930cfc17b2e8f))
+* **charts:** Make accepting the ignition eula opt-in with a top-level acceptEula, so a user reads it before deploying; renders without acceptEula=true now fail ([d78783a](https://github.com/Apollogeddon/ignition-helm/commit/d78783a2541c5540a33170c01648dcf878d5d961))
+
+
+### Bug Fixes
+
+* **charts:** Bound the active-routing labeller's kubectl calls with timeout, as kubectl 1.37 drops in-cluster config with --request-timeout and the ingress got no backend ([14649bf](https://github.com/Apollogeddon/ignition-helm/commit/14649bf8c15d2e90017b95f6121de584f6a75b10))
+* **charts:** Checksum the rendered configmap data, so a chart change to the gateways' environment rolls them ([3fcf32a](https://github.com/Apollogeddon/ignition-helm/commit/3fcf32a8d6b53563ded421e36d29dd83677872a1))
+* **charts:** Count a backup incompatible with its master as ready for 30 minutes, so a rolling update that changes the modules goes on to replace the master instead of hanging ([0f23cc0](https://github.com/Apollogeddon/ignition-helm/commit/0f23cc00ee7548e88ccaa9899d0e07f39a1bd945))
+* **charts:** Enable 8.3's historian and jdbc driver modules by id, so a gateway on the default image can reach postgresql, sql server and mariadb ([de492f7](https://github.com/Apollogeddon/ignition-helm/commit/de492f77e34f8ea6c3719a15aadfd6d6bb1ae97e))
+* **charts:** Issue the gan ca from the release's own self-signed issuer, so a redundant pair under a ca cluster issuer trusts each other ([9a91d8d](https://github.com/Apollogeddon/ignition-helm/commit/9a91d8d9776d68d4bbb66ce547e3bec0e3b6bff0))
+* **charts:** Keep the container ports, probes, network policy, headless services and redundancy peer on the gateway's own 8088/8043/8060, so a custom service.ports only moves the service port ([f8382cd](https://github.com/Apollogeddon/ignition-helm/commit/f8382cd37a36405df90151177d476ebdab0fa2c3))
+* **charts:** Mount extraVolumeMounts and localMounts read-only in the preconfigure init container, so restore.path can read a gwbk from a mounted volume ([c53dbb3](https://github.com/Apollogeddon/ignition-helm/commit/c53dbb3cc560a7767976c257b51b394c69718d74))
+* **charts:** Pass the gan and web keystore passwords to the gateway jvm, so a redundant pair whose secrets aren't metro and ignition connects ([2f95ad7](https://github.com/Apollogeddon/ignition-helm/commit/2f95ad71a8e1005859184c0f305262f5916a0b61))
+* **common:** Bound active-routing kubectl calls with timeout, not --request-timeout ([a500469](https://github.com/Apollogeddon/ignition-helm/commit/a500469c6179b8551a739dbfda9efdd9e4550209))
+* **scaleout:** Render the frontend's logback.xml from frontend.logging, so frontend log levels are no longer silently replaced by the backend's ([bbdf0c1](https://github.com/Apollogeddon/ignition-helm/commit/bbdf0c1d7234bb27799ab9de7ae75f023829c659))
+
 ## [4.0.0](https://github.com/Apollogeddon/ignition-helm/compare/ignition-common-v3.3.2...ignition-common-v4.0.0) (2026-10-16)
 
 
