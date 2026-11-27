@@ -383,10 +383,10 @@ stringData:
     log "started: namespace=${namespace} selector=${selector} label=${label} interval=${interval}s"
     streak=0
     loops=0
+    # Every API call is bounded by timeout(1), not --request-timeout: kubectl treats that flag as a config
+    # override and then ignores the in-cluster service account, so every call would fail.
     while :; do
       loops=$((loops + 1))
-      # bounded with timeout, not --request-timeout: kubectl 1.37 ignores the in-cluster
-      # service account config when that flag is set, and falls back to localhost:8080
       pods=$(timeout 10 kubectl get pods -n "$namespace" -l "$selector" \
         -o jsonpath="{range .items[*]}{.metadata.name}|{.status.podIP}|{.metadata.deletionTimestamp}|{.metadata.labels.${label}}{\"\n\"}{end}" 2>/dev/null)
       if [ -z "$pods" ]; then

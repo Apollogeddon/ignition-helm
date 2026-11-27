@@ -77,13 +77,14 @@ check "does not label a gateway that is commissioning" "" \
   PODS=$'gw-0|10.0.0.1||' GW_10_0_0_1="$COMMISSIONING"
 
 : > "$work/kubectl.args"
-# under timeout, not --request-timeout: kubectl 1.37 ignores the in-cluster config with that flag
-check "moves the label, every API call bounded by timeout" "gw-0 -|gw-1 +" \
+check "moves the label, every API call bounded" "gw-0 -|gw-1 +" \
   PODS=$'gw-0|10.0.0.1||true\ngw-1|10.0.0.2||' GW_10_0_0_1="$MASTER_COLD" GW_10_0_0_2="$BACKUP_ACTIVE"
-if [ "$(grep -vc '^bounded ' "$work/kubectl.args")" -eq 0 ] && ! grep -q -- "--request-timeout" "$work/kubectl.args" &&
-  [ -s "$work/kubectl.args" ]; then
-  echo "ok   no API call can hang the loop"
-else echo "FAIL no API call can hang the loop"; sed 's/^/     /' "$work/kubectl.args"; fails=$((fails + 1)); fi
+# --request-timeout makes kubectl skip the in-cluster service account, so every call would fail; each
+# kubectl call goes through timeout(1) instead
+unbounded=$(grep -vE '^[[:space:]]*#' "$work/active-routing.sh" | grep -E '(^|[^0-9a-z_-])kubectl ' | grep -vc 'timeout 10 kubectl ')
+if [ -s "$work/kubectl.args" ] && ! grep -q -- "--request-timeout" "$work/kubectl.args" && [ "$unbounded" -eq 0 ]; then
+  echo "ok   no API call can hang the loop or lose the in-cluster config"
+else echo "FAIL no API call can hang the loop or lose the in-cluster config"; sed 's/^/     /' "$work/kubectl.args"; fails=$((fails + 1)); fi
 
 # rejects intervals that would poll without pause, rather than looping
 for bad in -1 0 abc; do
