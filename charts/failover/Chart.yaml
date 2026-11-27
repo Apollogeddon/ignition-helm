@@ -3,7 +3,7 @@ name: ignition-failover
 description: A Helm chart for failover Ignition Gateway with combined
   frontend/backend functionality
 type: application
-version: 5.1.0
+version: 5.1.1
 keywords:
   - ignition
   - scada

@@ -1,5 +1,15 @@
 # Changelog
 
+## [5.1.1](https://github.com/Apollogeddon/ignition-helm/compare/ignition-failover-v5.1.0...ignition-failover-v5.1.1) (2026-11-27)
+
+
+### Bug Fixes
+
+* **charts:** Restart a backup that stays active and out of sync beside an active master, so a pair whose first sync failed pairs again ([cffff5d](https://github.com/Apollogeddon/ignition-helm/commit/cffff5dadb107ce7b1fc6c5fb82e2618c890f361))
+* **charts:** Restart a backup that stays active and out of sync beside an active master, so a pair whose first sync failed pairs again ([fb85ba1](https://github.com/Apollogeddon/ignition-helm/commit/fb85ba1cef96792eaa443d73a3f17a305efef168))
+* Require ignition-common &gt;=5.1.0 in the charts that bundle it ([1e42726](https://github.com/Apollogeddon/ignition-helm/commit/1e42726e13494aa8d8541da1fe4dd1d4a58794ea))
+* Require ignition-common &gt;=5.1.0 in the charts that bundle it ([2a2f1d4](https://github.com/Apollogeddon/ignition-helm/commit/2a2f1d4939b227b9975519bc7f09044ec475a7d6))
+
 ## [5.1.0](https://github.com/Apollogeddon/ignition-helm/compare/ignition-failover-v5.0.0...ignition-failover-v5.1.0) (2026-11-27)
 
 
