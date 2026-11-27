@@ -51,3 +51,21 @@ tests:
     asserts:
       - notExists:
           path: spec.template.metadata.annotations["checksum/secrets"]
+
+  - it: should add each component's podAnnotations to its own pod template
+    set:
+      frontend:
+        podAnnotations:
+          example.com/secret-hash: front
+      backend:
+        podAnnotations:
+          example.com/secret-hash: back
+    asserts:
+      - equal:
+          path: spec.template.metadata.annotations["example.com/secret-hash"]
+          value: front
+        template: templates/frontend/frontend-statefulset.yaml
+      - equal:
+          path: spec.template.metadata.annotations["example.com/secret-hash"]
+          value: back
+        template: templates/backend/backend-statefulset.yaml

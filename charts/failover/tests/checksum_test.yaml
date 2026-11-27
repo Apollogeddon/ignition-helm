@@ -36,3 +36,31 @@ tests:
           path: spec.template.metadata.annotations["checksum/secrets"]
       - exists:
           path: spec.template.metadata.annotations["checksum/config"]
+
+  # an existingSecret's hash passed in podAnnotations rolls the pods through the
+  # same install or upgrade
+  - it: should add podAnnotations to the pod template
+    set:
+      ignition:
+        existingSecret: my-ignition-secrets
+        secrets:
+          GATEWAY_ADMIN_PASSWORD: ""
+          IGNITION_GAN_KEYSTORE_PASSWORD: ""
+          IGNITION_WEB_KEYSTORE_PASSWORD: ""
+        podAnnotations:
+          example.com/secret-hash: abc123
+    asserts:
+      - equal:
+          path: spec.template.metadata.annotations["example.com/secret-hash"]
+          value: abc123
+      - exists:
+          path: spec.template.metadata.annotations["checksum/config"]
+
+  - it: should refuse a podAnnotation under checksum/
+    set:
+      ignition:
+        podAnnotations:
+          checksum/config: mine
+    asserts:
+      - failedTemplate:
+          errorPattern: "podAnnotations: checksum/config is the chart's own"

@@ -189,6 +189,12 @@ ignition:
   # are not used, and the render fails if `secrets` still sets a value
   existingSecret: ""
 
+  # -- Extra annotations on the gateway pods. A change to any of them rolls the
+  # pods, so a hash of the existingSecret's data here restarts the gateways when
+  # it changes, through the same install or upgrade (the chart can't see a
+  # Secret it doesn't render). Names under checksum/ are the chart's own.
+  podAnnotations: {}
+
   # -- Use SealedSecrets instead of plain Kubernetes Secrets: every key in `secrets`,
   # the username included, must then be encrypted with `kubeseal --raw --scope namespace-wide`
   sealedSecrets: false

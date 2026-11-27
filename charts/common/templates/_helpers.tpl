@@ -140,7 +140,9 @@ read only on start rolls the pods: the environment variables (the rendered
 ConfigMap's data, so a chart change to it rolls them too), the chart's own Secret (none with existingSecret: the chart can't
 see a Secret it doesn't render, so roll the pods yourself when it changes), the
 logback.xml the init container installs, and the scripts. Only the scripts'
-contents are hashed, so a chart version bump alone restarts nothing.
+contents are hashed, so a chart version bump alone restarts nothing. Then the
+component's podAnnotations, for example a hash of an existingSecret, so that
+changing it rolls the pods through the same install or upgrade.
 Params:
   values: The component-specific values object
   logging: The logging values the component's logback.xml is rendered from
@@ -154,6 +156,12 @@ checksum/secrets: {{ dict "secrets" .values.secrets "sealed" .values.sealedSecre
 {{- end }}
 checksum/logging: {{ include "ignition-common.logback" (dict "level" $logging.level "loggers" $logging.loggers "sqlite" $logging.sqlite) | sha256sum }}
 checksum/scripts: {{ get (include "ignition-common.scripts" .context | fromYaml) "stringData" | toJson | sha256sum }}
+{{- range $key, $value := .values.podAnnotations }}
+{{- if hasPrefix "checksum/" $key }}
+{{- fail (printf "podAnnotations: %s is the chart's own; pick another name" $key) }}
+{{- end }}
+{{ $key }}: {{ $value | toString | quote }}
+{{- end }}
 {{- end }}
 
 {{/*
