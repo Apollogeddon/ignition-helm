@@ -215,7 +215,10 @@ command:
   - /config/scripts/health-check.sh
   - "-t"
   - "5"
+  - "-l"
 ```
+
+With `-l`, liveness also restarts the Backup of a redundant pair that has been Active, and out of sync, for `IGNITION_LIVE_SPLIT_SECONDS` (in `ignition.config`, default 300; `"0"` turns it off) while its Master answers as the Active Master: both gateways serving at once, which a Backup whose first download of the Master's state fails can stay in. After the restart, with the configuration already synced, it pairs again. A Backup that took over from a Master that is down, or doesn't answer, is never restarted.
 
 **Default `ignition.readinessProbe`:**
 

@@ -49,6 +49,11 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.name
+        {{- if .Values.ignition.redundancy.enabled }}
+        # health-check.sh -l asks the Master whether a Backup Active beside it is stuck
+        - name: IGNITION_REDUNDANCY_MASTER_URL
+          value: {{ printf "http://%s:%s" (include "ignition-common.podFQDN" (dict "name" (include "ignition.name" .) "ordinal" 0)) (include "ignition-common.gatewayPort" "http") | quote }}
+        {{- end }}
         {{- if include "ignition-common.activeRoutingEnabled" (dict "values" .Values.ignition) }}
         - name: IGNITION_READY_REQUIRES_BACKUP_SYNC
           value: "true"

@@ -15,7 +15,7 @@ tests:
           value: ["/config/scripts/health-check.sh", "-t", "3", "-r"]
       - equal:
           path: spec.template.spec.containers[0].livenessProbe.exec.command
-          value: ["/config/scripts/health-check.sh", "-t", "5"]
+          value: ["/config/scripts/health-check.sh", "-t", "5", "-l"]
 
   - it: should keep a custom probe command
     template: ignition-statefulset.yaml
@@ -91,3 +91,26 @@ tests:
       - equal:
           path: data.IGNITION_READY_INCOMPATIBLE_SECONDS
           value: "3600"
+
+  # a Backup's liveness asks its Master whether a Backup Active beside it is stuck
+  - it: should give a redundant pair the Master's address
+    template: ignition-statefulset.yaml
+    set:
+      ignition:
+        redundancy:
+          enabled: true
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: IGNITION_REDUNDANCY_MASTER_URL
+            value: http://ignition-failover-0.ignition-failover-headless:8088
+
+  - it: should not give a single gateway a Master's address
+    template: ignition-statefulset.yaml
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          any: true
+          content:
+            name: IGNITION_REDUNDANCY_MASTER_URL

@@ -15,6 +15,7 @@ cat > "$work/bin/curl" <<'STUB'
 #!/usr/bin/env bash
 for a in "$@"; do url=$a; done
 case "$url" in
+  http://master.test:8088/system/gwinfo) [ -n "${MASTER_GWINFO:-}" ] || exit 7; printf '%s' "$MASTER_GWINFO" ;;
   */StatusPing) [ -n "${PING:-}" ] || exit 7; printf '%s' "$PING" ;;
   */system/gwinfo) [ -n "${GWINFO:-}" ] || exit 7; printf '%s' "$GWINFO" ;;
 esac
@@ -88,6 +89,32 @@ echo garbage > "$since"
 check 0 "a corrupt clock starts again" "${HC[@]}" GWINFO="$INCOMPAT_BACKUP" -- -r
 check 0 "unwritable log does not fail the probe" PING='{"state":"RUNNING"}' "$SYNC" HEALTH_CHECK_STATE_DIR="$work/new" HEALTH_CHECK_LOG=/nonexistent/x GWINFO="$INCOMPAT_BACKUP" -- -r
 check 1 "other backup states are still not ready" "${HC[@]}" GWINFO="${STALE_BACKUP/Unknown/Faulted}" -- -r
+
+# A Backup Active and out of sync while its Master answers as the Active Master
+# (both serving) fails liveness after IGNITION_LIVE_SPLIT_SECONDS, so it is
+# restarted; a Backup that took over from a Master that is down never is.
+ACTIVE_BACKUP="ContextStatus=RUNNING;RedundancyStatus=Backup;RedundantState=Unknown;RedundantNodeActiveStatus=Active;"
+ACTIVE_MASTER="ContextStatus=RUNNING;RedundancyStatus=Master;RedundantState=Good;RedundantNodeActiveStatus=Active;"
+split_state="$work/split"; mkdir "$split_state"
+split_since="$split_state/health-check.split-since"
+split_log="$work/split.log"
+LV=(PING='{"state":"RUNNING"}' IGNITION_REDUNDANCY_MASTER_URL=http://master.test:8088 HEALTH_CHECK_STATE_DIR="$split_state" HEALTH_CHECK_LOG="$split_log")
+check 0 "a split backup stays live within the limit" "${LV[@]}" GWINFO="$ACTIVE_BACKUP" MASTER_GWINFO="$ACTIVE_MASTER" -- -l
+holds "the split start is recorded and logged" test -s "$split_since"
+holds "the split is logged once" grep -q "out of sync while its Master is Active too" "$split_log"
+echo $(( $(date +%s) - 301 )) > "$split_since"
+check 1 "a split backup past the limit fails liveness" "${LV[@]}" GWINFO="$ACTIVE_BACKUP" MASTER_GWINFO="$ACTIVE_MASTER" -- -l
+check 0 "the split limit is configurable" "${LV[@]}" GWINFO="$ACTIVE_BACKUP" MASTER_GWINFO="$ACTIVE_MASTER" IGNITION_LIVE_SPLIT_SECONDS=3600 -- -l
+check 0 "a zero split limit turns it off" "${LV[@]}" GWINFO="$ACTIVE_BACKUP" MASTER_GWINFO="$ACTIVE_MASTER" IGNITION_LIVE_SPLIT_SECONDS=0 -- -l
+check 0 "a backup that took over from a master that is down stays live" "${LV[@]}" GWINFO="$ACTIVE_BACKUP" MASTER_GWINFO= -- -l
+check 0 "a backup beside a master that is not active stays live" "${LV[@]}" GWINFO="$ACTIVE_BACKUP" MASTER_GWINFO="${ACTIVE_MASTER/RedundantNodeActiveStatus=Active/RedundantNodeActiveStatus=Cold}" -- -l
+holds "the split clock is cleared once the pair is not split" test ! -e "$split_since"
+echo $(( $(date +%s) - 301 )) > "$split_since"
+check 0 "a cold backup is never split" "${LV[@]}" GWINFO="$STALE_BACKUP" MASTER_GWINFO="$ACTIVE_MASTER" -- -l
+check 0 "a backup in sync is never split" "${LV[@]}" GWINFO="ContextStatus=RUNNING;RedundancyStatus=Backup;RedundantState=Good;RedundantNodeActiveStatus=Active;" MASTER_GWINFO="$ACTIVE_MASTER" -- -l
+check 0 "the master itself is never split" "${LV[@]}" GWINFO="$ACTIVE_MASTER" MASTER_GWINFO="$ACTIVE_MASTER" -- -l
+check 0 "split ignored without a master url" PING='{"state":"RUNNING"}' HEALTH_CHECK_STATE_DIR="$split_state" GWINFO="$ACTIVE_BACKUP" MASTER_GWINFO="$ACTIVE_MASTER" -- -l
+check 0 "split ignored without -l" "${LV[@]}" GWINFO="$ACTIVE_BACKUP" MASTER_GWINFO="$ACTIVE_MASTER" --
 
 if [ "$fails" -ne 0 ]; then echo "$fails failed"; exit 1; fi
 echo "all passed"
