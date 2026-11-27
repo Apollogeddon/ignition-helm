@@ -1,5 +1,13 @@
 # Changelog
 
+## [6.1.1](https://github.com/Apollogeddon/ignition-helm/compare/ignition-scaleout-v6.1.0...ignition-scaleout-v6.1.1) (2026-11-27)
+
+
+### Bug Fixes
+
+* Require ignition-common &gt;=5.1.0 in the charts that bundle it ([1e42726](https://github.com/Apollogeddon/ignition-helm/commit/1e42726e13494aa8d8541da1fe4dd1d4a58794ea))
+* Require ignition-common &gt;=5.1.0 in the charts that bundle it ([2a2f1d4](https://github.com/Apollogeddon/ignition-helm/commit/2a2f1d4939b227b9975519bc7f09044ec475a7d6))
+
 ## [6.1.0](https://github.com/Apollogeddon/ignition-helm/compare/ignition-scaleout-v6.0.0...ignition-scaleout-v6.1.0) (2026-11-27)
 
 

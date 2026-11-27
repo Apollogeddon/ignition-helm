@@ -1,5 +1,13 @@
 # Changelog
 
+## [5.1.1](https://github.com/Apollogeddon/ignition-helm/compare/ignition-common-v5.1.0...ignition-common-v5.1.1) (2026-11-27)
+
+
+### Bug Fixes
+
+* **charts:** Restart a backup that stays active and out of sync beside an active master, so a pair whose first sync failed pairs again ([cffff5d](https://github.com/Apollogeddon/ignition-helm/commit/cffff5dadb107ce7b1fc6c5fb82e2618c890f361))
+* **charts:** Restart a backup that stays active and out of sync beside an active master, so a pair whose first sync failed pairs again ([fb85ba1](https://github.com/Apollogeddon/ignition-helm/commit/fb85ba1cef96792eaa443d73a3f17a305efef168))
+
 ## [5.1.0](https://github.com/Apollogeddon/ignition-helm/compare/ignition-common-v5.0.0...ignition-common-v5.1.0) (2026-11-27)
 
 
