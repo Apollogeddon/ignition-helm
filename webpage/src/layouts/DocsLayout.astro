@@ -16,6 +16,10 @@ const { title, description } = Astro.props;
 			<Sidebar />
 		</aside>
 		<article class="content-wrapper">
+			<details class="docs-menu">
+				<summary>Menu</summary>
+				<Sidebar />
+			</details>
 			<div class="prose">
 				<h1>{title}</h1>
 				<slot />
@@ -33,6 +37,8 @@ const { title, description } = Astro.props;
 	}
 
 	.sidebar-wrapper {
+		box-sizing: border-box;
+		flex-shrink: 0;
 		width: var(--sl-sidebar-width);
 		position: sticky;
 		top: var(--sl-nav-height);
@@ -61,13 +67,72 @@ const { title, description } = Astro.props;
 		color: var(--sl-color-text);
 	}
 
+	/* phones: the same sidebar, folded into a menu above the article */
+	.docs-menu {
+		display: none;
+		margin-bottom: 2rem;
+		border: 1px solid var(--sl-color-hairline);
+		border-radius: var(--sl-border-radius);
+		background: var(--sl-color-gray-6);
+	}
+
+	.docs-menu summary {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		min-height: 44px;
+		padding: 0 1rem;
+		font-weight: 600;
+		color: var(--sl-color-text);
+		cursor: pointer;
+		list-style: none;
+	}
+
+	.docs-menu summary::-webkit-details-marker {
+		display: none;
+	}
+
+	.docs-menu summary::after {
+		content: "";
+		width: 0.5rem;
+		height: 0.5rem;
+		border-right: 2px solid currentColor;
+		border-bottom: 2px solid currentColor;
+		transform: rotate(45deg);
+		transition: transform 0.2s;
+	}
+
+	.docs-menu[open] summary::after {
+		transform: rotate(-135deg);
+	}
+
+	.docs-menu[open] summary {
+		border-bottom: 1px solid var(--sl-color-hairline);
+	}
+
+	.docs-menu :global(.sidebar) {
+		padding: 0 0.5rem 0.5rem;
+	}
+
 	/* Responsive */
-	@media (max-width: 768px) {
+	@media (max-width: 1023px) {
+		.content-wrapper {
+			padding: 2rem 1.5rem;
+		}
+	}
+
+	@media (max-width: 767px) {
+		.docs-container {
+			padding: 0;
+		}
 		.sidebar-wrapper {
 			display: none;
 		}
+		.docs-menu {
+			display: block;
+		}
 		.content-wrapper {
-			padding: 2rem 1rem;
+			padding: 1.5rem 1rem 2rem;
 		}
 	}
 </style>

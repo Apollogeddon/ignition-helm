@@ -72,8 +72,8 @@
   --sl-color-accent: #0e7490;
   --sl-color-accent-rgb: 14, 116, 144;
   --sl-color-accent-high: #164e63;
-  /* the shared secondary is too pale for the heading gradient on white */
-  --sl-color-accent-secondary: #06b6d4;
+  /* the shared secondary is too pale for the heading gradient on white; this end stop is 3.7:1 */
+  --sl-color-accent-secondary: #0891b2;
 
   --sl-color-text: #111827;
   --sl-color-text-muted: #4b5563;
@@ -175,6 +175,11 @@ h6 {
   font-weight: 700;
 }
 
+/* anchor targets land below the sticky navbar */
+.prose :is(h2, h3, h4) {
+  scroll-margin-top: calc(var(--sl-nav-height) + 1rem);
+}
+
 .prose h2 {
   font-size: 1.75rem;
   margin-top: 3.5rem;
@@ -225,10 +230,19 @@ h6 {
 }
 
 .prose table {
+  /* a wide table scrolls inside itself instead of widening the page */
+  display: block;
+  overflow-x: auto;
+  max-width: 100%;
   width: 100%;
   border-collapse: collapse;
   margin-bottom: 2rem;
   font-size: 0.95rem;
+}
+
+/* long parameter names and defaults wrap between words, not mid-identifier */
+.prose td code {
+  overflow-wrap: break-word;
 }
 
 .prose th,

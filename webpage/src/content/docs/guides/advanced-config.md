@@ -124,7 +124,7 @@ With GitOps tools such as Argo CD, Services must stay reachable through rolling 
 
 ### Session affinity
 
-`ignition.service.sessionAffinity` defaults to `None`.
+`ignition.service.sessionAffinity` (failover, and scaleout's `backend`) defaults to `None`. Scaleout's `frontend.service.sessionAffinity` defaults to `""`, which the chart renders as `ClientIP` when there is more than one frontend gateway (`frontend.redundancy.replicas` above 1, or `frontend.hpa.enabled`), so a Perspective or Vision session stays on the gateway it started on, and `None` otherwise. Set it to override.
 
 `ClientIP` gives sticky Vision and Perspective sessions, but can leave a client unable to reach the Service during a rolling update while it holds an affinity mapping to a terminating pod. If your infrastructure (for example an external load balancer) handles stickiness, keep it as `None`. If you use `ClientIP`, expect brief connection drops while gateways restart.
 

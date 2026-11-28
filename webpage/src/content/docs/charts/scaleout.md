@@ -43,6 +43,8 @@ Settings that apply to both layers. `affinity.enabled` spreads each layer's pods
 | Parameter | Type | Default |
 | --- | --- | --- |
 | `applicationName` | string | `"ignition-scaleout"` |
+| `nameOverride` | string | unset (no effect: resource names come from `applicationName`) |
+| `fullnameOverride` | string | unset (no effect, as above) |
 | `acceptEula` | bool | `false` (the chart renders only with `true`, once you accept Inductive Automation's [Ignition EULA](https://inductiveautomation.com/ignition/license), and then sets `ACCEPT_IGNITION_EULA=Y` on every gateway) |
 | `componentSelectors` | bool | `false` |
 | `image.repository` | string | `"inductiveautomation/ignition"` |
@@ -56,11 +58,19 @@ Settings that apply to both layers. `affinity.enabled` spreads each layer's pods
 | `certManager.issuer.kind` | string | `"ClusterIssuer"` |
 | `certManager.rotation.enabled` | bool | `false` |
 | `certManager.rotation.schedule` | string | `"0 7 * * *"` |
-| `certManager.restartOnRenewal` | object | `{"enabled":false,"schedule":"*/15 * * * *","image":"<kubectl image>"}` |
+| `certManager.restartOnRenewal` | object | *(See below)* |
 | `serviceAccount.create` | bool | `false` |
 | `serviceAccount.name` | string | `""` |
 | `serviceAccount.annotations` | object | `{}` |
 | `serviceAccount.automountServiceAccountToken` | bool | `false` (the gateways never call the Kubernetes API) |
+
+**Default `certManager.restartOnRenewal`:**
+
+```yaml
+enabled: false
+schedule: "*/15 * * * *"
+image: "<kubectl image>"  # alpine/kubectl, tag pinned in values.yaml
+```
 
 ### Backend
 
@@ -123,7 +133,7 @@ GATEWAY_MODULES_ENABLED: alarm-notification,modbus-driver-v2,opc-ua,reporting,si
 | --- | --- | --- |
 | `backend.redundancy.enabled` | bool | `false` |
 | `backend.redundancy` | object | *(See below)* |
-| `backend.activeRouting` | object | `{"enabled":false,"image":"<kubectl image>","intervalSeconds":2,"unknownHold":3,"resources":{"requests":{"cpu":"10m","memory":"32Mi"},"limits":{"cpu":"200m","memory":"128Mi"}}}` |
+| `backend.activeRouting` | object | *(See below)* |
 
 **Default `backend.redundancy`:**
 
@@ -145,6 +155,22 @@ backupFailoverTimeout: 10000
 
 The timings, `maxDiskMb` and `pingMaxMissed`, and `backend.activeRouting.intervalSeconds` and `unknownHold`, must be whole numbers from 1 to 2147483647, and `masterRecoveryMode` `Automatic` or `Manual`; the chart refuses to render otherwise.
 
+**Default `backend.activeRouting`:**
+
+```yaml
+enabled: false
+image: "<kubectl image>"  # alpine/kubectl, tag pinned in values.yaml
+intervalSeconds: 2
+unknownHold: 3
+resources:
+  requests:
+    cpu: "10m"
+    memory: "32Mi"
+  limits:
+    cpu: "200m"
+    memory: "128Mi"
+```
+
 #### Persistence (backend)
 
 | Parameter | Type | Default |
@@ -153,6 +179,8 @@ The timings, `maxDiskMb` and `pingMaxMissed`, and `backend.activeRouting.interva
 | `backend.persistence.accessModes` | list | `["ReadWriteOnce"]` |
 | `backend.persistence.storageClassName` | string | `""` |
 | `backend.localMounts` | list | `[]` |
+| `backend.extraVolumes` | list | unset (Volume objects added to the gateway pod) |
+| `backend.extraVolumeMounts` | list | unset (mounted in the gateway container, and read-only in the `preconfigure` init container) |
 | `backend.restore.enabled` | bool | `false` |
 | `backend.restore.url` | string | `""` |
 | `backend.restore.path` | string | unset |
@@ -167,8 +195,10 @@ The timings, `maxDiskMb` and `pingMaxMissed`, and `backend.activeRouting.interva
 | `backend.service.ports` | object | `{"http":8088,"https":8043,"gan":8060}` (the Service's ports only: they map to the gateway's own 8088, 8043 and 8060) |
 | `backend.service.nodePorts` | object | unset |
 | `backend.service.sessionAffinity` | string | `"None"` |
+| `backend.service.annotations` | object | unset |
 | `backend.ingress.enabled` | bool | `false` |
 | `backend.ingress.className` | string | `""` |
+| `backend.ingress.annotations` | object | unset |
 | `backend.ingress.hosts` | list | unset |
 | `backend.ingress.tls` | list | `[]` |
 
@@ -181,15 +211,26 @@ There are no default passwords: set `GATEWAY_ADMIN_PASSWORD`, `IGNITION_GAN_KEYS
 | `backend.resources.requests` | object | `{"memory":"1Gi","cpu":"500m"}` |
 | `backend.resources.limits.cpu` | string | `"1000m"` |
 | `backend.resources.limits.memory` | string | `"2Gi"` |
-| `backend.initResources` | object | `{"requests":{"memory":"128Mi","cpu":"100m"},"limits":{"memory":"256Mi","cpu":"200m"}}` |
+| `backend.initResources` | object | *(See below)* |
 | `backend.updateStrategy.type` | string | `"RollingUpdate"` |
 | `backend.externalModules.enabled` | bool | `false` |
 | `backend.externalModules.pvcName` | string | `""` |
-| `backend.securityContext` | object | `{"runAsUser":2003,"runAsGroup":2003,"fsGroup":2003,"runAsNonRoot":true}` |
+| `backend.securityContext` | object | `{"runAsUser": 2003, "runAsGroup": 2003, "fsGroup": 2003, "runAsNonRoot": true}` |
 | `backend.existingSecret` | string | `""` |
 | `backend.podAnnotations` | object | `{}` |
 | `backend.secrets` | object | `{"GATEWAY_ADMIN_USERNAME":"admin"}` |
 | `backend.sealedSecrets` | bool | `false` |
+
+**Default `backend.initResources`:**
+
+```yaml
+requests:
+  memory: "128Mi"
+  cpu: "100m"
+limits:
+  memory: "256Mi"
+  cpu: "200m"
+```
 
 #### Probes (backend)
 
@@ -197,7 +238,7 @@ There are no default passwords: set `GATEWAY_ADMIN_PASSWORD`, `IGNITION_GAN_KEYS
 | --- | --- | --- |
 | `backend.livenessProbe` | object | *(See below)* |
 | `backend.readinessProbe` | object | *(See below)* |
-| `backend.startupProbe` | object | `{"enabled":true,"initialDelaySeconds":30,"periodSeconds":10,"failureThreshold":60,"timeoutSeconds":5,"command":["/config/scripts/health-check.sh","-t","5"]}` |
+| `backend.startupProbe` | object | *(See below)* |
 | `backend.lifecycle` | object | `{}` |
 
 **Default `backend.livenessProbe`:**
@@ -227,6 +268,20 @@ command:
   - "-t"
   - "3"
   - "-r"
+```
+
+**Default `backend.startupProbe`:**
+
+```yaml
+enabled: true
+initialDelaySeconds: 30
+periodSeconds: 10
+failureThreshold: 60
+timeoutSeconds: 5
+command:
+  - /config/scripts/health-check.sh
+  - "-t"
+  - "5"
 ```
 
 ### Frontend
@@ -304,8 +359,10 @@ GATEWAY_MODULES_ENABLED: perspective,symbol-factory
 | `frontend.service.ports` | object | `{"http":8088,"https":8043,"gan":8060}` (the Service's ports only: they map to the gateway's own 8088, 8043 and 8060) |
 | `frontend.service.nodePorts` | object | unset |
 | `frontend.service.sessionAffinity` | string | `""` (`ClientIP` with more than one frontend gateway or an autoscaler, else `None`) |
+| `frontend.service.annotations` | object | unset |
 | `frontend.ingress.enabled` | bool | `false` |
 | `frontend.ingress.className` | string | `""` |
+| `frontend.ingress.annotations` | object | unset |
 | `frontend.ingress.hosts` | list | unset |
 | `frontend.ingress.tls` | list | `[]` |
 
@@ -318,18 +375,31 @@ There are no default passwords: set `GATEWAY_ADMIN_PASSWORD`, `IGNITION_GAN_KEYS
 | `frontend.resources.requests` | object | `{"memory":"1Gi","cpu":"500m"}` |
 | `frontend.resources.limits.cpu` | string | `"1000m"` |
 | `frontend.resources.limits.memory` | string | `"2Gi"` |
-| `frontend.initResources` | object | `{"requests":{"memory":"128Mi","cpu":"100m"},"limits":{"memory":"256Mi","cpu":"200m"}}` |
+| `frontend.initResources` | object | *(See below)* |
 | `frontend.updateStrategy.type` | string | `"RollingUpdate"` |
 | `frontend.externalModules.enabled` | bool | `false` |
 | `frontend.externalModules.pvcName` | string | `""` |
 | `frontend.localMounts` | list | `[]` |
+| `frontend.extraVolumes` | list | unset (Volume objects added to the gateway pod) |
+| `frontend.extraVolumeMounts` | list | unset (mounted in the gateway container, and read-only in the `preconfigure` init container) |
 | `frontend.emptyDirSizeLimit` | object | `{"logs":"","temp":"","dotIgnition":""}` |
 | `frontend.fixDataOwnership` | bool | `false` |
-| `frontend.securityContext` | object | `{"runAsUser":2003,"runAsGroup":2003,"fsGroup":2003,"runAsNonRoot":true}` |
+| `frontend.securityContext` | object | `{"runAsUser": 2003, "runAsGroup": 2003, "fsGroup": 2003, "runAsNonRoot": true}` |
 | `frontend.existingSecret` | string | `""` |
 | `frontend.podAnnotations` | object | `{}` |
 | `frontend.secrets` | object | `{"GATEWAY_ADMIN_USERNAME":"admin"}` |
 | `frontend.sealedSecrets` | bool | `false` |
+
+**Default `frontend.initResources`:**
+
+```yaml
+requests:
+  memory: "128Mi"
+  cpu: "100m"
+limits:
+  memory: "256Mi"
+  cpu: "200m"
+```
 
 #### Probes (frontend)
 
@@ -337,7 +407,7 @@ There are no default passwords: set `GATEWAY_ADMIN_PASSWORD`, `IGNITION_GAN_KEYS
 | --- | --- | --- |
 | `frontend.livenessProbe` | object | *(See below)* |
 | `frontend.readinessProbe` | object | *(See below)* |
-| `frontend.startupProbe` | object | `{"enabled":true,"initialDelaySeconds":30,"periodSeconds":10,"failureThreshold":60,"timeoutSeconds":5,"command":["/config/scripts/health-check.sh","-t","5"]}` |
+| `frontend.startupProbe` | object | *(See below)* |
 | `frontend.lifecycle` | object | `{}` |
 
 **Default `frontend.livenessProbe`:**
@@ -367,4 +437,18 @@ command:
   - "-t"
   - "3"
   - "-r"
+```
+
+**Default `frontend.startupProbe`:**
+
+```yaml
+enabled: true
+initialDelaySeconds: 30
+periodSeconds: 10
+failureThreshold: 60
+timeoutSeconds: 5
+command:
+  - /config/scripts/health-check.sh
+  - "-t"
+  - "5"
 ```

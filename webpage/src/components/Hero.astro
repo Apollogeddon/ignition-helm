@@ -4,7 +4,11 @@ import { Image } from "astro:assets";
 const { tagline, logo } = Astro.props;
 const base = import.meta.env.BASE_URL;
 const quickStartCode = `helm repo add ignition-charts https://apollogeddon.github.io/ignition-helm
-helm install my-ignition ignition-charts/ignition-failover`;
+helm install my-ignition ignition-charts/ignition-failover \\
+  --set acceptEula=true \\
+  --set ignition.secrets.GATEWAY_ADMIN_PASSWORD=<admin password> \\
+  --set ignition.secrets.IGNITION_GAN_KEYSTORE_PASSWORD=<gan keystore password> \\
+  --set ignition.secrets.IGNITION_WEB_KEYSTORE_PASSWORD=<web keystore password>`;
 ---
 
 <section class="hero-section">
@@ -36,6 +40,12 @@ helm install my-ignition ignition-charts/ignition-failover`;
         <span class="label">Quick start</span>
       </div>
       <pre tabindex="0"><code>{quickStartCode}</code></pre>
+      <p class="install-note">
+        <code>acceptEula=true</code> accepts Inductive Automation's{" "}
+        <a href="https://inductiveautomation.com/ignition/license">Ignition EULA</a>: read it first. The charts have no
+        default passwords; to keep them out of Helm's values, use an <code>existingSecret</code> instead (see the{" "}
+        <a href={`${base}/docs/guides/installation/`}>installation guide</a>).
+      </p>
       <button class="copy-btn" id="copy-btn" data-code={quickStartCode} aria-label="Copy to clipboard">
         <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
       </button>
@@ -73,6 +83,8 @@ helm install my-ignition ignition-charts/ignition-failover`;
   .content {
     position: relative;
     z-index: 10;
+    width: 100%;
+    min-width: 0;
     max-width: 800px;
   }
 
@@ -148,7 +160,7 @@ helm install my-ignition ignition-charts/ignition-failover`;
     padding: 1.25rem;
     border-radius: 12px;
     text-align: left;
-    max-width: 600px;
+    max-width: 760px;
     margin: 0 auto;
   }
 
@@ -176,9 +188,21 @@ helm install my-ignition ignition-charts/ignition-failover`;
 
   pre {
     margin: 0;
+    max-width: 100%;
     font-size: 0.9rem;
     overflow-x: auto;
     color: var(--sl-color-text);
+  }
+
+  .install-note {
+    margin: 1rem 0 0;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    color: var(--sl-color-text-muted);
+  }
+
+  .install-note a {
+    color: var(--sl-color-accent);
   }
 
   .copy-btn {
