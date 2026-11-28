@@ -39,7 +39,7 @@ ignition:                  # scaleout: frontend and backend
 
 With `sealedSecrets`, seal them too. With `existingSecret`, add them to that Secret (`--from-literal=IGNITION_LICENSE_KEY=ABCD-1234 --from-literal=IGNITION_ACTIVATION_TOKEN=<activation token>`).
 
-* A changed key in `secrets` restarts the gateways; after changing an `existingSecret`, run `kubectl rollout restart statefulset/<name>`.
+* A changed key in `secrets` restarts the gateways; to roll them when an `existingSecret` changes, put a hash of its data in `<prefix>.podAnnotations` (names under `checksum/` are the chart's own), or run `kubectl rollout restart statefulset/<name>`.
 * Since 8.1.19 the image applies a changed key to a commissioned gateway; earlier versions read it only on the first start.
 * If you scale gateways often, add the gateway setting that returns a stopping gateway's lease session (see Inductive Automation's leased-activation documentation) to `args`, after `--`, so a replacement pod needn't wait for it to expire.
 

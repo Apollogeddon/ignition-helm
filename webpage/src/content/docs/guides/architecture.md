@@ -25,8 +25,8 @@ By default the main Service sends traffic to every Ready gateway, including a co
 ```mermaid
 graph TD
     User((User/Device)) --> Ingress
-    Ingress --> Service
     subgraph K8s Cluster
+        Ingress --> Service
         Service --> Pod0[Ignition-0: Master ]
         Service -.-> Pod1[Ignition-1: Backup ]
         Pod0 <-->|Gateway Network| Pod1

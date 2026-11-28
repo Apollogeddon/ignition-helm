@@ -29,6 +29,8 @@ If an upgrade with an earlier chart is already stuck on an `Incompatible` Backup
 
 ## Breaking changes: EULA, passwords and the values schema
 
+These came in ignition-failover 5.0.0 and ignition-scaleout 6.0.0 (both bundling ignition-common 5.0.0). Upgrading from an earlier chart, check each one.
+
 Check your values render with `helm template <release> ignition-charts/<chart> -n <namespace> -f my-values.yaml > /dev/null`; a failed render changes nothing in the cluster.
 
 | Change | What breaks | What to set |
@@ -46,6 +48,13 @@ To upgrade unchanged, set the old passwords explicitly (in scaleout, for both la
 - `GATEWAY_ADMIN_PASSWORD` applies only on commissioning: also change it in the Gateway web UI.
 - `IGNITION_GAN_KEYSTORE_PASSWORD` applies after `cmctl renew <name>-gan` (or `<name>-frontend-gan` and `<name>-backend-gan`) and a gateway restart.
 - Moving to `existingSecret` deletes the chart's `<name>-secrets`: create yours first, with every key, including `GATEWAY_ADMIN_USERNAME` if it isn't `admin` (see [Example: existingSecret](../capabilities/#example-existingsecret)).
+
+## Later changes
+
+Releases since then need no one-time steps, but add these:
+
+- **failover 5.1.0, scaleout 6.1.0**: `podAnnotations` (`ignition`, `frontend`, `backend`) adds your own annotations to the gateway pods, and a change to any of them rolls the pods. Put a hash of an `existingSecret`'s data there to restart the gateways when it changes; names under `checksum/` are the chart's own.
+- **failover 5.1.1**: the default liveness probe adds `-l` (`health-check.sh -t 5 -l`), which restarts a Backup that has stayed Active and out of sync beside an Active Master for `IGNITION_LIVE_SPLIT_SECONDS` (in `ignition.config`, default 300, `"0"` turns it off). A `livenessProbe.command` you set is used as-is, so add `-l` to it for the same behavior. Scaleout is unchanged: its backend has no `-l`.
 
 ## Install-specific steps
 

@@ -13,7 +13,7 @@ const models = [
     ],
     features: ["Volume per gateway", "Redundancy sync", "Simple licensing"],
     link: `${base}/docs/charts/failover/`,
-    icon: `<svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>`,
+    icon: `<svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="8" x="2" y="2" rx="2" ry="2" /><rect width="20" height="8" x="2" y="14" rx="2" ry="2" /><line x1="6" x2="6.01" y1="6" y2="6" /><line x1="6" x2="6.01" y1="18" y2="18" /></svg>`,
   },
   {
     name: "Scaleout",
@@ -26,14 +26,15 @@ const models = [
     ],
     features: ["Independent scaling", "Isolated backend", "EAM roles"],
     link: `${base}/docs/charts/scaleout/`,
-    icon: `<svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="10" x2="6" y2="14"/><line x1="18" y1="10" x2="18" y2="14"/></svg>`,
+    icon: `<svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="16" y="16" width="6" height="6" rx="1" /><rect x="2" y="16" width="6" height="6" rx="1" /><rect x="9" y="2" width="6" height="6" rx="1" /><path d="M5 16v-3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3" /><path d="M12 12V8" /></svg>`,
   },
 ];
 ---
 
 <section class="comparison-section">
   <div class="header">
-    <h2>Choose your <span class="text-gradient">architecture</span></h2>
+    <p class="section-eyebrow">Get going</p>
+    <h2>Choose your architecture</h2>
     <p>Run a redundant pair, or split frontend and backend gateways to scale out.</p>
   </div>
 
@@ -79,93 +80,102 @@ const models = [
 
 <style>
   .comparison-section {
-    padding: 4rem 1rem 8rem;
-    max-width: 1100px;
+    box-sizing: border-box;
+    max-width: var(--sl-content-width);
     margin: 0 auto;
+    padding: 3rem 1.5rem 6rem;
   }
 
   .header {
     text-align: center;
-    margin-bottom: 4rem;
+    margin-bottom: 3rem;
   }
 
   h2 {
-    font-size: clamp(2rem, 5vw, 3rem);
-    font-weight: 800;
-    margin-bottom: 1rem;
+    margin: 0 0 0.75rem;
+    font-size: clamp(1.75rem, 4vw, 2.5rem);
+    line-height: 1.15;
+    font-weight: 600;
+    letter-spacing: -0.035em;
   }
 
   .header p {
-    font-size: 1.25rem;
-    color: var(--sl-color-gray-4);
+    margin: 0;
+    font-size: 1.0625rem;
+    color: var(--sl-color-text-muted);
   }
 
   .comparison-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-    gap: 2.5rem;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
+    gap: 1rem;
   }
 
   .model-card {
-    padding: 2.5rem;
-    border-radius: 24px;
     display: flex;
     flex-direction: column;
-    gap: 2rem;
-    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    gap: 1.5rem;
+    padding: 2rem;
+    border-radius: 16px;
+    transition: border-color 0.15s;
   }
 
   .model-card:hover {
-    transform: scale(1.02);
-    border-color: rgba(var(--sl-color-accent-rgb), 0.3);
+    border-color: var(--sl-color-hairline-strong);
   }
 
   .model-header {
     display: flex;
     align-items: center;
-    gap: 1.25rem;
+    gap: 1rem;
   }
 
   .icon-box {
-    width: 64px;
-    height: 64px;
-    background: rgba(var(--sl-color-accent-rgb), 0.1);
-    color: var(--sl-color-accent);
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 16px;
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    border: 1px solid var(--sl-color-hairline);
+    border-radius: 10px;
+    background: var(--sl-color-gray-6);
+    color: var(--sl-color-accent-text, var(--sl-color-accent));
+  }
+
+  .icon-box :global(svg) {
+    width: 20px;
+    height: 20px;
   }
 
   h3 {
-    font-size: 1.75rem;
-    font-weight: 800;
     margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
   }
 
   .tag {
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: var(--sl-color-accent);
-    margin: 0.25rem 0 0;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
+    margin: 0.125rem 0 0;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--sl-color-text-muted);
   }
 
   .desc {
-    color: var(--sl-color-gray-3);
-    line-height: 1.6;
     margin: 0;
+    font-size: 0.9375rem;
+    line-height: 1.6;
+    color: var(--sl-color-text-muted);
   }
 
+  /* the figures sit in one row, split by hairlines */
   .stats-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 1rem;
-    padding: 1.25rem;
-    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--sl-color-hairline);
     border-radius: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    overflow: hidden;
   }
 
   .stat-item {
@@ -173,59 +183,65 @@ const models = [
     flex-direction: column;
     align-items: center;
     gap: 0.25rem;
+    padding: 1rem 0.5rem;
+    text-align: center;
+  }
+
+  .stat-item + .stat-item {
+    border-left: 1px solid var(--sl-color-hairline);
   }
 
   .stat-label {
-    font-size: 0.7rem;
-    text-transform: uppercase;
-    color: var(--sl-color-gray-5);
-    font-weight: 600;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--sl-color-text-muted);
   }
 
   .stat-value {
-    font-weight: 700;
+    font-size: 0.9375rem;
+    font-weight: 600;
     color: var(--sl-color-text);
   }
 
   .features-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
+    gap: 0.625rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
   }
 
   .features-list li {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: 0.625rem;
+    font-size: 0.9375rem;
     color: var(--sl-color-text);
-    font-size: 0.95rem;
   }
 
   .features-list li svg {
-    color: var(--sl-color-accent);
+    flex-shrink: 0;
+    color: var(--sl-color-accent-text, var(--sl-color-accent));
   }
 
   .btn-more {
-    margin-top: auto;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
-    padding: 1rem;
-    border-radius: 12px;
-    background: var(--sl-color-gray-6);
+    min-height: 44px;
+    margin-top: auto;
+    border: 1px solid var(--sl-color-hairline-strong);
+    border-radius: 999px;
     color: var(--sl-color-text);
-    font-weight: 600;
+    font-size: 0.9375rem;
+    font-weight: 500;
     text-decoration: none;
-    transition: all 0.2s;
+    transition: background-color 0.15s;
   }
 
   .btn-more:hover {
-    background: var(--sl-color-accent);
-    color: var(--sl-color-text-invert);
-    transform: translateY(-2px);
+    background: var(--sl-color-gray-6);
   }
 </style>

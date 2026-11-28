@@ -4,46 +4,47 @@ const features = [
     title: "Two architectures",
     description:
       "Deploy a Master/Backup redundant pair, or split frontend and backend gateways into a scaleout architecture.",
-    icon: `<svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>`,
+    icon: `<svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5" /><path d="M8 3H3v5" /><path d="M12 22v-8.3a4 4 0 0 0-1.172-2.872L3 3" /><path d="m15 9 6-6" /></svg>`,
   },
   {
     title: "Managed certificates",
     description:
-      "cert-manager issues the Gateway Network certificates, and CronJobs refresh the gateways' keystores when they renew.",
-    icon: `<svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></svg>`,
+      "cert-manager issues the Gateway Network certificates, and optional CronJobs refresh the gateways' keystores when they renew.",
+    icon: `<svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" /><path d="m9 12 2 2 4-4" /></svg>`,
   },
   {
     title: "Declarative configuration",
     description: "Manage modules, redundancy, logging and gateway settings in values.yaml, ready for GitOps workflows.",
-    icon: `<svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>`,
+    icon: `<svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M13.85 22H18a2 2 0 0 0 2-2V8a2 2 0 0 0-.586-1.414l-4-4A2 2 0 0 0 14 2H6a2 2 0 0 0-2 2v6.6" /><path d="M14 2v5a1 1 0 0 0 1 1h5" /><path d="m3.305 19.53.923-.382" /><path d="m4.228 16.852-.924-.383" /><path d="m5.852 15.228-.383-.923" /><path d="m5.852 20.772-.383.924" /><path d="m8.148 15.228.383-.923" /><path d="m8.53 21.696-.382-.924" /><path d="m9.773 16.852.922-.383" /><path d="m9.773 19.148.922.383" /><circle cx="7" cy="18" r="3" /></svg>`,
   },
   {
     title: "Gateway backups",
     description:
       "Fetch a gateway backup (.gwbk) from a URL or local path into the data volume before the gateway starts.",
-    icon: `<svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>`,
+    icon: `<svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="5" x="2" y="3" rx="1" /><path d="M4 8v11a2 2 0 0 0 2 2h2" /><path d="M20 8v11a2 2 0 0 1-2 2h-2" /><path d="m9 15 3-3 3 3" /><path d="M12 12v9" /></svg>`,
   },
   {
     title: "Scaling and rollouts",
     description:
       "Autoscale the scaleout frontend, and use the OnDelete update strategy to restart gateways in your own window.",
-    icon: `<svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21 21-6-6m6 6v-4.8m0 4.8h-4.8"/><path d="M3 16.2V21m0 0h4.8M3 21l6-6"/><path d="M21 7.8V3m0 0h-4.8M21 3l-6 6"/><path d="M3 7.8V3m0 0h4.8M3 3l6 6"/></svg>`,
+    icon: `<svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M14 15H9v-5" /><path d="M16 3h5v5" /><path d="M21 3 9 15" /></svg>`,
   },
   {
     title: "Health and monitoring",
     description:
       "Probes based on /StatusPing, optional routing to the active gateway only, and a Prometheus ServiceMonitor.",
-    icon: `<svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><circle cx="12" cy="12" r="3"/></svg>`,
+    icon: `<svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2" /></svg>`,
   },
 ];
 ---
 
 <section class="features-section">
-  <h2>Why use <span class="text-gradient">these charts?</span></h2>
+  <p class="section-eyebrow">Features</p>
+  <h2>Why use these charts?</h2>
   
   <div class="grid">
     {features.map(feature => (
-      <div class="feature-card glass">
+      <div class="feature-card">
         <div class="icon-wrapper" set:html={feature.icon}></div>
         <h3>{feature.title}</h3>
         <p>{feature.description}</p>
@@ -54,63 +55,69 @@ const features = [
 
 <style>
   .features-section {
-    padding: 6rem 1rem;
-    max-width: 1200px;
+    box-sizing: border-box;
+    max-width: var(--sl-content-width);
     margin: 0 auto;
+    padding: 5rem 1.5rem;
     text-align: center;
   }
 
   h2 {
-    font-size: clamp(2rem, 5vw, 3rem);
-    margin-bottom: 4rem;
-    font-weight: 800;
+    margin: 0 auto 3rem;
+    max-width: 22ch;
+    font-size: clamp(1.75rem, 4vw, 2.5rem);
+    line-height: 1.15;
+    font-weight: 600;
+    letter-spacing: -0.035em;
+    text-wrap: balance;
   }
 
   .grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-    gap: 2rem;
-  }
-
-  .feature-card {
-    padding: 2.5rem;
-    border-radius: 20px;
-    text-align: left;
-    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-    display: flex;
-    flex-direction: column;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
     gap: 1rem;
   }
 
+  /* a flat card that lifts its border on hover */
+  .feature-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 1.5rem;
+    border: 1px solid var(--sl-color-hairline);
+    border-radius: 12px;
+    background: var(--sl-color-surface);
+    text-align: left;
+    transition: border-color 0.15s;
+  }
+
   .feature-card:hover {
-    transform: translateY(-8px);
-    border-color: var(--sl-color-accent);
-    background: rgba(var(--sl-color-accent-rgb), 0.03);
-    box-shadow: 0 20px 40px -12px rgba(var(--sl-color-accent-rgb), 0.15);
+    border-color: var(--sl-color-hairline-strong);
   }
 
   .icon-wrapper {
-    width: 48px;
-    height: 48px;
     display: flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(var(--sl-color-accent-rgb), 0.1);
-    color: var(--sl-color-accent);
-    border-radius: 12px;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.75rem;
+    color: var(--sl-color-accent-text, var(--sl-color-accent));
+  }
+
+  .icon-wrapper :global(svg) {
+    width: 20px;
+    height: 20px;
   }
 
   h3 {
-    font-size: 1.5rem;
-    font-weight: 700;
     margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
     color: var(--sl-color-text);
   }
 
   p {
-    color: var(--sl-color-text-muted);
-    line-height: 1.6;
     margin: 0;
+    font-size: 0.9375rem;
+    line-height: 1.6;
+    color: var(--sl-color-text-muted);
   }
 </style>

@@ -75,7 +75,7 @@ Put sensitive values, such as `GATEWAY_ADMIN_PASSWORD`, in `secrets` instead, wh
 
 ### Rolling out changes
 
-Checksum annotations (`checksum/config`, `secrets`, `logging`, `scripts`, `redundancy`) restart the gateways one at a time, Backup first, when a `helm upgrade` changes what they read on start. An `existingSecret` isn't hashed: after changing it, run `kubectl rollout restart statefulset/<name>`.
+Checksum annotations (`checksum/config`, `secrets`, `logging`, `scripts`, `redundancy`) restart the gateways one at a time, Backup first, when a `helm upgrade` changes what they read on start. The chart can't see inside an `existingSecret`: to roll the gateways when it changes, put a hash of its data in `<prefix>.podAnnotations` (`ignition`, or scaleout's `frontend`/`backend`; names under `checksum/` are the chart's own), so the same `helm upgrade` restarts them, or run `kubectl rollout restart statefulset/<name>`.
 
 ### Gateway arguments
 
@@ -118,7 +118,7 @@ In scaleout, `frontend.logging` and `backend.logging` each configure their own l
 Kubernetes uses the probes to decide whether a gateway is alive and ready for traffic.
 
 * **Readiness** (`health-check.sh -t 3 -r`): `/StatusPing` must report `RUNNING`, and the gateway must have finished commissioning. With `activeRouting`, a Backup must also be in sync (`RedundantState=Good`), or `Incompatible` for up to 30 minutes during a module or version change (see [Upgrading](../upgrading/#module-and-version-changes-on-a-redundant-pair)).
-* **Liveness** (`health-check.sh -t 5`): `/StatusPing` must report `RUNNING`. A gateway stuck commissioning is not restarted in a loop.
+* **Liveness** (failover `health-check.sh -t 5 -l`, scaleout `-t 5`): `/StatusPing` must report `RUNNING`. A gateway stuck commissioning is not restarted in a loop. In failover, `-l` also restarts a Backup that has been Active and out of sync while its Master answers as the Active Master (both gateways serving) for `IGNITION_LIVE_SPLIT_SECONDS` (in `config`, default 300, `"0"` turns it off); a Backup that took over from a Master that is down, or doesn't answer, is never restarted. Scaleout's backend sets neither `-l` nor the Master URL it needs, so it has no such restart.
 * **Startup** (on by default): holds the other probes off for about 10 minutes (`failureThreshold` 60 × `periodSeconds` 10, after `initialDelaySeconds` 30), for a first start, a large restore or a state transfer; raise `startupProbe.failureThreshold` for longer.
 
 The checks use `/StatusPing`, which works on Ignition 8.1 and 8.3. A probe `command` you set is used as-is.
@@ -188,6 +188,8 @@ ignition:
     IGNITION_GAN_KEYSTORE_PASSWORD: "AgCk9dQe1..."
     IGNITION_WEB_KEYSTORE_PASSWORD: "AgA3Vt7mP..."
 ```
+
+The values above are shortened to illustrate the shape: the chart checks that each one looks like `kubeseal` output (at least 300 base64 characters) and fails the render otherwise, so paste the full ciphertext.
 
 The Gateway Network keystore takes its password from the unsealed Secret, so it matches what the gateway reads. For scaleout, seal `frontend.secrets` and `backend.secrets` the same way, with `frontend.sealedSecrets` and `backend.sealedSecrets`.
 

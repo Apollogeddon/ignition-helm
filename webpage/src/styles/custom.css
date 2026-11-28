@@ -1,108 +1,112 @@
-/* Import Inter font */
 @import "@fontsource/inter/400.css";
+@import "@fontsource/inter/500.css";
 @import "@fontsource/inter/600.css";
-@import "@fontsource/inter/800.css";
+@import "@fontsource/inter/700.css";
 
-/* 
-  Semantic Theme System 
+/*
+  Design tokens
+  Near-black and near-white neutrals, one accent per site, and surfaces told apart by a hairline rather than a shadow.
 */
 
 :root {
-  /* Font Stack */
   --sl-font-system:
-    "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans",
-    "Helvetica Neue", sans-serif;
+    "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  --sl-font-mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
 
   /* Layout */
-  --sl-nav-height: 4rem;
-  --sl-sidebar-width: 18rem;
-  --sl-border-radius: 8px;
+  --sl-nav-height: 3.75rem;
+  --sl-sidebar-width: 17rem;
+  --sl-border-radius: 10px;
+  --sl-content-width: 1200px;
 
-  /* Shared Palette (Standard) */
-  --sl-color-accent-secondary: #67e8f9; /* Cyan accent for the Helm charts */
+  --sl-color-accent-secondary: #67e8f9;
 }
 
-/* Dark Mode Variables (Default) */
+/* Dark (the default) */
 :root,
 :root[data-theme="dark"] {
   color-scheme: dark;
 
-  /* Core Backgrounds */
-  --sl-color-bg: #09090b;
-  --sl-color-bg-nav: rgba(9, 9, 11, 0.8);
-  --sl-color-bg-sidebar: #09090b;
-  --sl-color-hairline: #27272a;
+  --sl-color-bg: #08090a;
+  --sl-color-surface: #0f1011;
+  --sl-color-bg-nav: rgba(8, 9, 10, 0.72);
+  --sl-color-bg-sidebar: #08090a;
+  --sl-color-hairline: rgba(255, 255, 255, 0.08);
+  --sl-color-hairline-strong: rgba(255, 255, 255, 0.14);
 
-  /* Accent */
   --sl-color-accent-low: #083344;
   --sl-color-accent: #06b6d4;
   --sl-color-accent-rgb: 6, 182, 212;
   --sl-color-accent-high: #cffafe;
 
-  /* Semantic Text Colors */
   --sl-color-white: #ffffff;
-  --sl-color-text: #f3f4f6;
-  --sl-color-text-muted: #9ca3af;
-  --sl-color-text-invert: #09090b;
-  --sl-color-heading: #ffffff;
+  --sl-color-text: #f7f8f8;
+  --sl-color-text-muted: #8a8f98;
+  --sl-color-text-invert: #08090a;
+  --sl-color-heading: #f7f8f8;
 
-  /* Gray Scale - Dark Optimized */
-  --sl-color-gray-1: #f3f4f6;
-  --sl-color-gray-2: #e5e7eb;
-  --sl-color-gray-3: #d1d5db;
-  --sl-color-gray-4: #9ca3af;
-  --sl-color-gray-5: #4b5563;
-  --sl-color-gray-6: #1f2937;
-  --sl-color-black: #09090b;
+  --sl-color-gray-1: #f7f8f8;
+  --sl-color-gray-2: #e2e4e7;
+  --sl-color-gray-3: #c4c7cc;
+  --sl-color-gray-4: #8a8f98;
+  --sl-color-gray-5: #2a2c30;
+  --sl-color-gray-6: #16171a;
+  --sl-color-black: #08090a;
 
-  --bg-mesh:
-    radial-gradient(at 0% 0%, rgba(var(--sl-color-accent-rgb), 0.08) 0px, transparent 50%),
-    radial-gradient(at 100% 100%, rgba(var(--sl-color-accent-rgb), 0.05) 0px, transparent 50%);
+  /* the hero's light: a white wash from the top, with the site's two accents either side */
+  --hero-light-white: rgba(255, 255, 255, 0.07);
+  --hero-light-accent: 18%;
 }
 
-/* Light Mode Overrides */
 :root[data-theme="light"] {
   color-scheme: light;
-  --sl-color-bg: #ffffff;
-  --sl-color-bg-nav: rgba(255, 255, 255, 0.8);
-  --sl-color-bg-sidebar: #ffffff;
-  --sl-color-hairline: #e5e7eb;
+
+  --sl-color-bg: #fcfcfd;
+  --sl-color-surface: #ffffff;
+  --sl-color-bg-nav: rgba(252, 252, 253, 0.78);
+  --sl-color-bg-sidebar: #fcfcfd;
+  --sl-color-hairline: rgba(0, 0, 0, 0.08);
+  --sl-color-hairline-strong: rgba(0, 0, 0, 0.14);
 
   --sl-color-accent-low: #ecfeff;
   --sl-color-accent: #0e7490;
   --sl-color-accent-rgb: 14, 116, 144;
   --sl-color-accent-high: #164e63;
-  /* the shared secondary is too pale for the heading gradient on white */
-  --sl-color-accent-secondary: #06b6d4;
+  --sl-color-accent-secondary: #0891b2;
 
-  --sl-color-text: #111827;
-  --sl-color-text-muted: #4b5563;
+  --sl-color-text: #08090a;
+  --sl-color-text-muted: #5c6068;
   --sl-color-text-invert: #ffffff;
-  --sl-color-heading: #111827;
+  --sl-color-heading: #08090a;
 
-  --sl-color-gray-1: #111827;
-  --sl-color-gray-2: #1f2937;
-  --sl-color-gray-3: #374151;
-  --sl-color-gray-4: #6b7280;
-  --sl-color-gray-5: #d1d5db;
-  --sl-color-gray-6: #f3f4f6;
+  --sl-color-gray-1: #08090a;
+  --sl-color-gray-2: #1f2125;
+  --sl-color-gray-3: #3c3f45;
+  --sl-color-gray-4: #5c6068;
+  --sl-color-gray-5: #dcdee2;
+  --sl-color-gray-6: #f1f2f4;
   --sl-color-black: #ffffff;
 
-  --bg-mesh:
-    radial-gradient(at 0% 0%, rgba(var(--sl-color-accent-rgb), 0.04) 0px, transparent 50%),
-    radial-gradient(at 100% 100%, rgba(var(--sl-color-accent-rgb), 0.03) 0px, transparent 50%);
+  --hero-light-white: rgba(255, 255, 255, 0);
+  --hero-light-accent: 12%;
 }
 
-/* Typography Polish */
 body {
+  margin: 0;
   font-family: var(--sl-font-system);
+  font-feature-settings: "cv11", "ss01";
+  line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   background-color: var(--sl-color-bg);
-  background-image: var(--bg-mesh);
-  background-attachment: fixed;
   color: var(--sl-color-text);
-  margin: 0;
-  line-height: 1.5;
+}
+
+code,
+pre,
+kbd {
+  font-family: var(--sl-font-mono);
+  /* code shows the characters typed, so no ">-" drawn as an arrow */
+  font-variant-ligatures: none;
 }
 
 h1,
@@ -111,12 +115,66 @@ h3,
 h4,
 h5,
 h6 {
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: -0.025em;
   color: var(--sl-color-heading);
 }
 
-/* Utility Classes */
+/* a flat card: a raised surface with a hairline, no blur or shadow */
+.glass {
+  background: var(--sl-color-surface);
+  border: 1px solid var(--sl-color-hairline);
+}
+
+/* buttons: a solid pill in the text colour, and an outlined one */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  padding: 0 1.25rem;
+  border-radius: 999px;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  text-decoration: none;
+  transition:
+    background-color 0.15s,
+    border-color 0.15s,
+    color 0.15s;
+}
+
+.btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.btn-primary {
+  background: var(--sl-color-text);
+  color: var(--sl-color-bg);
+}
+
+.btn-primary:hover {
+  background: color-mix(in srgb, var(--sl-color-text) 86%, var(--sl-color-bg));
+}
+
+.btn-secondary {
+  border: 1px solid var(--sl-color-hairline-strong);
+  color: var(--sl-color-text);
+}
+
+.btn-secondary:hover {
+  background: var(--sl-color-gray-6);
+}
+
+/* section headings on the home page: a small accent label over a short, tight title */
+.section-eyebrow {
+  margin: 0 0 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--sl-color-accent-text, var(--sl-color-accent));
+}
+
 .text-gradient {
   background: linear-gradient(to right, var(--sl-color-accent), var(--sl-color-accent-secondary));
   background-clip: text;
@@ -125,133 +183,392 @@ h6 {
 }
 
 .custom-footer {
-  padding: 4rem 1rem;
-  border-top: 1px solid var(--sl-color-hairline);
-  text-align: center;
-  background: rgba(0, 0, 0, 0.2);
   margin-top: 4rem;
+  border-top: 1px solid var(--sl-color-hairline);
+}
+
+.footer-content {
+  box-sizing: border-box;
+  max-width: var(--sl-content-width);
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.5rem 2rem;
 }
 
 .footer-content p {
-  margin: 0.5rem 0;
-  font-size: 0.875rem;
+  margin: 0;
+  font-size: 0.8125rem;
   color: var(--sl-color-text-muted);
 }
 
-:root[data-theme="light"] .custom-footer {
-  background: var(--sl-color-gray-6);
-}
-
-/* Glass Utility */
-.glass {
-  background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-:root[data-theme="light"] .glass {
-  background: rgba(255, 255, 255, 0.7);
-  border: 1px solid rgba(0, 0, 0, 0.05);
-}
-
-/* Sidebar Active State */
-[aria-current="page"],
+/* Sidebar: the current page is a quiet neutral pill (the navbar marks its section its own way) */
+.sidebar [aria-current="page"],
 .sidebar-link.active {
-  background-color: var(--sl-color-accent-low);
-  border-left: 3px solid var(--sl-color-accent);
-  color: var(--sl-color-accent);
-  font-weight: 600;
+  background-color: var(--sl-color-gray-6);
+  color: var(--sl-color-text);
+  font-weight: 500;
 }
 
-/* 
-  Prose / Markdown Content Styles 
+/*
+  Prose / Markdown Content Styles
+  Shared by the Ignition sites: plain type, quiet structure, and code and tables framed the same way.
 */
 
+.prose {
+  font-size: 1rem;
+  line-height: 1.75;
+  color: var(--sl-color-text);
+  overflow-wrap: break-word;
+}
+
+.prose > :first-child {
+  margin-top: 0;
+}
+
+/* headings: spacing carries the structure, so no rules under them */
 .prose h2,
 .prose h3,
 .prose h4 {
+  position: relative;
   color: var(--sl-color-text);
   font-weight: 700;
+  letter-spacing: -0.015em;
+  scroll-margin-top: calc(var(--sl-nav-height) + 1.5rem);
 }
 
 .prose h2 {
-  font-size: 1.75rem;
-  margin-top: 3.5rem;
-  margin-bottom: 1.5rem;
-  border-bottom: 1px solid var(--sl-color-hairline);
-  padding-bottom: 0.5rem;
+  font-size: 1.5rem;
+  line-height: 1.3;
+  margin: 3rem 0 1rem;
 }
 
 .prose h3 {
-  font-size: 1.25rem;
-  margin-top: 2.5rem;
-  margin-bottom: 1rem;
+  font-size: 1.2rem;
+  line-height: 1.4;
+  margin: 2.25rem 0 0.75rem;
+}
+
+.prose h4 {
+  font-size: 1rem;
+  line-height: 1.5;
+  margin: 1.75rem 0 0.5rem;
+}
+
+/* a "#" after the heading, shown on hover, links to the section */
+.prose .heading-anchor {
+  margin-left: 0.5rem;
+  font-weight: 500;
+  color: var(--sl-color-text-muted);
+  text-decoration: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.prose :is(h2, h3):hover .heading-anchor,
+.prose .heading-anchor:focus-visible {
+  opacity: 1;
+}
+
+.prose .heading-anchor:hover {
+  color: var(--sl-color-accent);
 }
 
 .prose p {
-  margin-bottom: 1.5rem;
-  line-height: 1.7;
+  margin: 0 0 1.25rem;
+}
+
+.prose strong {
+  font-weight: 650;
   color: var(--sl-color-text);
 }
 
+/* links: accent text over a fainter underline that firms up on hover */
+.prose a:not(.heading-anchor) {
+  color: var(--sl-color-accent);
+  text-decoration: underline;
+  text-decoration-color: rgba(var(--sl-color-accent-rgb), 0.35);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  transition: text-decoration-color 0.15s;
+}
+
+.prose a:not(.heading-anchor):hover {
+  text-decoration-color: currentColor;
+}
+
+/* lists */
 .prose ul,
 .prose ol {
-  margin-bottom: 1.5rem;
+  margin: 0 0 1.25rem;
   padding-left: 1.5rem;
-  color: var(--sl-color-text);
 }
 
 .prose li {
-  margin-bottom: 0.5rem;
+  margin: 0.375rem 0;
+  padding-left: 0.25rem;
 }
 
-.prose a {
-  color: var(--sl-color-accent);
-  text-underline-offset: 2px;
+.prose li::marker {
+  color: var(--sl-color-text-muted);
 }
 
-.prose a:hover {
-  color: var(--sl-color-accent-high);
+.prose ol > li::marker {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
 }
 
+.prose li > :is(ul, ol) {
+  margin: 0.375rem 0 0;
+}
+
+/* inline code: a neutral chip that sits in the line, not a coloured badge */
 .prose code:not(pre code) {
-  background: var(--sl-color-accent-low);
-  color: var(--sl-color-accent);
-  padding: 0.2rem 0.4rem;
-  border-radius: 4px;
-  font-size: 0.9em;
-  border: 1px solid rgba(var(--sl-color-accent-rgb), 0.2);
+  padding: 0.125em 0.375em;
+  border: 1px solid var(--sl-color-hairline);
+  border-radius: 6px;
+  background: var(--sl-color-gray-6);
+  color: var(--sl-color-text);
+  font-size: 0.875em;
+  /* a long name wraps rather than widening the page; break-word keeps short ones whole */
+  overflow-wrap: break-word;
+}
+
+/* code in a link keeps the text colour, as the accent is too faint on the chip; the underline marks the link */
+.prose a code:not(pre code) {
+  color: var(--sl-color-text);
+}
+
+/* code blocks: one frame, padded evenly, with a copy button in the corner (ProseEnhance.astro) */
+.prose .code-block {
+  position: relative;
+  margin: 0 0 1.5rem;
+}
+
+.prose pre {
+  margin: 0 0 1.5rem;
+  padding: 1rem 1.25rem;
+  border: 1px solid var(--sl-color-hairline);
+  border-radius: 10px;
+  overflow-x: auto;
+  font-size: 0.85rem;
+  line-height: 1.7;
+}
+
+.prose .code-block pre {
+  margin: 0;
+  padding-right: 3rem;
+}
+
+.prose .code-copy {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--sl-color-hairline);
+  border-radius: 8px;
+  background: var(--sl-color-bg);
+  color: var(--sl-color-text-muted);
+  cursor: pointer;
+  opacity: 0;
+  transition:
+    opacity 0.15s,
+    color 0.15s;
+}
+
+.prose .code-block:hover .code-copy,
+.prose .code-copy:focus-visible {
+  opacity: 1;
+}
+
+.prose .code-copy:hover {
+  color: var(--sl-color-text);
+}
+
+/* touch screens have no hover, so the button stays visible there */
+@media (hover: none) {
+  .prose .code-copy {
+    opacity: 1;
+  }
+}
+
+/* tables: full width in a rounded frame that scrolls sideways, rows split by hairlines */
+.prose .table-wrap {
+  margin: 0 0 1.75rem;
+  border: 1px solid var(--sl-color-hairline);
+  border-radius: 10px;
+  overflow-x: auto;
 }
 
 .prose table {
   width: 100%;
+  margin: 0;
   border-collapse: collapse;
-  margin-bottom: 2rem;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
+  line-height: 1.6;
 }
 
 .prose th,
 .prose td {
-  padding: 0.75rem;
-  border: 1px solid var(--sl-color-hairline);
+  padding: 0.625rem 0.875rem;
+  border: 0;
+  border-top: 1px solid var(--sl-color-hairline);
   text-align: left;
+  vertical-align: top;
   color: var(--sl-color-text);
 }
 
-.prose th {
+.prose thead th {
+  border-top: 0;
   background: var(--sl-color-gray-6);
-  font-weight: 700;
+  color: var(--sl-color-text-muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.prose td code {
+  white-space: nowrap;
+}
+
+/* a long default can still wrap, between words */
+.prose td:last-child code {
+  white-space: normal;
 }
 
 .prose blockquote {
-  margin: 2rem 0;
-  padding: 1rem 1.5rem;
-  border-left: 4px solid var(--sl-color-accent);
-  background: var(--sl-color-accent-low);
+  margin: 0 0 1.5rem;
+  padding: 0.75rem 1rem;
+  border-left: 3px solid var(--sl-color-accent);
+  border-radius: 0 8px 8px 0;
+  background: rgba(var(--sl-color-accent-rgb), 0.06);
   color: var(--sl-color-text);
-  font-style: italic;
 }
+
+.prose blockquote > :last-child {
+  margin-bottom: 0;
+}
+
+.prose hr {
+  margin: 2.5rem 0;
+  border: 0;
+  border-top: 1px solid var(--sl-color-hairline);
+}
+
+.prose img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 10px;
+}
+
+/* Shiki writes both themes into each block: the light one inline, the dark one as --shiki-dark */
+/* biome-ignore-start lint/complexity/noImportantStyles: Shiki sets the colours inline */
+:root[data-theme="dark"] .astro-code,
+:root[data-theme="dark"] .astro-code span {
+  color: var(--shiki-dark) !important;
+  background-color: var(--shiki-dark-bg) !important;
+  font-style: var(--shiki-dark-font-style) !important;
+  font-weight: var(--shiki-dark-font-weight) !important;
+}
+
+/* github-dark's comments are #6a737d, 3:1 on its background; this one is 5.3:1 */
+:root[data-theme="dark"] .astro-code span[style*="--shiki-dark:#6A737D" i] {
+  color: #959da5 !important;
+}
+/* biome-ignore-end lint/complexity/noImportantStyles: Shiki sets the colours inline */
+
+/*
+  Mermaid diagrams
+  Drawn in the site's own colours, whichever of Mermaid's themes rendered them: raised boxes with hairlines,
+  muted connectors, and labels on the frame's surface. Mermaid scopes its rules by the diagram's id, so these
+  need !important to win.
+*/
+
+.prose pre.mermaid {
+  display: flex;
+  justify-content: center;
+  padding: 1.5rem;
+  background: var(--sl-color-surface);
+  border-radius: 12px;
+}
+
+/* biome-ignore-start lint/complexity/noImportantStyles: Mermaid's own rules are scoped by the diagram's id */
+.prose pre.mermaid[data-processed] {
+  background: var(--sl-color-surface) !important;
+  border-radius: 12px !important;
+}
+
+/* boxes: flowchart nodes, sequence actors and activations */
+.prose pre.mermaid svg :is(.node, .actor-top, .actor-bottom) :is(rect, circle, ellipse, polygon, path),
+.prose pre.mermaid svg :is(rect.actor, .activation0, .activation1, .activation2, .labelBox) {
+  fill: var(--sl-color-gray-6) !important;
+  stroke: var(--sl-color-hairline-strong) !important;
+  stroke-width: 1px !important;
+}
+
+.prose pre.mermaid svg .node rect,
+.prose pre.mermaid svg rect.actor {
+  rx: 8px;
+  ry: 8px;
+}
+
+/* a subgraph is a dashed region around its boxes */
+.prose pre.mermaid svg .cluster rect {
+  fill: transparent !important;
+  stroke: var(--sl-color-hairline-strong) !important;
+  stroke-width: 1px !important;
+  stroke-dasharray: 4 4;
+  rx: 10px;
+  ry: 10px;
+}
+
+/* text */
+.prose
+  pre.mermaid
+  svg
+  :is(.nodeLabel, .cluster-label, .cluster-label span, .label, foreignObject div, foreignObject span) {
+  color: var(--sl-color-text) !important;
+}
+
+.prose pre.mermaid svg :is(text, tspan, text.actor, .messageText, .labelText, .loopText, .noteText) {
+  fill: var(--sl-color-text) !important;
+  stroke: none !important;
+}
+
+/* connectors: flowchart edges and sequence messages, with their arrowheads */
+.prose pre.mermaid svg :is(.flowchart-link, .edgePath .path, .messageLine0, .messageLine1, .relation) {
+  stroke: var(--sl-color-text-muted) !important;
+  stroke-width: 1.25px !important;
+}
+
+.prose pre.mermaid svg :is(marker path, .arrowheadPath, .arrowMarkerPath, #arrowhead path, #crosshead path) {
+  fill: var(--sl-color-text-muted) !important;
+  stroke: var(--sl-color-text-muted) !important;
+}
+
+.prose pre.mermaid svg :is(.actor-line, .loopLine) {
+  stroke: var(--sl-color-hairline-strong) !important;
+}
+
+/* edge labels sit on the frame's surface, so they read against it in both themes */
+.prose pre.mermaid svg :is(.edgeLabel, .labelBkg, .edgeLabel p, .labelBkg p, .edgeLabel rect) {
+  background-color: var(--sl-color-surface) !important;
+  fill: var(--sl-color-surface) !important;
+  color: var(--sl-color-text-muted) !important;
+}
+
+/* a note keeps a trace of the accent */
+.prose pre.mermaid svg .note {
+  fill: rgba(var(--sl-color-accent-rgb), 0.08) !important;
+  stroke: rgba(var(--sl-color-accent-rgb), 0.45) !important;
+}
+/* biome-ignore-end lint/complexity/noImportantStyles: the end of the Mermaid rules */
 
 /*
   Accessibility
@@ -281,12 +598,6 @@ main:focus {
 :focus-visible {
   outline: 2px solid var(--sl-color-accent);
   outline-offset: 2px;
-}
-
-/* Shiki's github-dark comments are #6a737d, 3:1 on its background; this one is 5.3:1 */
-.astro-code span[style*="#6A737D" i] {
-  /* biome-ignore lint/complexity/noImportantStyles: Shiki sets the colour inline */
-  color: #959da5 !important;
 }
 
 /* biome-ignore-start lint/complexity/noImportantStyles: it must win over every component's own animation */

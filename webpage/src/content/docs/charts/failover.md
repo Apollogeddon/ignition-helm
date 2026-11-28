@@ -48,6 +48,8 @@ Resource naming and the container image.
 | Parameter | Type | Default |
 | --- | --- | --- |
 | `applicationName` | string | `"ignition-failover"` |
+| `nameOverride` | string | unset (no effect: resource names come from `applicationName`) |
+| `fullnameOverride` | string | unset (no effect, as above) |
 | `acceptEula` | bool | `false` |
 | `image.repository` | string | `"inductiveautomation/ignition"` |
 | `image.tag` | string | `""` (the chart's `appVersion`) |
@@ -117,7 +119,7 @@ Redundancy settings, applied to each gateway's data volume on every start.
 | --- | --- | --- |
 | `ignition.redundancy.enabled` | bool | `false` |
 | `ignition.redundancy` | object | *(See below)* |
-| `ignition.activeRouting` | object | `{"enabled":false,"image":"<kubectl image>","intervalSeconds":2,"unknownHold":3,"resources":{"requests":{"cpu":"10m","memory":"32Mi"},"limits":{"cpu":"200m","memory":"128Mi"}}}` |
+| `ignition.activeRouting` | object | *(See below)* |
 
 **Default `ignition.redundancy`:**
 
@@ -139,6 +141,22 @@ backupFailoverTimeout: 10000
 
 The timings, `maxDiskMb` and `pingMaxMissed`, and `ignition.activeRouting.intervalSeconds` and `unknownHold`, must be whole numbers from 1 to 2147483647, and `masterRecoveryMode` `Automatic` or `Manual`; the chart refuses to render otherwise.
 
+**Default `ignition.activeRouting`:**
+
+```yaml
+enabled: false
+image: "<kubectl image>"  # alpine/kubectl, tag pinned in values.yaml
+intervalSeconds: 2
+unknownHold: 3
+resources:
+  requests:
+    cpu: "10m"
+    memory: "32Mi"
+  limits:
+    cpu: "200m"
+    memory: "128Mi"
+```
+
 ### Persistence and storage
 
 | Parameter | Type | Default |
@@ -147,6 +165,8 @@ The timings, `maxDiskMb` and `pingMaxMissed`, and `ignition.activeRouting.interv
 | `ignition.persistence.accessModes` | list | `["ReadWriteOnce"]` |
 | `ignition.persistence.storageClassName` | string | `""` |
 | `ignition.localMounts` | list | `[]` |
+| `ignition.extraVolumes` | list | unset (Volume objects added to the gateway pod) |
+| `ignition.extraVolumeMounts` | list | unset (mounted in the gateway container, and read-only in the `preconfigure` init container) |
 | `ignition.restore.enabled` | bool | `false` |
 | `ignition.restore.url` | string | `""` |
 | `ignition.restore.path` | string | unset |
@@ -175,7 +195,15 @@ Service, Ingress and cert-manager settings. `ignition.service.ports` sets only t
 | `certManager.issuer.kind` | string | `"ClusterIssuer"` |
 | `certManager.rotation.enabled` | bool | `false` |
 | `certManager.rotation.schedule` | string | `"0 7 * * *"` |
-| `certManager.restartOnRenewal` | object | `{"enabled":false,"schedule":"*/15 * * * *","image":"<kubectl image>"}` |
+| `certManager.restartOnRenewal` | object | *(See below)* |
+
+**Default `certManager.restartOnRenewal`:**
+
+```yaml
+enabled: false
+schedule: "*/15 * * * *"
+image: "<kubectl image>"  # alpine/kubectl, tag pinned in values.yaml
+```
 
 ### Resources and scheduling
 
@@ -186,11 +214,22 @@ CPU and memory, the update strategy and pod anti-affinity. `affinity.type` is `s
 | `ignition.resources.requests` | object | `{"memory":"1Gi","cpu":"500m"}` |
 | `ignition.resources.limits.cpu` | string | `"1000m"` |
 | `ignition.resources.limits.memory` | string | `"2Gi"` |
-| `ignition.initResources` | object | `{"requests":{"memory":"128Mi","cpu":"100m"},"limits":{"memory":"256Mi","cpu":"200m"}}` |
+| `ignition.initResources` | object | *(See below)* |
 | `ignition.updateStrategy.type` | string | `"RollingUpdate"` |
 | `affinity.enabled` | bool | `false` |
 | `affinity.type` | string | `"soft"` |
 | `affinity.topologyKey` | string | `"kubernetes.io/hostname"` |
+
+**Default `ignition.initResources`:**
+
+```yaml
+requests:
+  memory: "128Mi"
+  cpu: "100m"
+limits:
+  memory: "256Mi"
+  cpu: "200m"
+```
 
 ### Probes
 
@@ -200,7 +239,7 @@ Health checks for the gateway container. A `command` you set is used as-is.
 | --- | --- | --- |
 | `ignition.livenessProbe` | object | *(See below)* |
 | `ignition.readinessProbe` | object | *(See below)* |
-| `ignition.startupProbe` | object | `{"enabled":true,"initialDelaySeconds":30,"periodSeconds":10,"failureThreshold":60,"timeoutSeconds":5,"command":["/config/scripts/health-check.sh","-t","5"]}` |
+| `ignition.startupProbe` | object | *(See below)* |
 | `ignition.lifecycle` | object | `{}` |
 
 **Default `ignition.livenessProbe`:**
@@ -235,13 +274,27 @@ command:
   - "-r"
 ```
 
+**Default `ignition.startupProbe`:**
+
+```yaml
+enabled: true
+initialDelaySeconds: 30
+periodSeconds: 10
+failureThreshold: 60
+timeoutSeconds: 5
+command:
+  - /config/scripts/health-check.sh
+  - "-t"
+  - "5"
+```
+
 ### Security and accounts
 
 Security context, secrets and the ServiceAccount. There are no default passwords: set `GATEWAY_ADMIN_PASSWORD`, `IGNITION_GAN_KEYSTORE_PASSWORD` and `IGNITION_WEB_KEYSTORE_PASSWORD` in `ignition.secrets`, or name a Secret you manage that holds them (and any other secret environment variables) in `ignition.existingSecret`. The chart then renders no Secret, and refuses values left in `ignition.secrets`. The chart can't see inside a Secret it doesn't render, so to restart the gateways when it changes, put a hash of its data in `ignition.podAnnotations`: a change to any pod annotation rolls the pods, through the same install or upgrade. Names under `checksum/` are the chart's own. With `ignition.sealedSecrets`, every `ignition.secrets` value, the user name included, must be encrypted with `kubeseal` (see [SealedSecrets](../../guides/capabilities/#example-sealedsecrets)).
 
 | Parameter | Type | Default |
 | --- | --- | --- |
-| `ignition.securityContext` | object | `{"runAsUser":2003,"runAsGroup":2003,"fsGroup":2003,"runAsNonRoot":true}` |
+| `ignition.securityContext` | object | `{"runAsUser": 2003, "runAsGroup": 2003, "fsGroup": 2003, "runAsNonRoot": true}` |
 | `ignition.existingSecret` | string | `""` |
 | `ignition.podAnnotations` | object | `{}` |
 | `ignition.secrets` | object | `{"GATEWAY_ADMIN_USERNAME":"admin"}` |

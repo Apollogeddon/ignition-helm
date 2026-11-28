@@ -1,28 +1,161 @@
 ---
+import type { MarkdownHeading } from "astro";
+import ProseEnhance from "../components/ProseEnhance.astro";
 import Sidebar from "../components/Sidebar.astro";
 import BaseLayout from "./BaseLayout.astro";
+
+interface PageLink {
+  label: string;
+  href: string;
+}
 
 interface Props {
   title: string;
   description?: string;
+  headings?: MarkdownHeading[];
+  prev?: PageLink;
+  next?: PageLink;
+  editUrl?: string;
 }
 
-const { title, description } = Astro.props;
+const { title, description, headings = [], prev, next, editUrl } = Astro.props;
+
+// a page with a few sections gets an "On this page" outline of its h2s and h3s
+const toc = headings.filter((h) => h.depth === 2 || h.depth === 3);
+const showToc = toc.length >= 3;
 ---
 
 <BaseLayout title={`${title} · Ignition Helm Charts`} description={description}>
-	<div class="docs-container">
+	<div class:list={["docs-container", { "has-toc": showToc }]}>
 		<aside class="sidebar-wrapper">
 			<Sidebar />
 		</aside>
 		<article class="content-wrapper">
+			<!-- the sidebar is hidden on a narrow screen, so its links are behind a menu here instead -->
+			<details class="docs-menu">
+				<summary>Menu</summary>
+				<Sidebar />
+			</details>
 			<div class="prose">
 				<h1>{title}</h1>
+				{
+					showToc && (
+						<details class="toc-inline">
+							<summary>On this page</summary>
+							<nav aria-label="On this page">
+								<ul class="toc-list">
+									{toc.map((h) => (
+										<li class={`depth-${h.depth}`}>
+											<a href={`#${h.slug}`}>{h.text}</a>
+										</li>
+									))}
+								</ul>
+							</nav>
+						</details>
+					)
+				}
 				<slot />
 			</div>
+
+			<footer class="page-footer">
+				{
+					editUrl && (
+						<a class="edit-link" href={editUrl} target="_blank" rel="noopener noreferrer">
+							<svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M11.013 1.427a1.75 1.75 0 0 1 2.474 0l1.086 1.086a1.75 1.75 0 0 1 0 2.474l-8.61 8.61c-.21.21-.47.364-.756.445l-3.251.93a.75.75 0 0 1-.927-.928l.929-3.25c.081-.286.235-.547.445-.758l8.61-8.61Zm.176 4.823L9.75 4.81l-6.286 6.287a.25.25 0 0 0-.064.108l-.558 1.953 1.953-.558a.25.25 0 0 0 .108-.064Zm1.238-3.763a.25.25 0 0 0-.354 0L10.811 3.75l1.439 1.44 1.263-1.263a.25.25 0 0 0 0-.354Z"/></svg>
+							Edit this page on GitHub
+						</a>
+					)
+				}
+				{
+					(prev || next) && (
+						<nav class="page-nav" aria-label="Previous and next pages">
+							{prev ? (
+								<a class="page-link" href={prev.href} rel="prev">
+									<span class="page-dir">
+										<svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
+										Previous
+									</span>
+									<span class="page-title">{prev.label}</span>
+								</a>
+							) : (
+								<span />
+							)}
+							{next && (
+								<a class="page-link page-link-next" href={next.href} rel="next">
+									<span class="page-dir">
+										Next
+										<svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+									</span>
+									<span class="page-title">{next.label}</span>
+								</a>
+							)}
+						</nav>
+					)
+				}
+			</footer>
 		</article>
+		{
+			showToc && (
+				<aside class="toc-rail">
+					<nav aria-label="On this page">
+						<p class="toc-title">On this page</p>
+						<ul class="toc-list">
+							{toc.map((h) => (
+								<li class={`depth-${h.depth}`}>
+									<a href={`#${h.slug}`} data-toc={h.slug}>
+										{h.text}
+									</a>
+								</li>
+							))}
+						</ul>
+					</nav>
+				</aside>
+			)
+		}
 	</div>
+	<ProseEnhance />
 </BaseLayout>
+
+<script>
+	// following a link in the phone menu or the inline contents closes it
+	for (const details of document.querySelectorAll<HTMLDetailsElement>(".docs-menu, .toc-inline")) {
+		details.addEventListener("click", (e) => {
+			if ((e.target as Element).closest("a")) details.open = false;
+		});
+	}
+
+	// the rail follows the reader: the last section whose heading has passed under the navbar is marked
+	const links = [...document.querySelectorAll<HTMLAnchorElement>(".toc-rail [data-toc]")];
+	const headings = links
+		.map((link) => document.getElementById(link.dataset.toc ?? ""))
+		.filter((h): h is HTMLElement => h !== null);
+	if (headings.length > 0) {
+		let frame = 0;
+		const mark = () => {
+			frame = 0;
+			const line = Number.parseFloat(getComputedStyle(document.documentElement).fontSize) * 6;
+			let current = headings[0];
+			for (const heading of headings) {
+				if (heading.getBoundingClientRect().top <= line) current = heading;
+				else break;
+			}
+			// at the foot of the page the last section is the one being read, however short
+			if (innerHeight + scrollY >= document.documentElement.scrollHeight - 2) current = headings[headings.length - 1];
+			for (const link of links) {
+				if (link.dataset.toc === current.id) link.setAttribute("aria-current", "location");
+				else link.removeAttribute("aria-current");
+			}
+		};
+		addEventListener(
+			"scroll",
+			() => {
+				frame ||= requestAnimationFrame(mark);
+			},
+			{ passive: true },
+		);
+		mark();
+	}
+</script>
 
 <style>
 	.docs-container {
@@ -33,6 +166,8 @@ const { title, description } = Astro.props;
 	}
 
 	.sidebar-wrapper {
+		box-sizing: border-box;
+		flex: 0 0 var(--sl-sidebar-width);
 		width: var(--sl-sidebar-width);
 		position: sticky;
 		top: var(--sl-nav-height);
@@ -45,29 +180,266 @@ const { title, description } = Astro.props;
 	.content-wrapper {
 		flex: 1;
 		min-width: 0;
-		padding: 2rem 4rem;
+		padding: 2.5rem 4rem 4rem;
 	}
 
-	.prose {
+	.prose,
+	.page-footer {
 		max-width: 80ch;
 		margin: 0 auto;
 	}
 
 	.prose h1 {
-		font-size: 2.5rem;
+		font-size: 2.25rem;
+		font-weight: 650;
+		letter-spacing: -0.035em;
+		line-height: 1.15;
+		/* a name such as ignition_alarm_notification_profile has no spaces to break at */
+		overflow-wrap: anywhere;
 		margin-bottom: 2rem;
-		border-bottom: 1px solid var(--sl-color-hairline);
-		padding-bottom: 1rem;
 		color: var(--sl-color-text);
 	}
 
-	/* Responsive */
-	@media (max-width: 768px) {
+	/* the phone menu and the inline contents: a bordered bar that opens downwards */
+	details {
+		border: 1px solid var(--sl-color-hairline);
+		border-radius: var(--sl-border-radius);
+		background: var(--sl-color-surface);
+	}
+
+	summary {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		min-height: 44px;
+		box-sizing: border-box;
+		padding: 0.5rem 1rem;
+		font-size: 0.875rem;
+		font-weight: 500;
+		color: var(--sl-color-text);
+		cursor: pointer;
+		list-style: none;
+	}
+
+	summary::-webkit-details-marker {
+		display: none;
+	}
+
+	summary::after {
+		content: "";
+		width: 0.4rem;
+		height: 0.4rem;
+		border-right: 1.5px solid var(--sl-color-text-muted);
+		border-bottom: 1.5px solid var(--sl-color-text-muted);
+		transform: translateY(-25%) rotate(45deg);
+		transition: transform 0.2s;
+	}
+
+	details[open] > summary::after {
+		transform: translateY(25%) rotate(-135deg);
+	}
+
+	details[open] > summary {
+		border-bottom: 1px solid var(--sl-color-hairline);
+	}
+
+	.docs-menu {
+		display: none;
+		margin-bottom: 1.5rem;
+	}
+
+	.docs-menu :global(.sidebar) {
+		padding: 0 0.5rem 0.5rem;
+	}
+
+	.docs-menu :global(.section) {
+		margin-bottom: 0.5rem;
+	}
+
+	.toc-inline {
+		margin: -0.75rem 0 2rem;
+	}
+
+	.toc-inline nav {
+		padding: 0.5rem 1rem 0.75rem;
+	}
+
+	.toc-list {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+	}
+
+	.prose .toc-list li {
+		margin: 0;
+		padding: 0;
+	}
+
+	.toc-list a {
+		display: block;
+		padding: 0.3rem 0;
+		color: var(--sl-color-text-muted);
+		text-decoration: none;
+		font-size: 0.8125rem;
+		line-height: 1.45;
+		transition: color 0.15s;
+	}
+
+	.toc-list a:hover {
+		color: var(--sl-color-text);
+	}
+
+	.toc-list .depth-3 a {
+		padding-left: 0.875rem;
+	}
+
+	.toc-rail {
+		display: none;
+	}
+
+	.toc-title {
+		margin: 0 0 0.75rem;
+		font-size: 0.8125rem;
+		font-weight: 600;
+		color: var(--sl-color-text);
+	}
+
+	/* wide screens: the outline moves to a sticky rail, a hairline track with the current section lit */
+	@media (min-width: 1200px) {
+		.toc-inline {
+			display: none;
+		}
+
+		.toc-rail {
+			display: block;
+			box-sizing: border-box;
+			flex: 0 0 15rem;
+			position: sticky;
+			top: var(--sl-nav-height);
+			height: calc(100vh - var(--sl-nav-height));
+			overflow-y: auto;
+			padding: 2.5rem 0 2rem 1.5rem;
+		}
+
+		.toc-rail .toc-list {
+			border-left: 1px solid var(--sl-color-hairline);
+		}
+
+		.toc-rail .toc-list a {
+			margin-left: -1px;
+			padding-left: 0.875rem;
+			border-left: 1px solid transparent;
+		}
+
+		.toc-rail .toc-list .depth-3 a {
+			padding-left: 1.75rem;
+		}
+
+		.toc-rail .toc-list a[aria-current="location"] {
+			border-left-color: var(--sl-color-text);
+			color: var(--sl-color-text);
+			font-weight: 500;
+		}
+
+		.has-toc .content-wrapper {
+			padding: 2.5rem 3rem 4rem;
+		}
+	}
+
+	/* the page's foot: an edit link, then the pages either side as two cards */
+	.page-footer {
+		margin-top: 4rem;
+		padding-top: 1.5rem;
+		border-top: 1px solid var(--sl-color-hairline);
+	}
+
+	.edit-link {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5rem;
+		min-height: 44px;
+		font-size: 0.875rem;
+		color: var(--sl-color-text-muted);
+		text-decoration: none;
+		transition: color 0.15s;
+	}
+
+	.edit-link:hover {
+		color: var(--sl-color-text);
+	}
+
+	.page-nav {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 1rem;
+		margin-top: 1.5rem;
+	}
+
+	.page-link {
+		display: flex;
+		flex-direction: column;
+		gap: 0.25rem;
+		padding: 1rem 1.25rem;
+		border: 1px solid var(--sl-color-hairline);
+		border-radius: 12px;
+		background: var(--sl-color-surface);
+		text-decoration: none;
+		transition: border-color 0.15s;
+	}
+
+	.page-link:hover {
+		border-color: var(--sl-color-hairline-strong);
+	}
+
+	.page-link-next {
+		grid-column: 2;
+		align-items: flex-end;
+		text-align: right;
+	}
+
+	.page-dir {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.375rem;
+		font-size: 0.8125rem;
+		color: var(--sl-color-text-muted);
+	}
+
+	.page-title {
+		font-size: 0.9375rem;
+		font-weight: 500;
+		color: var(--sl-color-text);
+		overflow-wrap: anywhere;
+	}
+
+	/* phones: the sidebar becomes a menu above the article; a 768px tablet keeps it */
+	@media (max-width: 767px) {
 		.sidebar-wrapper {
 			display: none;
 		}
+
+		.docs-menu {
+			display: block;
+		}
+
 		.content-wrapper {
-			padding: 2rem 1rem;
+			padding: 1.5rem 0 3rem;
+		}
+
+		.docs-container {
+			padding: 0 1rem;
+		}
+
+		.prose h1 {
+			font-size: 1.75rem;
+		}
+
+		.page-nav {
+			grid-template-columns: 1fr;
+		}
+
+		.page-link-next {
+			grid-column: auto;
 		}
 	}
 </style>
