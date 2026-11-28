@@ -1,108 +1,112 @@
-/* Import Inter font */
 @import "@fontsource/inter/400.css";
+@import "@fontsource/inter/500.css";
 @import "@fontsource/inter/600.css";
-@import "@fontsource/inter/800.css";
+@import "@fontsource/inter/700.css";
 
-/* 
-  Semantic Theme System 
+/*
+  Design tokens
+  Near-black and near-white neutrals, one accent per site, and surfaces told apart by a hairline rather than a shadow.
 */
 
 :root {
-  /* Font Stack */
   --sl-font-system:
-    "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans",
-    "Helvetica Neue", sans-serif;
+    "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  --sl-font-mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
 
   /* Layout */
-  --sl-nav-height: 3.5rem;
-  --sl-sidebar-width: 18rem;
-  --sl-border-radius: 8px;
+  --sl-nav-height: 3.75rem;
+  --sl-sidebar-width: 17rem;
+  --sl-border-radius: 10px;
+  --sl-content-width: 1200px;
 
-  /* Shared Palette (Standard) */
-  --sl-color-accent-secondary: #67e8f9; /* Cyan accent for the Helm charts */
+  --sl-color-accent-secondary: #67e8f9;
 }
 
-/* Dark Mode Variables (Default) */
+/* Dark (the default) */
 :root,
 :root[data-theme="dark"] {
   color-scheme: dark;
 
-  /* Core Backgrounds */
-  --sl-color-bg: #09090b;
-  --sl-color-bg-nav: rgba(9, 9, 11, 0.8);
-  --sl-color-bg-sidebar: #09090b;
-  --sl-color-hairline: #27272a;
+  --sl-color-bg: #08090a;
+  --sl-color-surface: #0f1011;
+  --sl-color-bg-nav: rgba(8, 9, 10, 0.72);
+  --sl-color-bg-sidebar: #08090a;
+  --sl-color-hairline: rgba(255, 255, 255, 0.08);
+  --sl-color-hairline-strong: rgba(255, 255, 255, 0.14);
 
-  /* Accent */
   --sl-color-accent-low: #083344;
   --sl-color-accent: #06b6d4;
   --sl-color-accent-rgb: 6, 182, 212;
   --sl-color-accent-high: #cffafe;
 
-  /* Semantic Text Colors */
   --sl-color-white: #ffffff;
-  --sl-color-text: #f3f4f6;
-  --sl-color-text-muted: #9ca3af;
-  --sl-color-text-invert: #09090b;
-  --sl-color-heading: #ffffff;
+  --sl-color-text: #f7f8f8;
+  --sl-color-text-muted: #8a8f98;
+  --sl-color-text-invert: #08090a;
+  --sl-color-heading: #f7f8f8;
 
-  /* Gray Scale - Dark Optimized */
-  --sl-color-gray-1: #f3f4f6;
-  --sl-color-gray-2: #e5e7eb;
-  --sl-color-gray-3: #d1d5db;
-  --sl-color-gray-4: #9ca3af;
-  --sl-color-gray-5: #4b5563;
-  --sl-color-gray-6: #1f2937;
-  --sl-color-black: #09090b;
+  --sl-color-gray-1: #f7f8f8;
+  --sl-color-gray-2: #e2e4e7;
+  --sl-color-gray-3: #c4c7cc;
+  --sl-color-gray-4: #8a8f98;
+  --sl-color-gray-5: #2a2c30;
+  --sl-color-gray-6: #16171a;
+  --sl-color-black: #08090a;
 
-  --bg-mesh:
-    radial-gradient(at 0% 0%, rgba(var(--sl-color-accent-rgb), 0.08) 0px, transparent 50%),
-    radial-gradient(at 100% 100%, rgba(var(--sl-color-accent-rgb), 0.05) 0px, transparent 50%);
+  /* the hero's light: a white wash from the top, with the site's two accents either side */
+  --hero-light-white: rgba(255, 255, 255, 0.07);
+  --hero-light-accent: 18%;
 }
 
-/* Light Mode Overrides */
 :root[data-theme="light"] {
   color-scheme: light;
-  --sl-color-bg: #ffffff;
-  --sl-color-bg-nav: rgba(255, 255, 255, 0.8);
-  --sl-color-bg-sidebar: #ffffff;
-  --sl-color-hairline: #e5e7eb;
+
+  --sl-color-bg: #fcfcfd;
+  --sl-color-surface: #ffffff;
+  --sl-color-bg-nav: rgba(252, 252, 253, 0.78);
+  --sl-color-bg-sidebar: #fcfcfd;
+  --sl-color-hairline: rgba(0, 0, 0, 0.08);
+  --sl-color-hairline-strong: rgba(0, 0, 0, 0.14);
 
   --sl-color-accent-low: #ecfeff;
   --sl-color-accent: #0e7490;
   --sl-color-accent-rgb: 14, 116, 144;
   --sl-color-accent-high: #164e63;
-  /* the shared secondary is too pale for the heading gradient on white; this end stop is 3.7:1 */
   --sl-color-accent-secondary: #0891b2;
 
-  --sl-color-text: #111827;
-  --sl-color-text-muted: #4b5563;
+  --sl-color-text: #08090a;
+  --sl-color-text-muted: #5c6068;
   --sl-color-text-invert: #ffffff;
-  --sl-color-heading: #111827;
+  --sl-color-heading: #08090a;
 
-  --sl-color-gray-1: #111827;
-  --sl-color-gray-2: #1f2937;
-  --sl-color-gray-3: #374151;
-  --sl-color-gray-4: #6b7280;
-  --sl-color-gray-5: #d1d5db;
-  --sl-color-gray-6: #f3f4f6;
+  --sl-color-gray-1: #08090a;
+  --sl-color-gray-2: #1f2125;
+  --sl-color-gray-3: #3c3f45;
+  --sl-color-gray-4: #5c6068;
+  --sl-color-gray-5: #dcdee2;
+  --sl-color-gray-6: #f1f2f4;
   --sl-color-black: #ffffff;
 
-  --bg-mesh:
-    radial-gradient(at 0% 0%, rgba(var(--sl-color-accent-rgb), 0.04) 0px, transparent 50%),
-    radial-gradient(at 100% 100%, rgba(var(--sl-color-accent-rgb), 0.03) 0px, transparent 50%);
+  --hero-light-white: rgba(255, 255, 255, 0);
+  --hero-light-accent: 12%;
 }
 
-/* Typography Polish */
 body {
+  margin: 0;
   font-family: var(--sl-font-system);
+  font-feature-settings: "cv11", "ss01";
+  line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   background-color: var(--sl-color-bg);
-  background-image: var(--bg-mesh);
-  background-attachment: fixed;
   color: var(--sl-color-text);
-  margin: 0;
-  line-height: 1.5;
+}
+
+code,
+pre,
+kbd {
+  font-family: var(--sl-font-mono);
+  /* code shows the characters typed, so no ">-" drawn as an arrow */
+  font-variant-ligatures: none;
 }
 
 h1,
@@ -111,12 +115,66 @@ h3,
 h4,
 h5,
 h6 {
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: -0.025em;
   color: var(--sl-color-heading);
 }
 
-/* Utility Classes */
+/* a flat card: a raised surface with a hairline, no blur or shadow */
+.glass {
+  background: var(--sl-color-surface);
+  border: 1px solid var(--sl-color-hairline);
+}
+
+/* buttons: a solid pill in the text colour, and an outlined one */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  padding: 0 1.25rem;
+  border-radius: 999px;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  text-decoration: none;
+  transition:
+    background-color 0.15s,
+    border-color 0.15s,
+    color 0.15s;
+}
+
+.btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.btn-primary {
+  background: var(--sl-color-text);
+  color: var(--sl-color-bg);
+}
+
+.btn-primary:hover {
+  background: color-mix(in srgb, var(--sl-color-text) 86%, var(--sl-color-bg));
+}
+
+.btn-secondary {
+  border: 1px solid var(--sl-color-hairline-strong);
+  color: var(--sl-color-text);
+}
+
+.btn-secondary:hover {
+  background: var(--sl-color-gray-6);
+}
+
+/* section headings on the home page: a small accent label over a short, tight title */
+.section-eyebrow {
+  margin: 0 0 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--sl-color-accent-text, var(--sl-color-accent));
+}
+
 .text-gradient {
   background: linear-gradient(to right, var(--sl-color-accent), var(--sl-color-accent-secondary));
   background-clip: text;
@@ -125,43 +183,33 @@ h6 {
 }
 
 .custom-footer {
-  padding: 4rem 1rem;
-  border-top: 1px solid var(--sl-color-hairline);
-  text-align: center;
-  background: rgba(0, 0, 0, 0.2);
   margin-top: 4rem;
+  border-top: 1px solid var(--sl-color-hairline);
+}
+
+.footer-content {
+  box-sizing: border-box;
+  max-width: var(--sl-content-width);
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.5rem 2rem;
 }
 
 .footer-content p {
-  margin: 0.5rem 0;
-  font-size: 0.875rem;
+  margin: 0;
+  font-size: 0.8125rem;
   color: var(--sl-color-text-muted);
 }
 
-:root[data-theme="light"] .custom-footer {
-  background: var(--sl-color-gray-6);
-}
-
-/* Glass Utility */
-.glass {
-  background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-:root[data-theme="light"] .glass {
-  background: rgba(255, 255, 255, 0.7);
-  border: 1px solid rgba(0, 0, 0, 0.05);
-}
-
-/* Sidebar Active State: the current page in the sidebar (the navbar marks its section its own way) */
+/* Sidebar: the current page is a quiet neutral pill (the navbar marks its section its own way) */
 .sidebar [aria-current="page"],
 .sidebar-link.active {
-  background-color: var(--sl-color-accent-low);
-  border-left: 3px solid var(--sl-color-accent);
-  color: var(--sl-color-accent);
-  font-weight: 600;
+  background-color: var(--sl-color-gray-6);
+  color: var(--sl-color-text);
+  font-weight: 500;
 }
 
 /*

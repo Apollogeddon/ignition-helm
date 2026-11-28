@@ -60,14 +60,12 @@ const isActive = (id: string) => {
   }
 
   .section-title {
-    font-size: 0.75rem;
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    color: var(--sl-color-text-muted);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--sl-color-text);
     margin-top: 1.33em;
-    margin-bottom: 1rem;
-    padding-left: 1rem;
+    margin-bottom: 0.5rem;
+    padding-left: 0.75rem;
   }
 
   .section-items {
@@ -78,16 +76,17 @@ const isActive = (id: string) => {
 
   .sidebar-link {
     display: block;
-    padding: 0.5rem 1rem;
-    font-size: 0.95rem;
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+    line-height: 1.5;
     text-decoration: none;
     color: var(--sl-color-text-muted);
-    border-radius: 6px;
-    transition: all 0.2s;
+    border-radius: 8px;
+    transition: color 0.15s, background-color 0.15s;
   }
 
   .sidebar-link:hover {
-    color: var(--sl-color-accent);
-    background: var(--sl-color-accent-low);
+    color: var(--sl-color-text);
+    background: var(--sl-color-gray-6);
   }
 </style>
