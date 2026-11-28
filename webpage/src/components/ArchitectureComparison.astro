@@ -13,7 +13,7 @@ const models = [
     ],
     features: ["Volume per gateway", "Redundancy sync", "Simple licensing"],
     link: `${base}/docs/charts/failover/`,
-    icon: `<svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>`,
+    icon: `<svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="8" x="2" y="2" rx="2" ry="2" /><rect width="20" height="8" x="2" y="14" rx="2" ry="2" /><line x1="6" x2="6.01" y1="6" y2="6" /><line x1="6" x2="6.01" y1="18" y2="18" /></svg>`,
   },
   {
     name: "Scaleout",
@@ -26,14 +26,14 @@ const models = [
     ],
     features: ["Independent scaling", "Isolated backend", "EAM roles"],
     link: `${base}/docs/charts/scaleout/`,
-    icon: `<svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="10" x2="6" y2="14"/><line x1="18" y1="10" x2="18" y2="14"/></svg>`,
+    icon: `<svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="16" y="16" width="6" height="6" rx="1" /><rect x="2" y="16" width="6" height="6" rx="1" /><rect x="9" y="2" width="6" height="6" rx="1" /><path d="M5 16v-3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3" /><path d="M12 12V8" /></svg>`,
   },
 ];
 ---
 
 <section class="comparison-section">
   <div class="header">
-    <h2>Choose your <span class="text-gradient">architecture</span></h2>
+    <h2>Choose your architecture</h2>
     <p>Run a redundant pair, or split frontend and backend gateways to scale out.</p>
   </div>
 
@@ -112,11 +112,10 @@ const models = [
     display: flex;
     flex-direction: column;
     gap: 2rem;
-    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    transition: border-color 0.2s;
   }
 
   .model-card:hover {
-    transform: scale(1.02);
     border-color: rgba(var(--sl-color-accent-rgb), 0.3);
   }
 
@@ -127,14 +126,21 @@ const models = [
   }
 
   .icon-box {
-    width: 64px;
-    height: 64px;
-    background: rgba(var(--sl-color-accent-rgb), 0.1);
+    width: 48px;
+    height: 48px;
+    flex-shrink: 0;
+    background: rgba(var(--sl-color-accent-rgb), 0.08);
+    border: 1px solid rgba(var(--sl-color-accent-rgb), 0.25);
     color: var(--sl-color-accent);
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 16px;
+    border-radius: 12px;
+  }
+
+  .icon-box :global(svg) {
+    width: 24px;
+    height: 24px;
   }
 
   h3 {
@@ -148,8 +154,6 @@ const models = [
     font-weight: 600;
     color: var(--sl-color-accent);
     margin: 0.25rem 0 0;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
   }
 
   .desc {
@@ -163,9 +167,9 @@ const models = [
     grid-template-columns: repeat(3, 1fr);
     gap: 1rem;
     padding: 1.25rem;
-    background: rgba(255, 255, 255, 0.02);
+    background: rgba(var(--sl-color-accent-rgb), 0.03);
     border-radius: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--sl-color-hairline);
   }
 
   .stat-item {
@@ -176,10 +180,9 @@ const models = [
   }
 
   .stat-label {
-    font-size: 0.7rem;
-    text-transform: uppercase;
-    color: var(--sl-color-gray-5);
-    font-weight: 600;
+    font-size: 0.8rem;
+    color: var(--sl-color-text-muted);
+    font-weight: 500;
   }
 
   .stat-value {
