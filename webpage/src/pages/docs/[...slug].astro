@@ -1,6 +1,7 @@
 ---
 import { getCollection, render } from "astro:content";
 import DocsLayout from "../../layouts/DocsLayout.astro";
+import { type Doc, docHref, navLabel, neighbours } from "../../lib/docs";
 
 export async function getStaticPaths() {
   const docs = await getCollection("docs");
@@ -11,9 +12,20 @@ export async function getStaticPaths() {
 }
 
 const { doc } = Astro.props;
-const { Content } = await render(doc);
+const { Content, headings } = await render(doc);
+const { prev, next } = await neighbours(doc.id);
+const pageLink = (d?: Doc) => d && { label: navLabel(d.data.title), href: docHref(d.id) };
+// the loader's filePath is relative to the webpage package
+const editUrl = doc.filePath && `https://github.com/apollogeddon/ignition-helm/edit/main/webpage/${doc.filePath}`;
 ---
 
-<DocsLayout title={doc.data.title} description={doc.data.description}>
+<DocsLayout
+  title={doc.data.title}
+  description={doc.data.description}
+  headings={headings}
+  prev={pageLink(prev)}
+  next={pageLink(next)}
+  editUrl={editUrl}
+>
   <Content />
 </DocsLayout>

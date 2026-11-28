@@ -1,6 +1,6 @@
 <!--
   Finishes a docs page's rendered Markdown: each table goes in a frame that scrolls sideways, each h2 and h3 gets a
-  "#" link to itself (shown on hover), and each code block a copy button. A frame that scrolls takes keyboard focus.
+  "#" link to itself (shown on hover), and each code block (not a diagram) a copy button. A frame that scrolls takes keyboard focus.
 -->
 <script>
   for (const table of document.querySelectorAll<HTMLTableElement>(".prose table")) {
@@ -26,7 +26,7 @@
   const doneIcon =
     '<svg aria-hidden="true" focusable="false" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
 
-  for (const pre of document.querySelectorAll<HTMLPreElement>(".prose pre")) {
+  for (const pre of document.querySelectorAll<HTMLPreElement>(".prose pre:not(.mermaid)")) {
     if (pre.parentElement?.classList.contains("code-block")) continue;
     const frame = document.createElement("div");
     frame.className = "code-block";

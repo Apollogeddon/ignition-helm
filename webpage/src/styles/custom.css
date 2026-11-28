@@ -483,12 +483,92 @@ h6 {
 }
 /* biome-ignore-end lint/complexity/noImportantStyles: Shiki sets the colours inline */
 
-/* Mermaid's dark labels are #ccc on a half-clear #585858, under 4.5:1; a solid dark chip clears it */
-/* biome-ignore-start lint/complexity/noImportantStyles: Mermaid's own rules are scoped by the diagram's id */
-:root[data-theme="dark"] svg :is(.edgeLabel, .labelBkg, .edgeLabel p, .labelBkg p) {
-  background-color: #1f2125 !important;
+/*
+  Mermaid diagrams
+  Drawn in the site's own colours, whichever of Mermaid's themes rendered them: raised boxes with hairlines,
+  muted connectors, and labels on the frame's surface. Mermaid scopes its rules by the diagram's id, so these
+  need !important to win.
+*/
+
+.prose pre.mermaid {
+  display: flex;
+  justify-content: center;
+  padding: 1.5rem;
+  background: var(--sl-color-surface);
+  border-radius: 12px;
 }
-/* biome-ignore-end lint/complexity/noImportantStyles: the end of the Mermaid label rule */
+
+/* biome-ignore-start lint/complexity/noImportantStyles: Mermaid's own rules are scoped by the diagram's id */
+.prose pre.mermaid[data-processed] {
+  background: var(--sl-color-surface) !important;
+  border-radius: 12px !important;
+}
+
+/* boxes: flowchart nodes, sequence actors and activations */
+.prose pre.mermaid svg :is(.node, .actor-top, .actor-bottom) :is(rect, circle, ellipse, polygon, path),
+.prose pre.mermaid svg :is(rect.actor, .activation0, .activation1, .activation2, .labelBox) {
+  fill: var(--sl-color-gray-6) !important;
+  stroke: var(--sl-color-hairline-strong) !important;
+  stroke-width: 1px !important;
+}
+
+.prose pre.mermaid svg .node rect,
+.prose pre.mermaid svg rect.actor {
+  rx: 8px;
+  ry: 8px;
+}
+
+/* a subgraph is a dashed region around its boxes */
+.prose pre.mermaid svg .cluster rect {
+  fill: transparent !important;
+  stroke: var(--sl-color-hairline-strong) !important;
+  stroke-width: 1px !important;
+  stroke-dasharray: 4 4;
+  rx: 10px;
+  ry: 10px;
+}
+
+/* text */
+.prose
+  pre.mermaid
+  svg
+  :is(.nodeLabel, .cluster-label, .cluster-label span, .label, foreignObject div, foreignObject span) {
+  color: var(--sl-color-text) !important;
+}
+
+.prose pre.mermaid svg :is(text, tspan, text.actor, .messageText, .labelText, .loopText, .noteText) {
+  fill: var(--sl-color-text) !important;
+  stroke: none !important;
+}
+
+/* connectors: flowchart edges and sequence messages, with their arrowheads */
+.prose pre.mermaid svg :is(.flowchart-link, .edgePath .path, .messageLine0, .messageLine1, .relation) {
+  stroke: var(--sl-color-text-muted) !important;
+  stroke-width: 1.25px !important;
+}
+
+.prose pre.mermaid svg :is(marker path, .arrowheadPath, .arrowMarkerPath, #arrowhead path, #crosshead path) {
+  fill: var(--sl-color-text-muted) !important;
+  stroke: var(--sl-color-text-muted) !important;
+}
+
+.prose pre.mermaid svg :is(.actor-line, .loopLine) {
+  stroke: var(--sl-color-hairline-strong) !important;
+}
+
+/* edge labels sit on the frame's surface, so they read against it in both themes */
+.prose pre.mermaid svg :is(.edgeLabel, .labelBkg, .edgeLabel p, .labelBkg p, .edgeLabel rect) {
+  background-color: var(--sl-color-surface) !important;
+  fill: var(--sl-color-surface) !important;
+  color: var(--sl-color-text-muted) !important;
+}
+
+/* a note keeps a trace of the accent */
+.prose pre.mermaid svg .note {
+  fill: rgba(var(--sl-color-accent-rgb), 0.08) !important;
+  stroke: rgba(var(--sl-color-accent-rgb), 0.45) !important;
+}
+/* biome-ignore-end lint/complexity/noImportantStyles: the end of the Mermaid rules */
 
 /*
   Accessibility
