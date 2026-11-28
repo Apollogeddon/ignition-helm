@@ -483,6 +483,13 @@ h6 {
 }
 /* biome-ignore-end lint/complexity/noImportantStyles: Shiki sets the colours inline */
 
+/* Mermaid's dark labels are #ccc on a half-clear #585858, under 4.5:1; a solid dark chip clears it */
+/* biome-ignore-start lint/complexity/noImportantStyles: Mermaid's own rules are scoped by the diagram's id */
+:root[data-theme="dark"] svg :is(.edgeLabel, .labelBkg, .edgeLabel p, .labelBkg p) {
+  background-color: #1f2125 !important;
+}
+/* biome-ignore-end lint/complexity/noImportantStyles: the end of the Mermaid label rule */
+
 /*
   Accessibility
 */
