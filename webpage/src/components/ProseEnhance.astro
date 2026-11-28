@@ -1,0 +1,72 @@
+<!--
+  Finishes a docs page's rendered Markdown: each table goes in a frame that scrolls sideways, each h2 and h3 gets a
+  "#" link to itself (shown on hover), and each code block a copy button. A frame that scrolls takes keyboard focus.
+-->
+<script>
+  for (const table of document.querySelectorAll<HTMLTableElement>(".prose table")) {
+    if (table.parentElement?.classList.contains("table-wrap")) continue;
+    const wrap = document.createElement("div");
+    wrap.className = "table-wrap";
+    table.replaceWith(wrap);
+    wrap.append(table);
+  }
+
+  for (const heading of document.querySelectorAll<HTMLHeadingElement>(".prose :is(h2, h3)[id]")) {
+    if (heading.querySelector(".heading-anchor")) continue;
+    const anchor = document.createElement("a");
+    anchor.className = "heading-anchor";
+    anchor.href = `#${heading.id}`;
+    anchor.textContent = "#";
+    anchor.setAttribute("aria-label", `Link to ${heading.textContent?.trim() ?? "this section"}`);
+    heading.append(anchor);
+  }
+
+  const copyIcon =
+    '<svg aria-hidden="true" focusable="false" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>';
+  const doneIcon =
+    '<svg aria-hidden="true" focusable="false" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
+
+  for (const pre of document.querySelectorAll<HTMLPreElement>(".prose pre")) {
+    if (pre.parentElement?.classList.contains("code-block")) continue;
+    const frame = document.createElement("div");
+    frame.className = "code-block";
+    pre.replaceWith(frame);
+    frame.append(pre);
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "code-copy";
+    button.setAttribute("aria-label", "Copy code");
+    button.innerHTML = copyIcon;
+    button.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(pre.innerText.replace(/\n$/, ""));
+        button.innerHTML = doneIcon;
+        button.setAttribute("aria-label", "Copied");
+      } catch {
+        button.setAttribute("aria-label", "Copy failed");
+      }
+      setTimeout(() => {
+        button.innerHTML = copyIcon;
+        button.setAttribute("aria-label", "Copy code");
+      }, 1600);
+    });
+    frame.append(button);
+  }
+
+  // a frame that scrolls sideways takes keyboard focus, so it can be scrolled without a mouse
+  const focusable = () => {
+    for (const wrap of document.querySelectorAll<HTMLElement>(".prose .table-wrap")) {
+      if (wrap.scrollWidth > wrap.clientWidth) {
+        wrap.tabIndex = 0;
+        wrap.setAttribute("role", "region");
+        wrap.setAttribute("aria-label", "Table, scrolls sideways");
+      } else {
+        wrap.removeAttribute("tabindex");
+        wrap.removeAttribute("role");
+        wrap.removeAttribute("aria-label");
+      }
+    }
+  };
+  focusable();
+  addEventListener("resize", focusable);
+</script>

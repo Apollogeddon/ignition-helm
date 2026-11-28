@@ -7,23 +7,28 @@
 
 <style>
   .theme-toggle {
-    background: none;
-    border: none;
-    cursor: pointer;
-    color: var(--sl-color-gray-3);
-    padding: 0.5rem;
-    min-width: 44px;
-    min-height: 44px;
-    border-radius: 8px;
-    transition: all 0.2s;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border: none;
+    border-radius: 8px;
+    background: none;
+    color: var(--sl-color-text-muted);
+    cursor: pointer;
+    transition: color 0.15s, background-color 0.15s;
   }
 
   .theme-toggle:hover {
-    color: var(--sl-color-accent);
-    background: rgba(var(--sl-color-accent-rgb), 0.05);
+    color: var(--sl-color-text);
+    background: var(--sl-color-gray-6);
+  }
+
+  .theme-toggle :global(svg) {
+    width: 18px;
+    height: 18px;
   }
 
   .sun { display: none; }

@@ -14,7 +14,7 @@
     "Helvetica Neue", sans-serif;
 
   /* Layout */
-  --sl-nav-height: 4rem;
+  --sl-nav-height: 3.5rem;
   --sl-sidebar-width: 18rem;
   --sl-border-radius: 8px;
 
@@ -54,6 +54,10 @@
   --sl-color-gray-5: #4b5563;
   --sl-color-gray-6: #1f2937;
   --sl-color-black: #09090b;
+
+  --bg-mesh:
+    radial-gradient(at 0% 0%, rgba(var(--sl-color-accent-rgb), 0.08) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(var(--sl-color-accent-rgb), 0.05) 0px, transparent 50%);
 }
 
 /* Light Mode Overrides */
@@ -83,6 +87,10 @@
   --sl-color-gray-5: #d1d5db;
   --sl-color-gray-6: #f3f4f6;
   --sl-color-black: #ffffff;
+
+  --bg-mesh:
+    radial-gradient(at 0% 0%, rgba(var(--sl-color-accent-rgb), 0.04) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(var(--sl-color-accent-rgb), 0.03) 0px, transparent 50%);
 }
 
 /* Typography Polish */
@@ -90,6 +98,7 @@ body {
   font-family: var(--sl-font-system);
   -webkit-font-smoothing: antialiased;
   background-color: var(--sl-color-bg);
+  background-image: var(--bg-mesh);
   background-attachment: fixed;
   color: var(--sl-color-text);
   margin: 0;
@@ -146,8 +155,8 @@ h6 {
   border: 1px solid rgba(0, 0, 0, 0.05);
 }
 
-/* Sidebar Active State */
-[aria-current="page"],
+/* Sidebar Active State: the current page in the sidebar (the navbar marks its section its own way) */
+.sidebar [aria-current="page"],
 .sidebar-link.active {
   background-color: var(--sl-color-accent-low);
   border-left: 3px solid var(--sl-color-accent);
@@ -155,108 +164,276 @@ h6 {
   font-weight: 600;
 }
 
-/* 
-  Prose / Markdown Content Styles 
+/*
+  Prose / Markdown Content Styles
+  Shared by the Ignition sites: plain type, quiet structure, and code and tables framed the same way.
 */
 
+.prose {
+  font-size: 1rem;
+  line-height: 1.75;
+  color: var(--sl-color-text);
+  overflow-wrap: break-word;
+}
+
+.prose > :first-child {
+  margin-top: 0;
+}
+
+/* headings: spacing carries the structure, so no rules under them */
 .prose h2,
 .prose h3,
 .prose h4 {
+  position: relative;
   color: var(--sl-color-text);
   font-weight: 700;
-}
-
-/* anchor targets land below the sticky navbar */
-.prose :is(h2, h3, h4) {
-  scroll-margin-top: calc(var(--sl-nav-height) + 1rem);
+  letter-spacing: -0.015em;
+  scroll-margin-top: calc(var(--sl-nav-height) + 1.5rem);
 }
 
 .prose h2 {
-  font-size: 1.75rem;
-  margin-top: 3.5rem;
-  margin-bottom: 1.5rem;
-  border-bottom: 1px solid var(--sl-color-hairline);
-  padding-bottom: 0.5rem;
+  font-size: 1.5rem;
+  line-height: 1.3;
+  margin: 3rem 0 1rem;
 }
 
 .prose h3 {
-  font-size: 1.25rem;
-  margin-top: 2.5rem;
-  margin-bottom: 1rem;
+  font-size: 1.2rem;
+  line-height: 1.4;
+  margin: 2.25rem 0 0.75rem;
+}
+
+.prose h4 {
+  font-size: 1rem;
+  line-height: 1.5;
+  margin: 1.75rem 0 0.5rem;
+}
+
+/* a "#" after the heading, shown on hover, links to the section */
+.prose .heading-anchor {
+  margin-left: 0.5rem;
+  font-weight: 500;
+  color: var(--sl-color-text-muted);
+  text-decoration: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.prose :is(h2, h3):hover .heading-anchor,
+.prose .heading-anchor:focus-visible {
+  opacity: 1;
+}
+
+.prose .heading-anchor:hover {
+  color: var(--sl-color-accent);
 }
 
 .prose p {
-  margin-bottom: 1.5rem;
-  line-height: 1.7;
+  margin: 0 0 1.25rem;
+}
+
+.prose strong {
+  font-weight: 650;
   color: var(--sl-color-text);
 }
 
+/* links: accent text over a fainter underline that firms up on hover */
+.prose a:not(.heading-anchor) {
+  color: var(--sl-color-accent);
+  text-decoration: underline;
+  text-decoration-color: rgba(var(--sl-color-accent-rgb), 0.35);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  transition: text-decoration-color 0.15s;
+}
+
+.prose a:not(.heading-anchor):hover {
+  text-decoration-color: currentColor;
+}
+
+/* lists */
 .prose ul,
 .prose ol {
-  margin-bottom: 1.5rem;
+  margin: 0 0 1.25rem;
   padding-left: 1.5rem;
-  color: var(--sl-color-text);
 }
 
 .prose li {
-  margin-bottom: 0.5rem;
+  margin: 0.375rem 0;
+  padding-left: 0.25rem;
 }
 
-.prose a {
-  color: var(--sl-color-accent);
-  text-underline-offset: 2px;
+.prose li::marker {
+  color: var(--sl-color-text-muted);
 }
 
-.prose a:hover {
-  color: var(--sl-color-accent-high);
+.prose ol > li::marker {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
 }
 
+.prose li > :is(ul, ol) {
+  margin: 0.375rem 0 0;
+}
+
+/* inline code: a neutral chip that sits in the line, not a coloured badge */
 .prose code:not(pre code) {
-  background: var(--sl-color-accent-low);
-  color: var(--sl-color-accent);
-  padding: 0.2rem 0.4rem;
-  border-radius: 4px;
-  font-size: 0.9em;
-  border: 1px solid rgba(var(--sl-color-accent-rgb), 0.2);
+  padding: 0.125em 0.375em;
+  border: 1px solid var(--sl-color-hairline);
+  border-radius: 6px;
+  background: var(--sl-color-gray-6);
+  color: var(--sl-color-text);
+  font-size: 0.875em;
+  /* a long name wraps rather than widening the page; break-word keeps short ones whole */
+  overflow-wrap: break-word;
+}
+
+/* code in a link keeps the text colour, as the accent is too faint on the chip; the underline marks the link */
+.prose a code:not(pre code) {
+  color: var(--sl-color-text);
+}
+
+/* code blocks: one frame, padded evenly, with a copy button in the corner (ProseEnhance.astro) */
+.prose .code-block {
+  position: relative;
+  margin: 0 0 1.5rem;
+}
+
+.prose pre {
+  margin: 0 0 1.5rem;
+  padding: 1rem 1.25rem;
+  border: 1px solid var(--sl-color-hairline);
+  border-radius: 10px;
+  overflow-x: auto;
+  font-size: 0.85rem;
+  line-height: 1.7;
+}
+
+.prose .code-block pre {
+  margin: 0;
+  padding-right: 3rem;
+}
+
+.prose .code-copy {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--sl-color-hairline);
+  border-radius: 8px;
+  background: var(--sl-color-bg);
+  color: var(--sl-color-text-muted);
+  cursor: pointer;
+  opacity: 0;
+  transition:
+    opacity 0.15s,
+    color 0.15s;
+}
+
+.prose .code-block:hover .code-copy,
+.prose .code-copy:focus-visible {
+  opacity: 1;
+}
+
+.prose .code-copy:hover {
+  color: var(--sl-color-text);
+}
+
+/* touch screens have no hover, so the button stays visible there */
+@media (hover: none) {
+  .prose .code-copy {
+    opacity: 1;
+  }
+}
+
+/* tables: full width in a rounded frame that scrolls sideways, rows split by hairlines */
+.prose .table-wrap {
+  margin: 0 0 1.75rem;
+  border: 1px solid var(--sl-color-hairline);
+  border-radius: 10px;
+  overflow-x: auto;
 }
 
 .prose table {
-  /* a wide table scrolls inside itself instead of widening the page */
-  display: block;
-  overflow-x: auto;
-  max-width: 100%;
   width: 100%;
+  margin: 0;
   border-collapse: collapse;
-  margin-bottom: 2rem;
-  font-size: 0.95rem;
-}
-
-/* long parameter names and defaults wrap between words, not mid-identifier */
-.prose td code {
-  overflow-wrap: break-word;
+  font-size: 0.9rem;
+  line-height: 1.6;
 }
 
 .prose th,
 .prose td {
-  padding: 0.75rem;
-  border: 1px solid var(--sl-color-hairline);
+  padding: 0.625rem 0.875rem;
+  border: 0;
+  border-top: 1px solid var(--sl-color-hairline);
   text-align: left;
+  vertical-align: top;
   color: var(--sl-color-text);
 }
 
-.prose th {
+.prose thead th {
+  border-top: 0;
   background: var(--sl-color-gray-6);
-  font-weight: 700;
+  color: var(--sl-color-text-muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.prose td code {
+  white-space: nowrap;
+}
+
+/* a long default can still wrap, between words */
+.prose td:last-child code {
+  white-space: normal;
 }
 
 .prose blockquote {
-  margin: 2rem 0;
-  padding: 1rem 1.5rem;
-  border-left: 4px solid var(--sl-color-accent);
-  background: var(--sl-color-accent-low);
+  margin: 0 0 1.5rem;
+  padding: 0.75rem 1rem;
+  border-left: 3px solid var(--sl-color-accent);
+  border-radius: 0 8px 8px 0;
+  background: rgba(var(--sl-color-accent-rgb), 0.06);
   color: var(--sl-color-text);
-  font-style: italic;
 }
+
+.prose blockquote > :last-child {
+  margin-bottom: 0;
+}
+
+.prose hr {
+  margin: 2.5rem 0;
+  border: 0;
+  border-top: 1px solid var(--sl-color-hairline);
+}
+
+.prose img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 10px;
+}
+
+/* Shiki writes both themes into each block: the light one inline, the dark one as --shiki-dark */
+/* biome-ignore-start lint/complexity/noImportantStyles: Shiki sets the colours inline */
+:root[data-theme="dark"] .astro-code,
+:root[data-theme="dark"] .astro-code span {
+  color: var(--shiki-dark) !important;
+  background-color: var(--shiki-dark-bg) !important;
+  font-style: var(--shiki-dark-font-style) !important;
+  font-weight: var(--shiki-dark-font-weight) !important;
+}
+
+/* github-dark's comments are #6a737d, 3:1 on its background; this one is 5.3:1 */
+:root[data-theme="dark"] .astro-code span[style*="--shiki-dark:#6A737D" i] {
+  color: #959da5 !important;
+}
+/* biome-ignore-end lint/complexity/noImportantStyles: Shiki sets the colours inline */
 
 /*
   Accessibility
@@ -286,12 +463,6 @@ main:focus {
 :focus-visible {
   outline: 2px solid var(--sl-color-accent);
   outline-offset: 2px;
-}
-
-/* Shiki's github-dark comments are #6a737d, 3:1 on its background; this one is 5.3:1 */
-.astro-code span[style*="#6A737D" i] {
-  /* biome-ignore lint/complexity/noImportantStyles: Shiki sets the colour inline */
-  color: #959da5 !important;
 }
 
 /* biome-ignore-start lint/complexity/noImportantStyles: it must win over every component's own animation */
